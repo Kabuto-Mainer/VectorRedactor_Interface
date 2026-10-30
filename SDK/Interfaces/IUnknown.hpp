@@ -16,8 +16,8 @@ inline constexpr HRESULT E_UNEXPECTED  = static_cast<HRESULT>(-5);
 inline constexpr HRESULT E_OUTOFMEMORY = static_cast<HRESULT>(-6);
 inline constexpr HRESULT E_INVALIDARG  = static_cast<HRESULT>(-7);
 
-constexpr bool succeeded(HRESULT hresult) { return hresult >= 0; }
-constexpr bool failed(HRESULT hresult)    { return hresult < 0; }
+constexpr bool SUCCEEDED(HRESULT hr) { return hr >= 0; }
+constexpr bool FAILED(HRESULT hr)    { return hr < 0; }
 
 using IID = uint64_t; 
 

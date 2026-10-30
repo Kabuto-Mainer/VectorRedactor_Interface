@@ -4,8 +4,8 @@
 class ACommand {
 public:
     virtual ~ACommand() = default;
-    
-    virtual void execute() = 0;
+
+    virtual void execute() const = 0;
 };
 
 #endif
