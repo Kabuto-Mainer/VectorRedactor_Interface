@@ -24,21 +24,19 @@ namespace UI
 namespace
 {
 
-constexpr uint8_t OPAQUE_ALPHA       = 255;
-constexpr float   CHANNEL_MAX        = 255.0F;
-constexpr float   NO_ANGLE           = 0.0F;
-constexpr float   PADDING            = 4.0F;
-constexpr float   HEADER_HEIGHT      = 28.0F;
-constexpr float   CLOSE_BUTTON_SIZE  = 20.0F;
-constexpr float   CLOSE_AREA_WIDTH   = CLOSE_BUTTON_SIZE + 2.0F * PADDING;
-constexpr float   MENU_ITEM_WIDTH    = 120.0F;
-constexpr float   MENU_ITEM_HEIGHT   = 28.0F;
-constexpr float   LINE_SPACING       = 1.0F;
-constexpr int     FONT_SIZE          = 16;
+constexpr uint8_t OPAQUE_ALPHA         = 255;
+constexpr float   CHANNEL_MAX          = 255.0F;
+constexpr float   NO_ANGLE             = 0.0F;
+constexpr float   PADDING              = 4.0F;
+constexpr float   HEADER_HEIGHT        = 28.0F;
+constexpr float   CLOSE_BUTTON_SIZE    = 20.0F;
+constexpr float   CLOSE_AREA_WIDTH     = CLOSE_BUTTON_SIZE + 2.0F * PADDING;
+constexpr float   MENU_ITEM_WIDTH      = 120.0F;
+constexpr float   MENU_ITEM_HEIGHT     = 28.0F;
+constexpr float   LINE_SPACING         = 1.0F;
+constexpr int     FONT_SIZE            = 16;
 constexpr char    DEFAULT_THEME_NAME[] = "default";
 
-// Палитра строится по принципам libadwaita: фон задаёт нейтральный цвет, цвет текста выбирается
-// по контрасту с фоном, состояния элементов получаются смешиванием базового цвета с цветом текста.
 constexpr float LIGHTNESS_THRESHOLD = 0.5F;
 constexpr float SECONDARY_TINT      = 0.15F;
 constexpr float HOVER_MIX           = 0.08F;
@@ -58,11 +56,11 @@ struct Palette
 
 struct Theme
 {
-    Color_t window;
-    Color_t surface;
-    Color_t border;
-    Color_t accent;
-    Color_t text;
+    Color_t                                                  window;
+    Color_t                                                  surface;
+    Color_t                                                  border;
+    Color_t                                                  accent;
+    Color_t                                                  text;
     std::array<Palette, static_cast<std::size_t>(Role::MAX)> palettes;
 
     const Palette& palette(Role role) const
@@ -73,7 +71,8 @@ struct Theme
 
 Color_t mix(const Color_t& from, const Color_t& to, float ratio)
 {
-    const auto channel = [ratio](uint8_t from_value, uint8_t to_value) {
+    const auto channel = [ratio](uint8_t from_value, uint8_t to_value)
+    {
         return static_cast<uint8_t>(static_cast<float>(from_value) +
                                     (static_cast<float>(to_value) - static_cast<float>(from_value)) * ratio);
     };
@@ -103,18 +102,16 @@ Palette derive(const Color_t& base)
 Theme makeTheme(const Color_t& primary, const Color_t& secondary, const Color_t& neutral, const Color_t& accent,
                 const Color_t& unical)
 {
-    const Color_t text    = contrastOf(neutral);
-    const bool    dark    = luminance(neutral) < LIGHTNESS_THRESHOLD;
+    const Color_t text = contrastOf(neutral);
+    const bool    dark = luminance(neutral) < LIGHTNESS_THRESHOLD;
     const Color_t white(255, 255, 255, OPAQUE_ALPHA);
     const Color_t surface = mix(neutral, white, dark ? DARK_SURFACE_LIFT : LIGHT_SURFACE_LIFT);
     const Color_t button  = mix(neutral, secondary, SECONDARY_TINT);
 
-    return Theme{neutral,
-                 surface,
-                 mix(neutral, text, BORDER_MIX),
-                 accent,
-                 text,
-                 {derive(button), derive(primary), derive(unical)}};
+    return Theme{
+        neutral, surface, mix(neutral, text, BORDER_MIX),
+        accent,  text,    {derive(button), derive(primary), derive(unical)}
+    };
 }
 
 struct RenderContext
@@ -166,14 +163,8 @@ void drawText(IRenderer* renderer, const RenderContext& context, const std::stri
     {
         return;
     }
-    const TextFormat format{color,
-                            *context.font,
-                            FONT_SIZE,
-                            TextOverflowAction::TailReplace,
-                            h_align,
-                            TextWAlign::Center,
-                            PADDING,
-                            LINE_SPACING,
+    const TextFormat format{color,   *context.font,      FONT_SIZE, TextOverflowAction::TailReplace,
+                            h_align, TextWAlign::Center, PADDING,   LINE_SPACING,
                             false};
     renderer->renderText(text.c_str(), format, box);
 }
@@ -195,8 +186,8 @@ void drawContent(IRenderer* renderer, const RenderContext& context, const std::o
 Vec2F menuSize(Direct direct, std::size_t count)
 {
     const auto items = static_cast<float>(count);
-    return direct == Direct::Vertical ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items)
-                                      : Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
+    return direct == Direct::Vertical ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items) :
+                                        Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
 }
 
 using Placement = std::optional<BoxF>;
@@ -209,10 +200,10 @@ std::vector<Placement> slotsFor(const BoxF& bounds, Direct direct, std::size_t c
         return slots;
     }
 
-    const auto divider   = static_cast<float>(count);
-    const Vec2F slot     = direct == Direct::Vertical ? Vec2F(bounds.size.x, bounds.size.y / divider)
-                                                      : Vec2F(bounds.size.x / divider, bounds.size.y);
-    const Vec2F step     = direct == Direct::Vertical ? Vec2F(0.0F, slot.y) : Vec2F(slot.x, 0.0F);
+    const auto  divider = static_cast<float>(count);
+    const Vec2F slot    = direct == Direct::Vertical ? Vec2F(bounds.size.x, bounds.size.y / divider) :
+                                                       Vec2F(bounds.size.x / divider, bounds.size.y);
+    const Vec2F step    = direct == Direct::Vertical ? Vec2F(0.0F, slot.y) : Vec2F(slot.x, 0.0F);
 
     Vec2F position = bounds.pos;
     for (std::size_t i = 0; i < count; ++i)
@@ -230,7 +221,6 @@ enum class PressResult
     CLICKED,
 };
 
-// Отслеживает состояния normal / hover / pressed и определяет, завершён ли клик внутри области.
 class PressTracker
 {
 public:
@@ -247,24 +237,24 @@ public:
 
         switch (event.type)
         {
-        case EventType::MOUSE_DOWN:
-            if (inside && mouse->button == MouseButton::LEFT)
-            {
-                pressed_ = true;
-                return PressResult::CONSUMED;
-            }
-            return PressResult::IGNORED;
-
-        case EventType::MOUSE_UP:
-            if (!pressed_ || mouse->button != MouseButton::LEFT)
-            {
+            case EventType::MOUSE_DOWN:
+                if (inside && mouse->button == MouseButton::LEFT)
+                {
+                    pressed_ = true;
+                    return PressResult::CONSUMED;
+                }
                 return PressResult::IGNORED;
-            }
-            pressed_ = false;
-            return inside ? PressResult::CLICKED : PressResult::CONSUMED;
 
-        default:
-            return PressResult::IGNORED;
+            case EventType::MOUSE_UP:
+                if (!pressed_ || mouse->button != MouseButton::LEFT)
+                {
+                    return PressResult::IGNORED;
+                }
+                pressed_ = false;
+                return inside ? PressResult::CLICKED : PressResult::CONSUMED;
+
+            default:
+                return PressResult::IGNORED;
         }
     }
 
@@ -302,13 +292,9 @@ class ButtonObject final : public AObject
 {
 public:
     ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                 std::optional<IRenderer::ResourceID> icon, Role role, Action on_press)
-        : context_(context),
-          bounds_(bounds),
-          text_(std::move(text)),
-          icon_(icon),
-          role_(role),
-          on_press_(std::move(on_press))
+                 std::optional<IRenderer::ResourceID> icon, Role role, Action on_press) :
+        context_(context), bounds_(bounds), text_(std::move(text)), icon_(icon), role_(role),
+        on_press_(std::move(on_press))
     {
     }
 
@@ -316,13 +302,13 @@ public:
     {
         switch (press_.process(bounds_, event))
         {
-        case PressResult::CLICKED:
-            runAction(on_press_);
-            return true;
-        case PressResult::CONSUMED:
-            return true;
-        default:
-            return false;
+            case PressResult::CLICKED:
+                runAction(on_press_);
+                return true;
+            case PressResult::CONSUMED:
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -340,27 +326,22 @@ public:
     }
 
 private:
-    const RenderContext&               context_;
-    BoxF                               bounds_;
-    std::optional<std::string>         text_;
+    const RenderContext&                 context_;
+    BoxF                                 bounds_;
+    std::optional<std::string>           text_;
     std::optional<IRenderer::ResourceID> icon_;
-    Role                               role_;
-    Action                             on_press_;
-    PressTracker                       press_;
+    Role                                 role_;
+    Action                               on_press_;
+    PressTracker                         press_;
 };
 
 class SwitcherObject final : public AObject
 {
 public:
     SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                   std::optional<IRenderer::ResourceID> icon, Role role, Action on_active, Action on_deactive)
-        : context_(context),
-          bounds_(bounds),
-          text_(std::move(text)),
-          icon_(icon),
-          role_(role),
-          on_active_(std::move(on_active)),
-          on_deactive_(std::move(on_deactive))
+                   std::optional<IRenderer::ResourceID> icon, Role role, Action on_active, Action on_deactive) :
+        context_(context), bounds_(bounds), text_(std::move(text)), icon_(icon), role_(role),
+        on_active_(std::move(on_active)), on_deactive_(std::move(on_deactive))
     {
     }
 
@@ -368,14 +349,14 @@ public:
     {
         switch (press_.process(bounds_, event))
         {
-        case PressResult::CLICKED:
-            active_ = !active_;
-            runAction(active_ ? on_active_ : on_deactive_);
-            return true;
-        case PressResult::CONSUMED:
-            return true;
-        default:
-            return false;
+            case PressResult::CLICKED:
+                active_ = !active_;
+                runAction(active_ ? on_active_ : on_deactive_);
+                return true;
+            case PressResult::CONSUMED:
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -409,8 +390,8 @@ class ContextMenuObject final : public AObject
 {
 public:
     ContextMenuObject(const RenderContext& context, const BoxF& bounds, Role role,
-                      std::optional<EventHandler> on_event)
-        : context_(context), bounds_(bounds), role_(role), on_event_(std::move(on_event))
+                      std::optional<EventHandler> on_event) :
+        context_(context), bounds_(bounds), role_(role), on_event_(std::move(on_event))
     {
     }
 
@@ -464,8 +445,8 @@ private:
 class PoolMenuObject final : public AObject
 {
 public:
-    PoolMenuObject(const RenderContext& context, const BoxF& bounds, Role role)
-        : context_(context), bounds_(bounds), role_(role)
+    PoolMenuObject(const RenderContext& context, const BoxF& bounds, Role role) :
+        context_(context), bounds_(bounds), role_(role)
     {
     }
 
@@ -491,8 +472,8 @@ class WindowObject final : public AObject
 {
 public:
     WindowObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label, Role role,
-                 std::optional<EventHandler> on_event)
-        : context_(context), bounds_(bounds), label_(std::move(label)), role_(role), on_event_(std::move(on_event))
+                 std::optional<EventHandler> on_event) :
+        context_(context), bounds_(bounds), label_(std::move(label)), role_(role), on_event_(std::move(on_event))
     {
     }
 
@@ -550,29 +531,30 @@ public:
     bool doForButton(ADescription& description) override
     {
         auto& button = static_cast<ButtonDescription&>(description);
-        result_      = std::make_unique<ButtonObject>(context_, placement_.value_or(button.box),
-                                                 std::move(button.text), loadIcon(button.icon),
-                                                 resolveRole(button.role), std::move(button.on_press));
+        result_ =
+            std::make_unique<ButtonObject>(context_, placement_.value_or(button.box), std::move(button.text),
+                                           loadIcon(button.icon), resolveRole(button.role), std::move(button.on_press));
         return true;
     }
 
     bool doForSwitcher(ADescription& description) override
     {
         auto& switcher = static_cast<SwitcherDescription&>(description);
-        result_        = std::make_unique<SwitcherObject>(
-            context_, placement_.value_or(switcher.box), std::move(switcher.text), loadIcon(switcher.icon),
-            resolveRole(switcher.role), std::move(switcher.on_active), std::move(switcher.on_deactive));
+        result_ =
+            std::make_unique<SwitcherObject>(context_, placement_.value_or(switcher.box), std::move(switcher.text),
+                                             loadIcon(switcher.icon), resolveRole(switcher.role),
+                                             std::move(switcher.on_active), std::move(switcher.on_deactive));
         return true;
     }
 
     bool doForContextMenu(ADescription& description) override
     {
-        auto&             menu  = static_cast<ContextMenu&>(description);
-        const std::size_t count = menu.objects.size();
+        auto&             menu   = static_cast<ContextMenu&>(description);
+        const std::size_t count  = menu.objects.size();
         const BoxF        bounds = placement_.value_or(BoxF(menu.min_point, menuSize(menu.direct, count)));
 
-        auto object = std::make_unique<ContextMenuObject>(context_, bounds, resolveRole(menu.role),
-                                                          std::move(menu.on_event));
+        auto object =
+            std::make_unique<ContextMenuObject>(context_, bounds, resolveRole(menu.role), std::move(menu.on_event));
         if (!addChildren(*object, menu.objects, slotsFor(bounds, menu.direct, count)))
         {
             return false;
@@ -606,10 +588,10 @@ public:
         if (window.on_close)
         {
             const Vec2F close_pos(bounds.pos.x + bounds.size.x - CLOSE_BUTTON_SIZE - PADDING, bounds.pos.y + PADDING);
-            object->addChild(std::make_unique<ButtonObject>(context_,
-                                                            BoxF(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
-                                                            std::optional<std::string>("X"), std::nullopt,
-                                                            Role::Default, std::move(*window.on_close)));
+            object->addChild(std::make_unique<ButtonObject>(
+                context_, BoxF(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)), std::optional<std::string>("X"),
+                std::nullopt, Role::Default, std::move(*window.on_close)
+            ));
         }
 
         if (!addChildren(*object, window.objects, std::vector<Placement>(window.objects.size())))

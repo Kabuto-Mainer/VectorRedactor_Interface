@@ -9,58 +9,38 @@
 
 class ACommand;
 class AObject;
-class Event;
-class IPlugin;
-class ColorRGB;
+struct Event;
 
 #include "../Utils/BoxF.hpp"
-#include "../Utils/Vec2f.hpp"
+#include "../Utils/Vec2F.hpp"
 #include "IPlugin.hpp"
+#include "IRenderer.hpp"
 
+constexpr IID IID_IUIFramework = 0x00'06;
 
 namespace UI
 {
 
-/**
- * Фреймворк будет реализовывать следующие элементы:
- * - Кнопка с 3 состояниями
- * - Переключатель
- * - Контекстное окно
- * - Пул
- * - Обычное окно
- *
- * Создание будет происходить так:
- * - Пользователь создает структуру описания того, что он хочет получить.
- *   Возможно вообще сделаю систему макросов для удобства
- * - Запрашивается интерфейс фреймворка
- * - В интерфейсе вызывается конструктор по соответствующему описанию
- * - Возвращается std::unique_ptr<AOBject> готового объекта
- */
-
-class ADescription; // forward declaration
+class ADescription;
 
 class ADescriptionVisitor
 {
 public:
     ~ADescriptionVisitor() = default;
 
-    virtual bool doForButton(const ADescription& button)      = 0;
-    virtual bool doForSwitcher(const ADescription& button)    = 0;
-    virtual bool doForContextMenu(const ADescription& button) = 0;
-    virtual bool doForPoolMenu(const ADescription& button)    = 0;
-    virtual bool doForWindow(const ADescription& button)      = 0;
-
+    virtual bool doForButton(ADescription& button)      = 0;
+    virtual bool doForSwitcher(ADescription& button)    = 0;
+    virtual bool doForContextMenu(ADescription& button) = 0;
+    virtual bool doForPoolMenu(ADescription& button)    = 0;
+    virtual bool doForWindow(ADescription& button)      = 0;
 }; // class ADescriptionVisitor
-
-// ==============================================================
-// DESCRIPTIONS
-// ==============================================================
 
 class ADescription
 {
 public:
     virtual bool accept(ADescriptionVisitor& visitor) = 0;
 
+    ADescription()          = default;
     virtual ~ADescription() = default;
 
     ADescription(const ADescription&)            = delete;
@@ -77,17 +57,18 @@ struct Action
 
 using EventHandler = std::function<bool(const Event&)>;
 
-enum Direct
+enum class Direct
 {
     Vertical,
     Horizontal,
 };
 
-enum Role
+enum class Role
 {
     Default,
     Primary,
     Danger,
+    MAX,
 };
 
 struct ButtonDescription : public ADescription
@@ -102,7 +83,7 @@ struct ButtonDescription : public ADescription
     {
         return visitor.doForButton(*this);
     }
-}; // class ButtonDescription
+}; // struct ButtonDescription
 
 struct SwitcherDescription : public ADescription
 {
@@ -121,7 +102,7 @@ struct SwitcherDescription : public ADescription
 
 struct ContextMenu : public ADescription
 {
-    Vec2f                                      min_point;
+    Vec2F                                      min_point;
     Direct                                     direct;
     std::vector<std::unique_ptr<ADescription>> objects;
     std::optional<EventHandler>                on_event;
@@ -135,7 +116,8 @@ struct ContextMenu : public ADescription
 
 struct PoolMenu : public ADescription
 {
-    Vec2f                                      min_point;
+    Vec2F                                      min_point;
+    Vec2F                                      size;
     Direct                                     direct;
     std::vector<std::unique_ptr<ADescription>> objects;
     std::optional<Role>                        role;
@@ -161,19 +143,16 @@ struct Window : public ADescription
     }
 }; // struct Window
 
-// ==============================================================
-// FRAMEWORK
-// ==============================================================
-
 class IFramework : public IPlugin
 {
 public:
-    virtual std::unique_ptr<AObject> create(const ADescription& description)                            = 0;
-    virtual void registryTheme(std::string name, const ColorRGB& primary, const ColorRGB& secondary,
-                               const ColorRGB& neutral, const ColorRGB& accent, const ColorRGB& unical) = 0;
-    virtual bool setTheme(std::string name)                                                             = 0;
+    virtual std::unique_ptr<AObject> create(ADescription& description)                               = 0;
+    virtual void registryTheme(std::string name, const Color_t& primary, const Color_t& secondary,
+                               const Color_t& neutral, const Color_t& accent, const Color_t& unical) = 0;
+    virtual bool setTheme(std::string name)                                                          = 0;
+    virtual bool setFont(std::string path)                                                           = 0;
 }; // class IFramework
 
-}; // namespace UI
+} // namespace UI
 
 #endif // I_UI_FRAMEWORK_HPP
