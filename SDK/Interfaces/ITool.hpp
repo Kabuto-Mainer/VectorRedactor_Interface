@@ -1,7 +1,7 @@
 #ifndef I_TOOL_HPP
 #define I_TOOL_HPP
 
-#include "SDK/Interfaces/IUnknown.hpp"
+#include "Interfaces/IUnknown.hpp"
 #include <memory>
 // forward declaration
 class Event;

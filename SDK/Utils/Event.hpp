@@ -1,7 +1,7 @@
 #ifndef EVENT_HPP
 #define EVENT_HPP
 
-#include "SDK/Utils/Vec2F.hpp"
+#include "Utils/Vec2F.hpp"
 
 #include <variant>
 

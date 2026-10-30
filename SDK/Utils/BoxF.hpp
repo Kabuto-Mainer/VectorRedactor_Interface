@@ -1,7 +1,7 @@
 #ifndef BOX_F_HPP
 #define BOX_F_HPP
 
-#include "SDK/Utils/Vec2F.hpp"
+#include "Utils/Vec2F.hpp"
 
 struct BoxF
 {

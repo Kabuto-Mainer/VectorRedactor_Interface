@@ -4,10 +4,11 @@
 #include <list>
 #include <memory>
 
-#include "Utils/BoxF.hpp"
-#include "Utils/Event.hpp"
+#include "BoxF.hpp"
+#include "Event.hpp"
 
-class AObject {
+class AObject
+{
 private:
     BoxF box_;
     std::list<std::unique_ptr<AObject>> children_;
@@ -20,15 +21,15 @@ public:
         parent_ = new_parent;
     }
 
-    AObject* getParent() const {
+    AObject* parent() const {
         return parent_;
     }
 
-    const std::list<std::unique_ptr<AObject>>& getChildren() const {
+    const std::list<std::unique_ptr<AObject>>& children() const {
         return children_;
     }
 
-    std::list<std::unique_ptr<AObject>>& getChildren() {
+    std::list<std::unique_ptr<AObject>>& children() {
         return children_;
     }
 

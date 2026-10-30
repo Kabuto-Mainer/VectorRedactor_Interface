@@ -1,181 +1,201 @@
 #ifndef APPLICATION_CORE_HPP
 #define APPLICATION_CORE_HPP
 
+#include <cassert>
 #include <unordered_map>
 #include <vector>
 #include <string>
 #include <memory>
 #include <dlfcn.h>
-#include <iostream>
+#include <optional>
 
 #include "Interfaces/IUnknown.hpp"
 #include "Interfaces/IPlugin.hpp"
+#include "Interfaces/IRenderer.hpp"
+#include "Interfaces/IInputPump.hpp"
 #include "Utils/AObject.hpp"
 
-constexpr IID IID_IUnknown   = 0x0001;
-constexpr IID IID_IPlugin    = 0x0002; 
-constexpr IID IID_IRender    = 0x0003;
-constexpr IID IID_IInputPump = 0x0004;
-constexpr IID IID_ILogger    = 0x0005;
+constexpr IID IID_UNKNOWN	= 0x0001;
+constexpr IID IID_PLUGIN	= 0x0002; 
+constexpr IID IID_RENDERER	= 0x0003;
+constexpr IID IID_INPUT_PUMP	= 0x0004;
+constexpr IID IID_LOGGER	= 0x0005;
 
 // NOTE: Forward declaration
 struct Event;
 
-class IRender;
-class IInputPump;
-class ILogger;
-
-class ApplicationCore {
+class ApplicationCore
+{
 private:
-    std::unordered_map<IID, IPlugin*> registry_;
-
+	IRenderer *renderer_ = nullptr;
+	IInputPump *input_pump_ = nullptr;
+    std::unordered_map<IID, IPlugin *> registry_;
     std::unique_ptr<AObject> root_;
-
-    std::vector<void*> loaded_handles_;
-    
+    std::vector<void *> loaded_handles_;
     bool is_running_ = false;
 
 public:
-    // -------------------------------------------------------------------------------
-    // --- Constructor ---
-    
-    ApplicationCore() {
-        root_ = std::make_unique<AObject>();
-    }
+    ApplicationCore();
+    ~ApplicationCore();
 
-    // --- Destructor ---
-    
-    ~ApplicationCore() {
-        std::cout << "[Core] Shutting down application and clearing resources...\n";
-        
-        for (auto& [iid, service] : registry_) {
-            if (service) service->release();
-        }
-        registry_.clear();
-
-        for (auto it = loaded_handles_.rbegin(); it != loaded_handles_.rend(); ++it) {
-            if (*it) dlclose(*it);
-        }
-        loaded_handles_.clear();
-    }
-
-    // --- Copy Semantics Disabled ---
-    
     ApplicationCore(const ApplicationCore&) = delete;
+    ApplicationCore(ApplicationCore&&) = delete;
     ApplicationCore& operator=(const ApplicationCore&) = delete;
+    ApplicationCore& operator=(ApplicationCore&&) = delete;
 
-    // -------------------------------------------------------------------------------
-    // --- Getters & Setters ---
-    
-    AObject* getRoot() const { return root_.get(); }
-    
-    void stop() { is_running_ = false; }
+    AObject *root() const;
+    IRenderer *renderer() const;
+    IInputPump *inputPump() const;
 
-    // -------------------------------------------------------------------------------
+    int run();
+    void stop();
 
-    HRESULT registerInterface(IID iid, IPlugin* service) {
-        if (!service) return E_INVALIDARG;
-        if (registry_.find(iid) != registry_.end()) {
-            return E_FAIL; 
-        }
-        service->addRef(); 
-        registry_[iid] = service;
-        return S_OK;
-    }
-    
-    HRESULT getInterface(IID iid, void** ppv) {
-        if (!ppv) return E_INVALIDARG;
-        *ppv = nullptr;
-
-        auto it = registry_.find(iid);
-        if (it != registry_.end() && it->second != nullptr) {
-            return it->second->getInterface(iid, ppv);
-        }
-
-        return E_NOINTERFACE;
-    }
-
-    bool loadPlugin(const std::string& path) {
-        void* handle = dlopen(path.c_str(), RTLD_NOW);
-        if (!handle) {
-            std::cerr << "[Core] dlopen error: " << dlerror() << "\n";
-            return false;
-        }
-
-        using GetPluginFunc = IUnknown* (*)();
-        auto getPluginInstance = (GetPluginFunc)dlsym(handle, "getInterface"); 
-        
-        if (!getPluginInstance) {
-            std::cerr << "[Core] Missing 'getInterface' function in " << path << "\n";
-            dlclose(handle);
-            return false;
-        }
-
-        IUnknown* raw_plugin = getPluginInstance();
-        if (!raw_plugin) {
-            dlclose(handle);
-            return false;
-        }
-
-        void* pv_plugin = nullptr;
-        if (raw_plugin->getInterface(IID_IPlugin, &pv_plugin) == S_OK) {
-            auto* plugin = static_cast<IPlugin*>(pv_plugin);
-            if (plugin->init() != S_OK) {
-                std::cerr << "[Core] Plugin init failed: " << path << "\n";
-                plugin->release(); raw_plugin->release(); dlclose(handle); return false;
-            }
-            registerInterface(IID_IPlugin, plugin);
-            plugin->release();
-        } else {
-            raw_plugin->release(); dlclose(handle); return false;
-        }
-
-        loaded_handles_.push_back(handle);
-        raw_plugin->release(); 
-        return true;
-    }
-
-    // -------------------------------------------------------------------------------
-    // --- Main Loop ---
-
-    int run() {
-        IRender* render = nullptr;
-        IInputPump* input = nullptr;
-
-        if (getInterface(IID_IRender, (void**)&render) != S_OK ||
-            getInterface(IID_IInputPump, (void**)&input) != S_OK) {
-            std::cerr << "[Core] Critical subsystems missing in registry. Call loadPlugin first.\n";
-            if (render) render->release();
-            return -1;
-        }
-
-        std::cout << "[Core] Entering hardware-accelerated main loop...\n";
-        is_running_ = true;
-
-        while (is_running_) {
-            Event event;
-
-            // Input polling
-            while (input->pollEvent(event)) {
-                if (event.type == 67) { // Let's say 67 means Quit.
-                    is_running = false;
-                    break;
-                }
-                root_->processEvent(event);
-            }
-
-            // Rendering the object tree
-            render->beginFrame();
-            root_->render();
-            render->endFrame();
-        }
-
-        render->release();
-        input->release();
-
-        std::cout << "[Core] Exited main loop.\n";
-        return 0;
-    }
+    HRESULT registerPluginInterface(IID iid, IPlugin *service);
+    std::optional<IPlugin *> getPluginInterface(IID iid);
+    bool loadPlugin(const std::string& path);
 };
 
+/* ======================== Implementation ======================== */
+
+ApplicationCore::ApplicationCore()
+{
+	root_ = std::make_unique<AObject>();
+}
+
+ApplicationCore::~ApplicationCore()
+{
+	for (auto& [iid, service] : registry_) {
+		if (service != nullptr) { service->release(); }
+	}
+	registry_.clear();
+
+	for (auto it = loaded_handles_.rbegin(); it != loaded_handles_.rend(); ++it) {
+		if (*it != nullptr) { dlclose(*it); }
+	}
+	loaded_handles_.clear();
+}
+
+AObject *ApplicationCore::root() const
+{
+	return root_.get();
+}
+
+IRenderer *ApplicationCore::renderer() const
+{
+	assert(renderer_);
+	return renderer_;
+}
+
+IInputPump *ApplicationCore::inputPump() const
+{
+	assert(input_pump_);
+	return input_pump_;
+}
+
+void ApplicationCore::stop()
+{
+	is_running_ = false;
+}
+
+HRESULT ApplicationCore::registerPluginInterface(IID iid,
+		IPlugin* service)
+{
+	if (service == nullptr) { return E_INVALIDARG; }
+	if (registry_.contains(iid)) { return E_FAIL; }
+	service->addRef(); 
+	registry_[iid] = service;
+	return S_OK;
+}
+
+std::optional<IPlugin *> ApplicationCore::getPluginInterface(IID iid)
+{
+	IPlugin *plugin = nullptr;
+	auto found = registry_.find(iid);
+
+	if(registry_.contains(iid))
+	{
+		found->second->queryInterface(iid, reinterpret_cast<void **>(&plugin));
+		return plugin;
+	}
+
+	return std::nullopt;
+}
+
+bool ApplicationCore::loadPlugin(const std::string& path)
+{
+	using GetPluginFunc = IUnknown *(*)();
+
+	void* handle = dlopen(path.c_str(), RTLD_NOW);
+	if (handle == nullptr) { return false; }
+
+	auto get_plugin_instance = (GetPluginFunc)dlsym(handle, "getInterface"); 
+
+	if (get_plugin_instance == nullptr)
+	{
+		dlclose(handle);
+		return false;
+	}
+
+	IUnknown* raw_plugin = get_plugin_instance();
+	if (raw_plugin == nullptr)
+	{
+		dlclose(handle);
+		return false;
+	}
+
+	void* pv_plugin = nullptr;
+	if (raw_plugin->queryInterface(IID_PLUGIN, &pv_plugin) == S_OK)
+	{
+		auto* plugin = static_cast<IPlugin*>(pv_plugin);
+		if (plugin->init(this) != S_OK)
+		{
+			plugin->release();
+			raw_plugin->release();
+			dlclose(handle);
+			return false;
+		}
+
+		registerPluginInterface(IID_PLUGIN, plugin);
+		plugin->release();
+	}
+	else
+	{
+		raw_plugin->release();
+		dlclose(handle);
+		return false;
+	}
+
+	loaded_handles_.push_back(handle);
+	raw_plugin->release(); 
+	return true;
+}
+
+int ApplicationCore::run()
+{
+	/* already running => return */
+	if(is_running_) { return 1; }
+
+	is_running_ = true;
+
+	while (is_running_) {
+		Event event;
+
+		// Input polling
+		while (input_pump_->pollEvent(event))
+		{
+			root_->processEvent(event);
+		}
+
+		// Rendering the object tree
+		root_->render();
+		renderer_->update();
+	}
+
+	renderer_->release();
+	input_pump_->release();
+
+	return 0;
+}
+
 #endif
+

@@ -5,9 +5,9 @@
 #include <memory>
 #include <string>
 
-#include "SDK/Interfaces/IUnknown.hpp"
-#include "SDK/Interfaces/ITool.hpp"
-#include "SDK/Core/ApplicationCore.hpp"
+#include "Interfaces/IUnknown.hpp"
+#include "Interfaces/ITool.hpp"
+#include "Core/ApplicationCore.hpp"
 // forward-declaration
 class Event;
 
