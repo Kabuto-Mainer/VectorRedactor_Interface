@@ -17,7 +17,11 @@ class Matrix3F
 public:
     using Storage = std::array<std::array<float, DIMENSION>, DIMENSION>;
 
-    constexpr Matrix3F() : values_
+    constexpr Matrix3F() : values_{Storage{{{1.0F, 0.0F, 0.0F}, {0.0F, 1.0F, 0.0F}, {0.0F, 0.0F, 1.0F}}}}
+    {
+    }
+
+    constexpr explicit Matrix3F(const Storage& values) : values_(values)
     {
         {
             {1.0F, 0.0F, 0.0F}, {0.0F, 1.0F, 0.0F}, {0.0F, 0.0F, 1.0F}
@@ -184,42 +188,29 @@ public:
             return result;
         }
 
-        constexpr float determinant() const
-        {
-            return ((*this)[0][0] * (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1]))) -
-                   ((*this)[0][1] * (((*this)[1][0] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][0]))) +
-                   ((*this)[0][2] * (((*this)[1][0] * (*this)[2][1]) - ((*this)[1][1] * (*this)[2][0])));
-        }
-
-        bool tryInverse(Matrix3F & result, float epsilon = DEFAULT_EPSILON) const
-        {
-            const float det = determinant();
-            if (std::abs(det) <= epsilon)
-            {
-                return false;
-            }
-
-            const float inv = 1.0F / det;
-            result          = Matrix3F{};
-            result[0][0]    = (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1])) * inv;
-            result[0][1]    = (((*this)[0][2] * (*this)[2][1]) - ((*this)[0][1] * (*this)[2][2])) * inv;
-            result[0][2]    = (((*this)[0][1] * (*this)[1][2]) - ((*this)[0][2] * (*this)[1][1])) * inv;
-            result[1][0]    = (((*this)[1][2] * (*this)[2][0]) - ((*this)[1][0] * (*this)[2][2])) * inv;
-            result[1][1]    = (((*this)[0][0] * (*this)[2][2]) - ((*this)[0][2] * (*this)[2][0])) * inv;
-            result[1][2]    = (((*this)[0][2] * (*this)[1][0]) - ((*this)[0][0] * (*this)[1][2])) * inv;
-            result[2][0]    = (((*this)[1][0] * (*this)[2][1]) - ((*this)[1][1] * (*this)[2][0])) * inv;
-            result[2][1]    = (((*this)[0][1] * (*this)[2][0]) - ((*this)[0][0] * (*this)[2][1])) * inv;
-            result[2][2]    = (((*this)[0][0] * (*this)[1][1]) - ((*this)[0][1] * (*this)[1][0])) * inv;
-            return true;
-        }
-
-    private:
-        Storage values_;
+        const float inv = 1.0F / det;
+        Matrix3F    inverse{Storage{}};
+        inverse[0][0] = (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1])) * inv;
+        inverse[0][1] = (((*this)[0][2] * (*this)[2][1]) - ((*this)[0][1] * (*this)[2][2])) * inv;
+        inverse[0][2] = (((*this)[0][1] * (*this)[1][2]) - ((*this)[0][2] * (*this)[1][1])) * inv;
+        inverse[1][0] = (((*this)[1][2] * (*this)[2][0]) - ((*this)[1][0] * (*this)[2][2])) * inv;
+        inverse[1][1] = (((*this)[0][0] * (*this)[2][2]) - ((*this)[0][2] * (*this)[2][0])) * inv;
+        inverse[1][2] = (((*this)[0][2] * (*this)[1][0]) - ((*this)[0][0] * (*this)[1][2])) * inv;
+        inverse[2][0] = (((*this)[1][0] * (*this)[2][1]) - ((*this)[1][1] * (*this)[2][0])) * inv;
+        inverse[2][1] = (((*this)[0][1] * (*this)[2][0]) - ((*this)[0][0] * (*this)[2][1])) * inv;
+        inverse[2][2] = (((*this)[0][0] * (*this)[1][1]) - ((*this)[0][1] * (*this)[1][0])) * inv;
+        result        = inverse;
+        return true;
     }
 
-    constexpr Matrix3F operator*(float scalar, const Matrix3F& matrix)
-    {
-        return matrix * scalar;
-    }
+private:
+    Storage values_;
+}; // class Matrix3F
+
+constexpr Matrix3F operator*(float scalar, const Matrix3F& matrix)
+{
+    return matrix * scalar;
+}
 
 #endif
+
