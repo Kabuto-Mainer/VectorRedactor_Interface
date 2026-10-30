@@ -1,5 +1,5 @@
-#ifndef PHOTOSHOP_IRENDERER_HPP
-#define PHOTOSHOP_IRENDERER_HPP
+#ifndef I_RENDERER_HPP
+#define I_RENDERER_HPP
 
 #include <cstdint>
 

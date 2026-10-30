@@ -1,5 +1,5 @@
-#ifndef BOXF_HPP
-#define BOXF_HPP
+#ifndef BOX_F_HPP
+#define BOX_F_HPP
 
 #include "SDK/Utils/Vec2F.hpp"
 
