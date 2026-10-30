@@ -1,8 +1,6 @@
 #ifndef VEC_2F_HPP
 #define VEC_2F_HPP
 
-#include <cmath>
-
 struct Vec2F
 {
     float x = 0.0;
