@@ -1,22 +1,23 @@
-#ifndef _MY_FBOX_HPP_
-#define _MY_FBOX_HPP_
+#ifndef BOXF_HPP
+#define BOXF_HPP
 
-#include "SDK/Utils/Vec2f.hpp"
+#include "SDK/Utils/Vec2F.hpp"
 
 struct BoxF
 {
-    Vec2f pos;
-    Vec2f size;
+    Vec2F pos;
+    Vec2F size;
 
     BoxF() = default;
 
-    bool contains(const Vec2f& point) const
+    bool contains(const Vec2F& point) const
     {
-        return point.x() >= pos.x() && point.x() <= pos.x() + size.x()
-            && point.y() >= pos.y() && point.y() <= pos.y() + size.y();
+        return point.x >= pos.x && point.x <= pos.x + size.x && point.y >= pos.y && point.y <= pos.y + size.y;
     }
 
-    BoxF(const Vec2f& pos1, const Vec2f& size1) : pos(pos1), size(size1) {}
+    BoxF(const Vec2F& pos1, const Vec2F& size1) : pos(pos1), size(size1)
+    {
+    }
 };
 
 #endif

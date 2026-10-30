@@ -28,6 +28,10 @@ public:
         return children_;
     }
 
+    std::list<std::unique_ptr<AObject>>& getChildren() {
+        return children_;
+    }
+
     void addChild(std::unique_ptr<AObject> child) {
         child->setParent(this);
         children_.push_back(std::move(child));
