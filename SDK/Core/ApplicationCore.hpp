@@ -8,9 +8,9 @@
 #include <dlfcn.h>
 #include <iostream>
 
-#include "SDK/Interfaces/IUnknown.hpp"
-#include "SDK/Interfaces/IPlugin.hpp"
-#include "SDK/Utils/AObject.hpp"
+#include "Interfaces/IUnknown.hpp"
+#include "Interfaces/IPlugin.hpp"
+#include "Utils/AObject.hpp"
 
 constexpr IID IID_IUnknown   = 0x0001;
 constexpr IID IID_IPlugin    = 0x0002; 
@@ -67,7 +67,7 @@ public:
     // -------------------------------------------------------------------------------
     // --- Getters & Setters ---
     
-    AObject*    getRoot()      const { return root_.get(); }
+    AObject* getRoot() const { return root_.get(); }
     
     void stop() { is_running_ = false; }
 
@@ -129,42 +129,6 @@ public:
         } else {
             raw_plugin->release(); dlclose(handle); return false;
         }
-
-        void* pv_render = nullptr;
-        void* pv_input  = nullptr;
-        void* pv_logger = nullptr;
-
-        raw_plugin->getInterface(IID_IRender,    &pv_render);
-        raw_plugin->getInterface(IID_IInputPump, &pv_input);
-        raw_plugin->getInterface(IID_ILogger,    &pv_logger);
-
-        if (!pv_render || !pv_input || !pv_logger) {
-            std::cerr << "[Core] Loaded plugin missing critical IRender, IInputPump or ILogger\n";
-            
-            if (pv_render) static_cast<IPlugin*>(pv_render)->release();
-            if (pv_input)  static_cast<IPlugin*>(pv_input)->release();
-            if (pv_logger) static_cast<IPlugin*>(pv_logger)->release();
-            
-            auto it = registry_.find(IID_IPlugin);
-            if (it != registry_.end()) {
-                it->second->release();
-                registry_.erase(it);
-            }
-
-            raw_plugin->release();
-            dlclose(handle);
-            return false;
-        }
-
-        registerInterface(IID_IRender,    static_cast<IPlugin*>(pv_render));
-        registerInterface(IID_IInputPump, static_cast<IPlugin*>(pv_input));
-        if (pv_logger) {
-            registerInterface(IID_ILogger, static_cast<IPlugin*>(pv_logger));
-        }
-
-        static_cast<IPlugin*>(pv_render)->release();
-        static_cast<IPlugin*>(pv_input)->release();
-        if (pv_logger) static_cast<IPlugin*>(pv_logger)->release();
 
         loaded_handles_.push_back(handle);
         raw_plugin->release(); 

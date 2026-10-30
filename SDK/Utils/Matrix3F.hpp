@@ -1,5 +1,5 @@
-#ifndef VECTOR_REDACTOR_MATRIX3F_HPP
-#define VECTOR_REDACTOR_MATRIX3F_HPP
+#ifndef MATRIX_3F_HPP
+#define MATRIX_3F_HPP
 
 #include "Vec2F.hpp"
 
