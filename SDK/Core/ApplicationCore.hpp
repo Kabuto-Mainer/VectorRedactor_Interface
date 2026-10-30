@@ -29,22 +29,22 @@ private:
     std::unique_ptr<AObject> root_;
 
     std::vector<void*> loaded_handles_;
-    
+
     bool is_running_ = false;
 
 public:
     // -------------------------------------------------------------------------------
     // --- Constructor ---
-    
+
     ApplicationCore() {
         root_ = std::make_unique<AObject>();
     }
 
     // --- Destructor ---
-    
+
     ~ApplicationCore() {
         std::cout << "[Core] Shutting down application and clearing resources...\n";
-        
+
         if (render_) render_->release();
         if (input_)  input_->release();
         if (logger_) logger_->release();
@@ -61,16 +61,15 @@ public:
     }
 
     // --- Copy Semantics Disabled ---
-    
+
     ApplicationCore(const ApplicationCore&) = delete;
     ApplicationCore& operator=(const ApplicationCore&) = delete;
 
     // -------------------------------------------------------------------------------
     // --- Getters & Setters ---
-    
-    IRender*    getRender()    const { return render_; }
-    IInputPump* getInputPump() const { return input_; }
-    ILogger*    getLogger()    const { return logger_; }
+
+    static ApplicationCore& instance() { static ApplicationCore core; return core; }
+
     AObject*    getRoot()      const { return root_.get(); }
 
     // -------------------------------------------------------------------------------
@@ -90,9 +89,9 @@ public:
     HRESULT registerInterface(IID iid, IPlugin* service) {
         if (!service) return E_INVALIDARG;
         if (registry_.find(iid) != registry_.end()) {
-            return E_FAIL; 
+            return E_FAIL;
         }
-        service->addRef(); 
+        service->addRef();
         registry_[iid] = service;
         return S_OK;
     }
@@ -105,8 +104,8 @@ public:
         }
 
         using GetPluginFunc = IUnknown* (*)();
-        auto getPluginInstance = (GetPluginFunc)dlsym(handle, "getInterface"); 
-        
+        auto getPluginInstance = (GetPluginFunc)dlsym(handle, "getInterface");
+
         if (!getPluginInstance) {
             std::cerr << "[Core] Missing 'getInterface' function in " << path << "\n";
             dlclose(handle);
@@ -120,8 +119,8 @@ public:
         }
 
         IPlugin* plugin = nullptr;
-        constexpr IID IID_IPlugin = 0x0002; 
-        
+        constexpr IID IID_IPlugin = 0x0002;
+
         void* pv_plugin = nullptr;
         if (raw_plugin->getInterface(IID_IPlugin, &pv_plugin) == S_OK) {
             plugin = static_cast<IPlugin*>(pv_plugin);
@@ -161,13 +160,13 @@ public:
         }
 
         loaded_handles_.push_back(handle);
-        raw_plugin->release(); 
+        raw_plugin->release();
         return true;
     }
 
     // -------------------------------------------------------------------------------
     // --- Main Loop ---
-    
+
     int run() {
         if (!render_ || !input_) {
             std::cerr << "[Core] Subsystems not initialized. Call loadPlugin first.\n";
@@ -191,9 +190,9 @@ public:
 
             // Rendering the object tree
             render_->beginFrame();
-            
+
             root_->render();
-            
+
             render_->endFrame();
         }
 
