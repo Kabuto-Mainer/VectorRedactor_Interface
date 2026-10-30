@@ -1,54 +1,64 @@
 #ifndef A_OBJECT_HPP
 #define A_OBJECT_HPP
 
-#include <list>
-#include <memory>
-
 #include "BoxF.hpp"
 #include "Event.hpp"
+
+#include <list>
+#include <memory>
 
 class AObject
 {
 private:
-    BoxF box_;
+    BoxF                                box_;
     std::list<std::unique_ptr<AObject>> children_;
-    AObject* parent_ = nullptr;
+    AObject*                            parent_ = nullptr;
 
 public:
     virtual ~AObject() = default;
 
-    void setParent(AObject* new_parent) {
+    void setParent(AObject* new_parent)
+    {
         parent_ = new_parent;
     }
 
-    AObject* parent() const {
+    AObject* parent() const
+    {
         return parent_;
     }
 
-    const std::list<std::unique_ptr<AObject>>& children() const {
+    const std::list<std::unique_ptr<AObject>>& children() const
+    {
         return children_;
     }
 
-    std::list<std::unique_ptr<AObject>>& children() {
+    std::list<std::unique_ptr<AObject>>& children()
+    {
         return children_;
     }
 
-    void addChild(std::unique_ptr<AObject> child) {
+    void addChild(std::unique_ptr<AObject> child)
+    {
         child->setParent(this);
         children_.push_back(std::move(child));
     }
 
-    virtual bool processEvent(const Event& event) {
-        for (auto& child : children_) {
-            if (child->processEvent(event)) {
+    virtual bool processEvent(const Event& event)
+    {
+        for (auto& child : children_)
+        {
+            if (child->processEvent(event))
+            {
                 return true;
             }
         }
         return false;
     }
 
-    virtual void render() {
-        for (auto& child : children_) {
+    virtual void render()
+    {
+        for (auto& child : children_)
+        {
             child->render();
         }
     }

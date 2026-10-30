@@ -16,18 +16,25 @@ inline constexpr HRESULT E_UNEXPECTED  = static_cast<HRESULT>(-5);
 inline constexpr HRESULT E_OUTOFMEMORY = static_cast<HRESULT>(-6);
 inline constexpr HRESULT E_INVALIDARG  = static_cast<HRESULT>(-7);
 
-constexpr bool SUCCEEDED(HRESULT hres) { return hres >= 0; }
-constexpr bool FAILED(HRESULT hres)    { return hres < 0; }
+constexpr bool SUCCEEDED(HRESULT hres)
+{
+    return hres >= 0;
+}
+constexpr bool FAILED(HRESULT hres)
+{
+    return hres < 0;
+}
 
-using IID = uint64_t; 
+using IID = uint64_t;
 
-class IUnknown {
+class IUnknown
+{
 public:
     virtual ~IUnknown() = default;
-    
+
     virtual HRESULT queryInterface(const IID& iid, void** ppv) = 0;
-    virtual ULONG   addRef() = 0;
-    virtual ULONG   release() = 0;
+    virtual ULONG   addRef()                                   = 0;
+    virtual ULONG   release()                                  = 0;
 };
 
 #endif
