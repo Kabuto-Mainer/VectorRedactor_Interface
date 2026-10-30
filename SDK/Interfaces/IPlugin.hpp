@@ -4,12 +4,13 @@
 #include "Interfaces/IUnknown.hpp"
 
 // NOTE: Forward declaration
-class IApplicationCore;
+class ApplicationCore;
 
-class IPlugin : public IUnknown {
+class IPlugin : public IUnknown
+{
 public:
-    virtual HRESULT init(IApplicationCore* core) = 0;
-    virtual HRESULT shutdown() = 0;
+    virtual HRESULT init(ApplicationCore* core) = 0;
+    virtual HRESULT shutdown()                  = 0;
 };
 
 #endif
