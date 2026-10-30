@@ -195,24 +195,14 @@ int ApplicationCore::run()
     }
 
     is_running_ = true;
-
     while (is_running_)
     {
-        Event event;
+        auto event = input_pump_->pollEvent();
+        if (event.has_value()) root_->processEvent(event);
 
-        // Input polling
-        while (input_pump_->pollEvent(event))
-        {
-            root_->processEvent(event);
-        }
-
-        // Rendering the object tree
         root_->render();
         renderer_->update();
     }
-
-    renderer_->release();
-    input_pump_->release();
 
     return 0;
 }
