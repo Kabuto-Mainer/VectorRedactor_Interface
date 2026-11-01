@@ -1,7 +1,5 @@
-#ifndef _MY_VEC2F_HPP_
-#define _MY_VEC2F_HPP_
-
-#include <cmath>
+#ifndef VEC_2F_HPP
+#define VEC_2F_HPP
 
 struct Vec2F
 {

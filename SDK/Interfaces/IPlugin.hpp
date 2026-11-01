@@ -1,7 +1,7 @@
 #ifndef I_PLUGIN_HPP
 #define I_PLUGIN_HPP
 
-#include "SDK/Interfaces/IUnknown.hpp"
+#include "Interfaces/IUnknown.hpp"
 
 // NOTE: Forward declaration
 class IApplicationCore;

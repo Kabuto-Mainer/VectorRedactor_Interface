@@ -4,8 +4,8 @@
 #include <list>
 #include <memory>
 
-#include "SDK/Utils/BoxF.hpp"
-#include "SDK/Utils/Event.hpp"
+#include "Utils/BoxF.hpp"
+#include "Utils/Event.hpp"
 
 class AObject {
 private:
