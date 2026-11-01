@@ -19,12 +19,12 @@ inline constexpr HRESULT E_INVALIDARG  = static_cast<HRESULT>(-7);
 constexpr bool SUCCEEDED(HRESULT hr) { return hr >= 0; }
 constexpr bool FAILED(HRESULT hr)    { return hr < 0; }
 
-using IID = uint64_t; 
+using IID = uint64_t;
 
 class IUnknown {
 public:
     virtual ~IUnknown() = default;
-    
+
     virtual HRESULT queryInterface(const IID& iid, void** ppv) = 0;
     virtual ULONG   addRef() = 0;
     virtual ULONG   release() = 0;
