@@ -13,7 +13,7 @@
 #include "Utils/AObject.hpp"
 
 constexpr IID IID_IUnknown   = 0x0001;
-constexpr IID IID_IPlugin    = 0x0002;
+constexpr IID IID_IPlugin    = 0x0002; 
 constexpr IID IID_IRender    = 0x0003;
 constexpr IID IID_IInputPump = 0x0004;
 constexpr IID IID_ILogger    = 0x0005;
@@ -32,22 +32,22 @@ private:
     std::unique_ptr<AObject> root_;
 
     std::vector<void*> loaded_handles_;
-
+    
     bool is_running_ = false;
 
 public:
     // -------------------------------------------------------------------------------
     // --- Constructor ---
-
+    
     ApplicationCore() {
         root_ = std::make_unique<AObject>();
     }
 
     // --- Destructor ---
-
+    
     ~ApplicationCore() {
         std::cout << "[Core] Shutting down application and clearing resources...\n";
-
+        
         for (auto& [iid, service] : registry_) {
             if (service) service->release();
         }
@@ -60,15 +60,15 @@ public:
     }
 
     // --- Copy Semantics Disabled ---
-
+    
     ApplicationCore(const ApplicationCore&) = delete;
     ApplicationCore& operator=(const ApplicationCore&) = delete;
 
     // -------------------------------------------------------------------------------
     // --- Getters & Setters ---
-
+    
     AObject* getRoot() const { return root_.get(); }
-
+    
     void stop() { is_running_ = false; }
 
     // -------------------------------------------------------------------------------
@@ -76,13 +76,13 @@ public:
     HRESULT registerInterface(IID iid, IPlugin* service) {
         if (!service) return E_INVALIDARG;
         if (registry_.find(iid) != registry_.end()) {
-            return E_FAIL;
+            return E_FAIL; 
         }
-        service->addRef();
+        service->addRef(); 
         registry_[iid] = service;
         return S_OK;
     }
-
+    
     HRESULT getInterface(IID iid, void** ppv) {
         if (!ppv) return E_INVALIDARG;
         *ppv = nullptr;
@@ -103,8 +103,8 @@ public:
         }
 
         using GetPluginFunc = IUnknown* (*)();
-        auto getPluginInstance = (GetPluginFunc)dlsym(handle, "getInterface");
-
+        auto getPluginInstance = (GetPluginFunc)dlsym(handle, "getInterface"); 
+        
         if (!getPluginInstance) {
             std::cerr << "[Core] Missing 'getInterface' function in " << path << "\n";
             dlclose(handle);
@@ -131,7 +131,7 @@ public:
         }
 
         loaded_handles_.push_back(handle);
-        raw_plugin->release();
+        raw_plugin->release(); 
         return true;
     }
 
