@@ -8,11 +8,10 @@
 #include "SDK/Utils/JsonParser.hpp"
 #include "SDK/Utils/Vec2F.hpp"
 
-#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -42,7 +41,6 @@ constexpr float   LINE_SPACING         = 1.0F;
 constexpr int     FONT_SIZE            = 16;
 constexpr char    DEFAULT_THEME_NAME[] = "default";
 constexpr char    DARK_THEME_NAME[]    = "dark";
-constexpr char    ROLE_KEY_PREFIX[]    = "roles.";
 
 constexpr float LIGHTNESS_THRESHOLD = 0.5F;
 constexpr float SECONDARY_TINT      = 0.15F;
@@ -109,12 +107,11 @@ struct Theme
     Color_t              window;
     Color_t              surface;
     Color_t              accent;
-    std::vector<Color_t> role_bases;
+    std::array<Color_t, static_cast<std::size_t>(Role::MAX)> role_bases;
 
     Palette palette(Role role) const
     {
-        const Color_t& base = role < role_bases.size() ? role_bases[role] : role_bases[Roles::Default];
-        return derive(base, surface, window);
+        return derive(role_bases[static_cast<std::size_t>(role)], surface, window);
     }
 };
 
@@ -152,7 +149,7 @@ const MouseEvent* asMouse(const Event& event)
 
 Role resolveRole(const std::optional<Role>& role)
 {
-    return role.value_or(Roles::Default);
+    return role.value_or(Role::Default);
 }
 
 std::optional<IRenderer::ResourceID> loadIcon(const std::optional<std::string>& path)
@@ -687,35 +684,6 @@ std::optional<Color_t> parseColor(const std::string& value)
     return Color_t(channels[0], channels[1], channels[2], OPAQUE_ALPHA);
 }
 
-Theme buildTheme(const std::vector<Color_t>& role_defaults, const Color_t& primary, const Color_t& secondary,
-                 const Color_t& neutral, const Color_t& accent, const Color_t& unical)
-{
-    Theme theme = makeTheme(primary, secondary, neutral, accent, unical);
-    for (std::size_t i = theme.role_bases.size(); i < role_defaults.size(); ++i)
-    {
-        theme.role_bases.push_back(role_defaults[i]);
-    }
-    return theme;
-}
-
-Role ensureRole(std::vector<std::string>& role_names, std::vector<Color_t>& role_defaults,
-                std::unordered_map<std::string, Theme>& themes, const std::string& name, const Color_t& base)
-{
-    const auto it = std::find(role_names.begin(), role_names.end(), name);
-    if (it != role_names.end())
-    {
-        return static_cast<Role>(std::distance(role_names.begin(), it));
-    }
-
-    role_names.push_back(name);
-    role_defaults.push_back(base);
-    for (auto& entry : themes)
-    {
-        entry.second.role_bases.push_back(base);
-    }
-    return static_cast<Role>(role_names.size() - 1);
-}
-
 } // namespace
 
 class UIWi final : public IFramework
@@ -723,9 +691,6 @@ class UIWi final : public IFramework
 public:
     UIWi()
     {
-        role_names_ = {"default", "primary", "danger"};
-        role_defaults_.resize(role_names_.size(), Color_t(0, 0, 0, OPAQUE_ALPHA));
-
         registryTheme(DEFAULT_THEME_NAME, Color_t(53, 132, 228, OPAQUE_ALPHA), Color_t(222, 221, 218, OPAQUE_ALPHA),
                       Color_t(246, 245, 244, OPAQUE_ALPHA), Color_t(28, 113, 216, OPAQUE_ALPHA),
                       Color_t(224, 27, 36, OPAQUE_ALPHA));
@@ -793,8 +758,7 @@ public:
     void registryTheme(std::string name, const Color_t& primary, const Color_t& secondary, const Color_t& neutral,
                        const Color_t& accent, const Color_t& unical) override
     {
-        themes_.insert_or_assign(std::move(name),
-                                 buildTheme(role_defaults_, primary, secondary, neutral, accent, unical));
+        themes_.insert_or_assign(std::move(name), makeTheme(primary, secondary, neutral, accent, unical));
     }
 
     bool setTheme(std::string name) override
@@ -817,17 +781,6 @@ public:
         }
         context_.font = renderer->loadFont(path.c_str());
         return true;
-    }
-
-    Role registerRole(std::string name, const Color_t& base) override
-    {
-        const Role id = ensureRole(role_names_, role_defaults_, themes_, name, base);
-        role_defaults_[id] = base;
-        for (auto& entry : themes_)
-        {
-            entry.second.role_bases[id] = base;
-        }
-        return id;
     }
 
     bool importTheme(std::string path) override
@@ -864,37 +817,13 @@ public:
             return false;
         }
 
-        const std::string                     prefix(ROLE_KEY_PREFIX);
-        std::vector<std::pair<Role, Color_t>> overrides;
-        for (const auto& [key, value] : fields)
-        {
-            if (key.compare(0, prefix.size(), prefix) != 0)
-            {
-                continue;
-            }
-            const auto base = parseColor(value);
-            if (!base)
-            {
-                return false;
-            }
-            overrides.emplace_back(ensureRole(role_names_, role_defaults_, themes_, key.substr(prefix.size()), *base),
-                                   *base);
-        }
-
-        Theme theme = buildTheme(role_defaults_, *primary, *secondary, *neutral, *accent, *unical);
-        for (const auto& [role, base] : overrides)
-        {
-            theme.role_bases[role] = base;
-        }
-        themes_.insert_or_assign(name_it->second, std::move(theme));
+        themes_.insert_or_assign(name_it->second, makeTheme(*primary, *secondary, *neutral, *accent, *unical));
         return true;
     }
 
 private:
     RenderContext                          context_;
     std::unordered_map<std::string, Theme> themes_;
-    std::vector<std::string>               role_names_;
-    std::vector<Color_t>                   role_defaults_;
     ULONG                                  ref_count_ = 1;
 };
 

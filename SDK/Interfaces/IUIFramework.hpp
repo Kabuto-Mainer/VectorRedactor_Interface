@@ -1,7 +1,6 @@
 #ifndef I_UI_FRAMEWORK_HPP
 #define I_UI_FRAMEWORK_HPP
 
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -64,14 +63,13 @@ enum class Direct
     Horizontal,
 };
 
-using Role = uint32_t;
-
-namespace Roles
+enum class Role
 {
-constexpr Role Default = 0;
-constexpr Role Primary = 1;
-constexpr Role Danger  = 2;
-} // namespace Roles
+    Default,
+    Primary,
+    Danger,
+    MAX,
+};
 
 struct ButtonDescription : public ADescription
 {
@@ -153,7 +151,6 @@ public:
                                const Color_t& neutral, const Color_t& accent, const Color_t& unical) = 0;
     virtual bool setTheme(std::string name)                                                          = 0;
     virtual bool setFont(std::string path)                                                           = 0;
-    virtual Role registerRole(std::string name, const Color_t& base)                                 = 0;
     virtual bool importTheme(std::string path)                                                       = 0;
 }; // class IFramework
 
