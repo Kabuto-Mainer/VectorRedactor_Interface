@@ -4,6 +4,7 @@
 #include "Interfaces/IID.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/Vec2F.hpp"
+
 #include <cstdint>
 
 constexpr static const IID IID_RENDERER = 0;

@@ -10,8 +10,7 @@
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-	ApplicationCore::instance().registerInterface(IID_MAIN_PLUGIN,
-			reinterpret_cast<void*>(&IMainPlugin::instance()));
+    ApplicationCore::instance().registerInterface(IID_MAIN_PLUGIN, reinterpret_cast<void*>(&IMainPlugin::instance()));
 
     auto main_window = std::make_unique<MainWindow>();
     ApplicationCore::instance().root()->addChild(std::move(main_window));
@@ -35,7 +34,7 @@ bool MainWindow::processEvent(const Event& event)
 {
     if (std::holds_alternative<EventQuit>(event))
     {
-	    ApplicationCore::instance().stop();
+        ApplicationCore::instance().stop();
         return true;
     }
 

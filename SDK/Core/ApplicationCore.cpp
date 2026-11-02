@@ -1,9 +1,11 @@
 #include "Core/ApplicationCore.hpp"
+
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/AObject.hpp"
+
 #include <cassert>
 #include <cstdarg>
 #include <cstdio>
@@ -222,4 +224,3 @@ ApplicationCore::Error ApplicationCore::loadPackage(const std::string& path)
 
     return Error::SUCCESS;
 }
-

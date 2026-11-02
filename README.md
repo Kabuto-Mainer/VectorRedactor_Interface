@@ -31,10 +31,10 @@ README.md
 ниже
 ```bash
 # Building main (<- int main() here)
-clang++ -rdynamic main.cpp SDK/Core/ApplicationCore.cpp
+clang++ -std=c++23 -rdynamic -g -ldl -Wall -Wextra main.cpp SDK/Core/ApplicationCore.cpp
 
 # Building some_package.so (dynamically loaded in main)
-clang++ -shared -fpic some_package.cpp
+clang++ -std=c++23 -fpic -shared -g -ldl -Wall -Wextra some_package.cpp
 ```
 Флаг `-rdynamic` открывает доступ ко всем глобальным символам, в том числе к `ApplicationCore::instance()`,
 которые во время `dlopen` связываются с символами в плагине, обеспечивая единственность экземпляра ядра.

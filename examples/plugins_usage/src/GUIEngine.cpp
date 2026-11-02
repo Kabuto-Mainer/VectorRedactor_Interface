@@ -35,10 +35,12 @@
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-	ApplicationCore::instance().registerInterface(IID_RENDERER,
-			reinterpret_cast<void*>(static_cast<IRenderer*>(&GUIEngine::instance())));
-    ApplicationCore::instance().registerInterface(IID_INPUT_PUMP,
-		    reinterpret_cast<void*>(static_cast<IInputPump*>(&GUIEngine::instance())));
+    ApplicationCore::instance().registerInterface(
+        IID_RENDERER, reinterpret_cast<void*>(static_cast<IRenderer*>(&GUIEngine::instance()))
+    );
+    ApplicationCore::instance().registerInterface(
+        IID_INPUT_PUMP, reinterpret_cast<void*>(static_cast<IInputPump*>(&GUIEngine::instance()))
+    );
 
     return true;
 }
@@ -231,7 +233,8 @@ void GUIEngine::renderEllipseLines([[maybe_unused]] const Color& color, [[maybe_
     LOG_NOT_IMPLEMENTED();
 }
 
-void GUIEngine::renderLine([[maybe_unused]] const Vec2F& origin, [[maybe_unused]] const Vec2F& end, [[maybe_unused]] const Color& color)
+void GUIEngine::renderLine([[maybe_unused]] const Vec2F& origin, [[maybe_unused]] const Vec2F& end,
+                           [[maybe_unused]] const Color& color)
 {
     LOG_NOT_IMPLEMENTED();
 }
