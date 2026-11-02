@@ -1,8 +1,8 @@
 #ifndef A_DOCUMENT_HPP
 #define A_DOCUMENT_HPP
 
-#include "SDK/Utils/AObject.hpp"
-#include "SDK/Utils/AShape.hpp"
+#include "Utils/AObject.hpp"
+#include "Utils/AShape.hpp"
 
 #include <memory>
 

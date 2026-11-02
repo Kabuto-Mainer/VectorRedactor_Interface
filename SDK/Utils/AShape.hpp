@@ -1,9 +1,9 @@
 #ifndef A_SHAPE_HPP
 #define A_SHAPE_HPP
 
-#include "SDK/Interfaces/IRenderer.hpp"
-#include "SDK/Utils/AObject.hpp"
-#include "SDK/Utils/Matrix3F.hpp"
+#include "Interfaces/IRenderer.hpp"
+#include "Utils/AObject.hpp"
+#include "Utils/Matrix3F.hpp"
 
 class AShape : public AObject
 {
@@ -29,20 +29,20 @@ public:
 
 
 
-    Color_t fillColor() const
+    Color fillColor() const
     {
         return fill_color_;
     }
-    void setFillColor(Color_t const& color)
+    void setFillColor(Color const& color)
     {
         fill_color_ = color;
     }
 
-    Color_t outlineColor() const
+    Color outlineColor() const
     {
         return outline_color_;
     }
-    void setOutlineColor(Color_t const& color)
+    void setOutlineColor(Color const& color)
     {
         outline_color_ = color;
     }
@@ -62,9 +62,9 @@ protected:
 private:
     Matrix3F transform_{};
 
-    Color_t fill_color_{0, 0, 0, 0};
-    Color_t outline_color_{0, 0, 0, 0};
-    float   outline_thickness_{};
+    Color fill_color_{0, 0, 0, 0};
+    Color outline_color_{0, 0, 0, 0};
+    float outline_thickness_{};
 };
 
 #endif
