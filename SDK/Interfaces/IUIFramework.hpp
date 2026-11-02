@@ -151,7 +151,6 @@ public:
                                const Color_t& neutral, const Color_t& accent, const Color_t& unical) = 0;
     virtual bool setTheme(std::string name)                                                          = 0;
     virtual bool setFont(std::string path)                                                           = 0;
-    virtual bool importTheme(std::string path)                                                       = 0;
 }; // class IFramework
 
 } // namespace UI

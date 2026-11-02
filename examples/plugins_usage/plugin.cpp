@@ -1,31 +1,31 @@
 #include "plugin.hpp"
+
 #include <cstdarg>
 #include <cstdio>
 
-Logger *Logger::_interface(void)
+Logger* Logger::_interface(void)
 {
-	static Logger interface;
-	return &interface;
+    static Logger interface;
+    return &interface;
 }
 
-void Logger::init(Core *)
+void Logger::init(Core*)
 {
-	return;
+    return;
 }
 
 void Logger::shutDown(void)
 {
-	return;
+    return;
 }
 
-extern "C" IPlugin *getPluginInterface(void)
+extern "C" IPlugin* getPluginInterface(void)
 {
-	return Logger::_interface();
+    return Logger::_interface();
 }
 
-void Logger::log(const char *fmt, ...)
+void Logger::log(const char* fmt, ...)
 {
-	std::va_list args;
-	vfprintf(stderr, fmt, args);
+    std::va_list args;
+    vfprintf(stderr, fmt, args);
 }
-
