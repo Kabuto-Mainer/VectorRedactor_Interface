@@ -1,11 +1,13 @@
-#include "SDK/Core/ApplicationCore.hpp"
-#include "SDK/Interfaces/IRenderer.hpp"
-#include "SDK/Interfaces/IUIFramework.hpp"
-#include "SDK/Utils/ACommand.hpp"
-#include "SDK/Utils/AObject.hpp"
-#include "SDK/Utils/BoxF.hpp"
-#include "SDK/Utils/Event.hpp"
-#include "SDK/Utils/Vec2F.hpp"
+#include "IUIFramework.hpp"
+
+#include "Core/ApplicationCore.hpp"
+#include "Interfaces/IRenderer.hpp"
+#include "Interfaces/Package.hpp"
+#include "Utils/ACommand.hpp"
+#include "Utils/AObject.hpp"
+#include "Utils/BoxF.hpp"
+#include "Utils/Event.hpp"
+#include "Utils/Vec2F.hpp"
 
 #include <array>
 #include <cstddef>
@@ -34,7 +36,6 @@ constexpr float   CLOSE_BUTTON_SIZE    = 20.0F;
 constexpr float   CLOSE_AREA_WIDTH     = CLOSE_BUTTON_SIZE + 2.0F * PADDING;
 constexpr float   MENU_ITEM_WIDTH      = 120.0F;
 constexpr float   MENU_ITEM_HEIGHT     = 28.0F;
-constexpr float   LINE_SPACING         = 1.0F;
 constexpr int     FONT_SIZE            = 16;
 constexpr char    DEFAULT_THEME_NAME[] = "default";
 constexpr char    DARK_THEME_NAME[]    = "dark";
@@ -50,45 +51,45 @@ constexpr float LIGHT_SURFACE_LIFT  = 0.50F;
 
 struct Palette
 {
-    Color_t base;
-    Color_t hover;
-    Color_t pressed;
-    Color_t text;
-    Color_t border;
-    Color_t surface;
-    Color_t surface_text;
-    Color_t canvas;
+    Color base;
+    Color hover;
+    Color pressed;
+    Color text;
+    Color border;
+    Color surface;
+    Color surface_text;
+    Color canvas;
 };
 
-Color_t mix(const Color_t& from, const Color_t& to, float ratio)
+Color mix(const Color& from, const Color& to, float ratio)
 {
     const auto channel = [ratio](uint8_t from_value, uint8_t to_value)
     {
         return static_cast<uint8_t>(static_cast<float>(from_value) +
                                     (static_cast<float>(to_value) - static_cast<float>(from_value)) * ratio);
     };
-    return Color_t(channel(from.r, to.r), channel(from.g, to.g), channel(from.b, to.b), OPAQUE_ALPHA);
+    return Color{channel(from.r, to.r), channel(from.g, to.g), channel(from.b, to.b), OPAQUE_ALPHA};
 }
 
-float luminance(const Color_t& color)
+float luminance(const Color& color)
 {
     return (0.2126F * color.r + 0.7152F * color.g + 0.0722F * color.b) / CHANNEL_MAX;
 }
 
-Color_t contrastOf(const Color_t& color)
+Color contrastOf(const Color& color)
 {
     if (luminance(color) < LIGHTNESS_THRESHOLD)
     {
-        return Color_t(255, 255, 255, OPAQUE_ALPHA);
+        return Color{255, 255, 255, OPAQUE_ALPHA};
     }
-    return Color_t(0, 0, 0, OPAQUE_ALPHA);
+    return Color{0, 0, 0, OPAQUE_ALPHA};
 }
 
-Palette derive(const Color_t& base, const Color_t& surface, const Color_t& canvas)
+Palette derive(const Color& base, const Color& surface, const Color& canvas)
 {
-    const Color_t text   = contrastOf(base);
-    const Color_t panel  = mix(surface, base, SECONDARY_TINT);
-    const Color_t tinted = mix(canvas, base, CANVAS_TINT);
+    const Color text   = contrastOf(base);
+    const Color panel  = mix(surface, base, SECONDARY_TINT);
+    const Color tinted = mix(canvas, base, CANVAS_TINT);
     return Palette{base,
                    mix(base, text, HOVER_MIX),
                    mix(base, text, PRESSED_MIX),
@@ -101,10 +102,10 @@ Palette derive(const Color_t& base, const Color_t& surface, const Color_t& canva
 
 struct Theme
 {
-    Color_t                                                  window;
-    Color_t                                                  surface;
-    Color_t                                                  accent;
-    std::array<Color_t, static_cast<std::size_t>(Role::MAX)> role_bases;
+    Color                                                    window;
+    Color                                                    surface;
+    Color                                                    accent;
+    std::array<Color, static_cast<std::size_t>(Role::MAX)> role_bases;
 
     Palette palette(Role role) const;
 };
@@ -114,13 +115,13 @@ inline Palette Theme::palette(Role role) const
     return derive(role_bases[static_cast<std::size_t>(role)], surface, window);
 }
 
-Theme makeTheme(const Color_t& primary, const Color_t& secondary, const Color_t& neutral, const Color_t& accent,
-                const Color_t& unical)
+Theme makeTheme(const Color& primary, const Color& secondary, const Color& neutral, const Color& accent,
+                const Color& unical)
 {
-    const bool    dark = luminance(neutral) < LIGHTNESS_THRESHOLD;
-    const Color_t white(255, 255, 255, OPAQUE_ALPHA);
-    const Color_t surface = mix(neutral, white, dark ? DARK_SURFACE_LIFT : LIGHT_SURFACE_LIFT);
-    const Color_t button  = mix(neutral, secondary, SECONDARY_TINT);
+    const bool  dark    = luminance(neutral) < LIGHTNESS_THRESHOLD;
+    const Color white{255, 255, 255, OPAQUE_ALPHA};
+    const Color surface = mix(neutral, white, dark ? DARK_SURFACE_LIFT : LIGHT_SURFACE_LIFT);
+    const Color button  = mix(neutral, secondary, SECONDARY_TINT);
 
     return Theme{
         neutral, surface, accent, {button, primary, unical}
@@ -133,6 +134,11 @@ struct RenderContext
     std::optional<IRenderer::FontID> font;
 };
 
+BoxF makeBox(const Vec2F& pos, const Vec2F& size)
+{
+    return BoxF(pos, pos + size);
+}
+
 } // namespace
 
 class UIWi final : public IFramework
@@ -143,20 +149,10 @@ public:
     UIWi(const UIWi&)            = delete;
     UIWi& operator=(const UIWi&) = delete;
 
-    HRESULT queryInterface(const IID& iid, void** ppv) override;
-
-    ULONG addRef() override;
-
-    ULONG release() override;
-
-    HRESULT init(IApplicationCore* /* core */) override;
-
-    HRESULT shutdown() override;
-
     std::unique_ptr<AObject> create(ADescription& description) override;
 
-    void registryTheme(std::string name, const Color_t& primary, const Color_t& secondary, const Color_t& neutral,
-                       const Color_t& accent, const Color_t& unical) override;
+    void registryTheme(std::string name, const Color& primary, const Color& secondary, const Color& neutral,
+                       const Color& accent, const Color& unical) override;
 
     bool setTheme(std::string name) override;
 
@@ -165,7 +161,6 @@ public:
 private:
     RenderContext                          context_;
     std::unordered_map<std::string, Theme> themes_;
-    ULONG                                  ref_count_ = 1;
 };
 
 namespace
@@ -173,17 +168,18 @@ namespace
 
 IRenderer* queryRenderer()
 {
-    void* raw = nullptr;
-    if (FAILED(ApplicationCore::instance().getInterface(IID_IRender, &raw)))
+    IRenderer* renderer = nullptr;
+    if (ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer)) !=
+        ApplicationCore::Error::SUCCESS)
     {
         return nullptr;
     }
-    return static_cast<IRenderer*>(raw);
+    return renderer;
 }
 
-const MouseEvent* asMouse(const Event& event)
+const EventMouse* asMouse(const Event& event)
 {
-    return std::get_if<MouseEvent>(&event.data);
+    return std::get_if<EventMouse>(&event);
 }
 
 Role resolveRole(const std::optional<Role>& role)
@@ -201,36 +197,34 @@ std::optional<IRenderer::ResourceID> loadIcon(const std::optional<std::string>& 
     return renderer->loadTexture(path->c_str());
 }
 
-void drawPanel(IRenderer* renderer, const Color_t& fill, const Color_t& border, const BoxF& box)
+void drawPanel(IRenderer* renderer, const Color& fill, const Color& border, const BoxF& box)
 {
     renderer->renderRect(fill, box, NO_ANGLE);
     renderer->renderRectLines(border, box, NO_ANGLE);
 }
 
-void drawText(IRenderer* renderer, const RenderContext& context, const std::string& text, const Color_t& color,
-              const BoxF& box, TextHAlign h_align)
+void drawText(IRenderer* renderer, const RenderContext& context, const std::string& text, const Color& color,
+              const BoxF& box)
 {
     if (!context.font)
     {
         return;
     }
-    const TextFormat format{color,   *context.font,      FONT_SIZE, TextOverflowAction::TailReplace,
-                            h_align, TextWAlign::Center, PADDING,   LINE_SPACING,
-                            false};
-    renderer->renderText(text.c_str(), format, box);
+    renderer->renderText(text.c_str(), color, box, *context.font, FONT_SIZE);
 }
 
 void drawContent(IRenderer* renderer, const RenderContext& context, const std::optional<IRenderer::ResourceID>& icon,
-                 const std::optional<std::string>& text, const Color_t& color, const BoxF& box)
+                 const std::optional<std::string>& text, const Color& color, const BoxF& box)
 {
     if (icon)
     {
-        renderer->renderTexture(*icon, BoxF(box.pos + Vec2F(PADDING, PADDING), box.size - Vec2F(2.0F * PADDING)),
+        renderer->renderTexture(*icon,
+                                makeBox(box.topLeft() + Vec2F(PADDING, PADDING), box.size() - Vec2F(2.0F * PADDING)),
                                 NO_ANGLE);
     }
     if (text)
     {
-        drawText(renderer, context, *text, color, box, TextHAlign::Center);
+        drawText(renderer, context, *text, color, box);
     }
 }
 
@@ -252,14 +246,15 @@ std::vector<Placement> slotsFor(const BoxF& bounds, Direct direct, std::size_t c
     }
 
     const auto  divider = static_cast<float>(count);
-    const Vec2F slot    = direct == Direct::Vertical ? Vec2F(bounds.size.x, bounds.size.y / divider) :
-                                                       Vec2F(bounds.size.x / divider, bounds.size.y);
-    const Vec2F step    = direct == Direct::Vertical ? Vec2F(0.0F, slot.y) : Vec2F(slot.x, 0.0F);
+    const Vec2F size    = bounds.size();
+    const Vec2F slot    = direct == Direct::Vertical ? Vec2F(size.x(), size.y() / divider) :
+                                                       Vec2F(size.x() / divider, size.y());
+    const Vec2F step    = direct == Direct::Vertical ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
 
-    Vec2F position = bounds.pos;
+    Vec2F position = bounds.topLeft();
     for (std::size_t i = 0; i < count; ++i)
     {
-        slots.emplace_back(BoxF(position, slot));
+        slots.emplace_back(makeBox(position, slot));
         position = position + step;
     }
     return slots;
@@ -277,7 +272,7 @@ class PressTracker
 public:
     PressResult process(const BoxF& bounds, const Event& event);
 
-    Color_t background(const Color_t& idle, const Palette& palette) const;
+    Color background(const Color& idle, const Palette& palette) const;
 
 private:
     bool hovered_ = false;
@@ -286,27 +281,27 @@ private:
 
 inline PressResult PressTracker::process(const BoxF& bounds, const Event& event)
 {
-    const MouseEvent* mouse = asMouse(event);
+    const EventMouse* mouse = asMouse(event);
     if (!mouse)
     {
         return PressResult::IGNORED;
     }
 
-    const bool inside = bounds.contains(mouse->pos);
+    const bool inside = bounds.contains(mouse->cursorPos());
     hovered_          = inside;
 
-    switch (event.type)
+    switch (mouse->type())
     {
-        case EventType::MOUSE_DOWN:
-            if (inside && mouse->button == MouseButton::LEFT)
+        case EventMouse::Type::LEFT_BUTTON_PRESSING:
+            if (inside)
             {
                 pressed_ = true;
                 return PressResult::CONSUMED;
             }
             return PressResult::IGNORED;
 
-        case EventType::MOUSE_UP:
-            if (!pressed_ || mouse->button != MouseButton::LEFT)
+        case EventMouse::Type::LEFT_BUTTON_RELEASING:
+            if (!pressed_)
             {
                 return PressResult::IGNORED;
             }
@@ -318,7 +313,7 @@ inline PressResult PressTracker::process(const BoxF& bounds, const Event& event)
     }
 }
 
-inline Color_t PressTracker::background(const Color_t& idle, const Palette& palette) const
+inline Color PressTracker::background(const Color& idle, const Palette& palette) const
 {
     if (hovered_ && pressed_)
     {
@@ -450,9 +445,9 @@ inline void SwitcherObject::render()
     }
 
     const Palette palette = context_.theme->palette(role_);
-    const Color_t idle    = active_ ? palette.base : palette.surface;
-    const Color_t text    = active_ ? palette.text : palette.surface_text;
-    const Color_t border  = active_ ? context_.theme->accent : palette.border;
+    const Color   idle    = active_ ? palette.base : palette.surface;
+    const Color   text    = active_ ? palette.text : palette.surface_text;
+    const Color   border  = active_ ? context_.theme->accent : palette.border;
     drawPanel(renderer, press_.background(idle, palette), border, bounds_);
     drawContent(renderer, context_, icon_, text_, text, bounds_);
 }
@@ -519,8 +514,8 @@ inline void ContextMenuObject::render()
 
 inline bool ContextMenuObject::isPressOutside(const Event& event) const
 {
-    const MouseEvent* mouse = asMouse(event);
-    return event.type == EventType::MOUSE_DOWN && mouse && !bounds_.contains(mouse->pos);
+    const EventMouse* mouse = asMouse(event);
+    return mouse && mouse->type() == EventMouse::Type::LEFT_BUTTON_PRESSING && !bounds_.contains(mouse->cursorPos());
 }
 
 class PoolMenuObject final : public AObject
@@ -595,20 +590,22 @@ inline void WindowObject::render()
         return;
     }
 
-    const Palette palette = context_.theme->palette(role_);
-    const BoxF    header_box(bounds_.pos, Vec2F(bounds_.size.x, HEADER_HEIGHT));
+    const Palette palette    = context_.theme->palette(role_);
+    const Vec2F   origin     = bounds_.topLeft();
+    const BoxF    header_box = makeBox(origin, Vec2F(bounds_.size().x(), HEADER_HEIGHT));
 
     drawPanel(renderer, palette.canvas, palette.border, bounds_);
     drawPanel(renderer, palette.base, palette.border, header_box);
     renderer->renderRect(context_.theme->accent,
-                         BoxF(Vec2F(bounds_.pos.x, bounds_.pos.y + HEADER_HEIGHT - ACCENT_LINE_HEIGHT),
-                              Vec2F(bounds_.size.x, ACCENT_LINE_HEIGHT)),
+                         makeBox(Vec2F(origin.x(), origin.y() + HEADER_HEIGHT - ACCENT_LINE_HEIGHT),
+                                 Vec2F(bounds_.size().x(), ACCENT_LINE_HEIGHT)),
                          NO_ANGLE);
 
     if (label_)
     {
-        const BoxF label_box(header_box.pos, Vec2F(header_box.size.x - CLOSE_AREA_WIDTH, HEADER_HEIGHT));
-        drawText(renderer, context_, *label_, palette.text, label_box, TextHAlign::Left);
+        const BoxF label_box =
+            makeBox(header_box.topLeft(), Vec2F(header_box.size().x() - CLOSE_AREA_WIDTH, HEADER_HEIGHT));
+        drawText(renderer, context_, *label_, palette.text, label_box);
     }
 
     AObject::render();
@@ -667,7 +664,7 @@ inline bool Builder::doForContextMenu(ADescription& description)
 {
     auto&             menu   = static_cast<ContextMenu&>(description);
     const std::size_t count  = menu.objects.size();
-    const BoxF        bounds = placement_.value_or(BoxF(menu.min_point, menuSize(menu.direct, count)));
+    const BoxF        bounds = placement_.value_or(makeBox(menu.min_point, menuSize(menu.direct, count)));
 
     auto object =
         std::make_unique<ContextMenuObject>(context_, bounds, resolveRole(menu.role), std::move(menu.on_event));
@@ -682,7 +679,7 @@ inline bool Builder::doForContextMenu(ADescription& description)
 inline bool Builder::doForPoolMenu(ADescription& description)
 {
     auto&      pool   = static_cast<PoolMenu&>(description);
-    const BoxF bounds = placement_.value_or(BoxF(pool.min_point, pool.size));
+    const BoxF bounds = placement_.value_or(makeBox(pool.min_point, pool.size));
 
     auto object = std::make_unique<PoolMenuObject>(context_, bounds, resolveRole(pool.role));
     if (!addChildren(*object, pool.objects, slotsFor(bounds, pool.direct, pool.objects.size())))
@@ -704,9 +701,11 @@ inline bool Builder::doForWindow(ADescription& description)
 
     if (window.on_close)
     {
-        const Vec2F close_pos(bounds.pos.x + bounds.size.x - CLOSE_BUTTON_SIZE - PADDING, bounds.pos.y + PADDING);
+        const Vec2F origin = bounds.topLeft();
+        const Vec2F size   = bounds.size();
+        const Vec2F close_pos(origin.x() + size.x() - CLOSE_BUTTON_SIZE - PADDING, origin.y() + PADDING);
         object->addChild(std::make_unique<ButtonObject>(context_,
-                                                        BoxF(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
+                                                        makeBox(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
                                                         std::optional<std::string>("X"), std::nullopt, role,
                                                         std::move(*window.on_close)));
     }
@@ -736,58 +735,15 @@ inline bool Builder::addChildren(AObject& parent, std::vector<std::unique_ptr<AD
 
 } // namespace
 
-
 inline UIWi::UIWi()
 {
-    registryTheme(DEFAULT_THEME_NAME, Color_t(53, 132, 228, OPAQUE_ALPHA), Color_t(222, 221, 218, OPAQUE_ALPHA),
-                  Color_t(246, 245, 244, OPAQUE_ALPHA), Color_t(28, 113, 216, OPAQUE_ALPHA),
-                  Color_t(224, 27, 36, OPAQUE_ALPHA));
-    registryTheme(DARK_THEME_NAME, Color_t(53, 132, 228, OPAQUE_ALPHA), Color_t(61, 61, 61, OPAQUE_ALPHA),
-                  Color_t(36, 36, 36, OPAQUE_ALPHA), Color_t(98, 160, 234, OPAQUE_ALPHA),
-                  Color_t(255, 123, 107, OPAQUE_ALPHA));
+    registryTheme(DEFAULT_THEME_NAME, Color{53, 132, 228, OPAQUE_ALPHA}, Color{222, 221, 218, OPAQUE_ALPHA},
+                  Color{246, 245, 244, OPAQUE_ALPHA}, Color{28, 113, 216, OPAQUE_ALPHA},
+                  Color{224, 27, 36, OPAQUE_ALPHA});
+    registryTheme(DARK_THEME_NAME, Color{53, 132, 228, OPAQUE_ALPHA}, Color{61, 61, 61, OPAQUE_ALPHA},
+                  Color{36, 36, 36, OPAQUE_ALPHA}, Color{98, 160, 234, OPAQUE_ALPHA},
+                  Color{255, 123, 107, OPAQUE_ALPHA});
     setTheme(DEFAULT_THEME_NAME);
-}
-
-inline HRESULT UIWi::queryInterface(const IID& iid, void** ppv)
-{
-    if (!ppv)
-    {
-        return E_POINTER;
-    }
-    *ppv = nullptr;
-
-    if (iid != IID_IUnknown && iid != IID_IPlugin && iid != IID_IUIFramework)
-    {
-        return E_NOINTERFACE;
-    }
-    *ppv = static_cast<IFramework*>(this);
-    addRef();
-    return S_OK;
-}
-
-inline ULONG UIWi::addRef()
-{
-    return ++ref_count_;
-}
-
-inline ULONG UIWi::release()
-{
-    const ULONG count = --ref_count_;
-    if (count == 0)
-    {
-        delete this;
-    }
-    return count;
-}
-
-inline HRESULT UIWi::init(IApplicationCore* /* core */)
-{
-    return S_OK;
-}
-
-inline HRESULT UIWi::shutdown()
-{
-    return S_OK;
 }
 
 inline std::unique_ptr<AObject> UIWi::create(ADescription& description)
@@ -800,8 +756,8 @@ inline std::unique_ptr<AObject> UIWi::create(ADescription& description)
     return builder.take();
 }
 
-inline void UIWi::registryTheme(std::string name, const Color_t& primary, const Color_t& secondary,
-                                const Color_t& neutral, const Color_t& accent, const Color_t& unical)
+inline void UIWi::registryTheme(std::string name, const Color& primary, const Color& secondary, const Color& neutral,
+                                const Color& accent, const Color& unical)
 {
     themes_.insert_or_assign(std::move(name), makeTheme(primary, secondary, neutral, accent, unical));
 }
@@ -830,7 +786,11 @@ inline bool UIWi::setFont(std::string path)
 
 } // namespace UI
 
-extern "C" IUnknown* getInterface()
+extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-    return new UI::UIWi();
+    static UI::UIWi framework;
+
+    return ApplicationCore::instance().registerInterface(
+               IID_IUIFramework, reinterpret_cast<void*>(static_cast<UI::IFramework*>(&framework))) ==
+           ApplicationCore::Error::SUCCESS;
 }

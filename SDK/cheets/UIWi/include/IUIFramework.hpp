@@ -1,6 +1,12 @@
 #ifndef I_UI_FRAMEWORK_HPP
 #define I_UI_FRAMEWORK_HPP
 
+#include "Interfaces/IID.hpp"
+#include "Interfaces/IRenderer.hpp"
+#include "Utils/BoxF.hpp"
+#include "Utils/Event.hpp"
+#include "Utils/Vec2F.hpp"
+
 #include <functional>
 #include <memory>
 #include <optional>
@@ -9,12 +15,6 @@
 
 class ACommand;
 class AObject;
-struct Event;
-
-#include "../Utils/BoxF.hpp"
-#include "../Utils/Vec2F.hpp"
-#include "IPlugin.hpp"
-#include "IRenderer.hpp"
 
 constexpr IID IID_IUIFramework = 0x00'06;
 
@@ -143,14 +143,16 @@ struct Window : public ADescription
     }
 }; // struct Window
 
-class IFramework : public IPlugin
+class IFramework
 {
 public:
-    virtual std::unique_ptr<AObject> create(ADescription& description)                               = 0;
-    virtual void registryTheme(std::string name, const Color_t& primary, const Color_t& secondary,
-                               const Color_t& neutral, const Color_t& accent, const Color_t& unical) = 0;
-    virtual bool setTheme(std::string name)                                                          = 0;
-    virtual bool setFont(std::string path)                                                           = 0;
+    virtual ~IFramework() = default;
+
+    virtual std::unique_ptr<AObject> create(ADescription& description)                              = 0;
+    virtual void registryTheme(std::string name, const Color& primary, const Color& secondary,
+                               const Color& neutral, const Color& accent, const Color& unical) = 0;
+    virtual bool setTheme(std::string name)                                                         = 0;
+    virtual bool setFont(std::string path)                                                          = 0;
 }; // class IFramework
 
 } // namespace UI

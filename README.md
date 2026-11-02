@@ -79,4 +79,3 @@ clang++ -shared -fpic some_package.cpp
 [Plugin]  feat: add plugin manager interface
 [General] docs: update README
 ```
-

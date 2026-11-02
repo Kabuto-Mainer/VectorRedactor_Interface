@@ -10,4 +10,3 @@ clean:
 	rm -rf *.so main
 
 .PHONY: all clean
-
