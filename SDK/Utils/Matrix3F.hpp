@@ -154,9 +154,9 @@ public:
 
     Vec2F transformPoint(const Vec2F& point) const
     {
-        const float transformed_x = ((*this)[0][0] * point.x) + ((*this)[0][1] * point.y) + (*this)[0][2];
-        const float transformed_y = ((*this)[1][0] * point.x) + ((*this)[1][1] * point.y) + (*this)[1][2];
-        const float homogeneous_w = ((*this)[2][0] * point.x) + ((*this)[2][1] * point.y) + (*this)[2][2];
+        const float transformed_x = ((*this)[0][0] * point.x()) + ((*this)[0][1] * point.y()) + (*this)[0][2];
+        const float transformed_y = ((*this)[1][0] * point.x()) + ((*this)[1][1] * point.y()) + (*this)[1][2];
+        const float homogeneous_w = ((*this)[2][0] * point.x()) + ((*this)[2][1] * point.y()) + (*this)[2][2];
 
         if (std::abs(homogeneous_w) <= DEFAULT_EPSILON)
         {
@@ -179,20 +179,30 @@ public:
         return result;
     }
 
-    const float inv = 1.0F / det;
-    // FIXME: Incomplete type! what is it???
-    Matrix3F inverse{Storage{}};
-    inverse[0][0] = (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1])) * inv;
-    inverse[0][1] = (((*this)[0][2] * (*this)[2][1]) - ((*this)[0][1] * (*this)[2][2])) * inv;
-    inverse[0][2] = (((*this)[0][1] * (*this)[1][2]) - ((*this)[0][2] * (*this)[1][1])) * inv;
-    inverse[1][0] = (((*this)[1][2] * (*this)[2][0]) - ((*this)[1][0] * (*this)[2][2])) * inv;
-    inverse[1][1] = (((*this)[0][0] * (*this)[2][2]) - ((*this)[0][2] * (*this)[2][0])) * inv;
-    inverse[1][2] = (((*this)[0][2] * (*this)[1][0]) - ((*this)[0][0] * (*this)[1][2])) * inv;
-    inverse[2][0] = (((*this)[1][0] * (*this)[2][1]) - ((*this)[1][1] * (*this)[2][0])) * inv;
-    inverse[2][1] = (((*this)[0][1] * (*this)[2][0]) - ((*this)[0][0] * (*this)[2][1])) * inv;
-    inverse[2][2] = (((*this)[0][0] * (*this)[1][1]) - ((*this)[0][1] * (*this)[1][0])) * inv;
-    result        = inverse;
-    return true;
+    constexpr float determinant() const
+    {
+        return ((*this)[0][0] * (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1]))) -
+               ((*this)[0][1] * (((*this)[1][0] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][0]))) +
+               ((*this)[0][2] * (((*this)[1][0] * (*this)[2][1]) - ((*this)[1][1] * (*this)[2][0])));
+    }
+
+    // Возвращает обратную матрицу. Для вырожденной матрицы (det == 0) результат не определён.
+    constexpr Matrix3F inverse() const
+    {
+        const float inv = 1.0F / determinant();
+
+        Matrix3F result{Storage{}};
+        result[0][0] = (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1])) * inv;
+        result[0][1] = (((*this)[0][2] * (*this)[2][1]) - ((*this)[0][1] * (*this)[2][2])) * inv;
+        result[0][2] = (((*this)[0][1] * (*this)[1][2]) - ((*this)[0][2] * (*this)[1][1])) * inv;
+        result[1][0] = (((*this)[1][2] * (*this)[2][0]) - ((*this)[1][0] * (*this)[2][2])) * inv;
+        result[1][1] = (((*this)[0][0] * (*this)[2][2]) - ((*this)[0][2] * (*this)[2][0])) * inv;
+        result[1][2] = (((*this)[0][2] * (*this)[1][0]) - ((*this)[0][0] * (*this)[1][2])) * inv;
+        result[2][0] = (((*this)[1][0] * (*this)[2][1]) - ((*this)[1][1] * (*this)[2][0])) * inv;
+        result[2][1] = (((*this)[0][1] * (*this)[2][0]) - ((*this)[0][0] * (*this)[2][1])) * inv;
+        result[2][2] = (((*this)[0][0] * (*this)[1][1]) - ((*this)[0][1] * (*this)[1][0])) * inv;
+        return result;
+    }
 
 private:
     Storage values_;

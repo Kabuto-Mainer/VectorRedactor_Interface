@@ -2,14 +2,14 @@
 #define A_DOCUMENT_HPP
 
 #include "Utils/AObject.hpp"
-#include "Utils/AShape.hpp"
+#include "Utils/DocumentObject.hpp"
 
 #include <memory>
 
 // Forward declaration
 class ITool;
 
-class IDocument : private AObject
+class IDocument
 {
 public:
     using ShapeID                      = size_t;
@@ -18,39 +18,11 @@ public:
 public:
     virtual ~IDocument() = default;
 
-
-
-    virtual ShapeID addShape(std::unique_ptr<AShape> shape)
-    {
-        addChild(std::move(shape));
-        return getChildren().size() - 1;
-    }
-    virtual AShape* queryShape(ShapeID const& sid)
-    {
-        return static_cast<AShape*>(getChildren()[sid].get());
-    }
-    virtual AShape const* queryShape(ShapeID const& sid) const
-    {
-        return static_cast<AShape const*>(getChildren()[sid].get());
-    }
-    // I can't remove children for now
+    virtual ShapeID addShape(std::unique_ptr<DocumentObject> shape) = 0;
+    virtual DocumentObject* queryShape(ShapeID const& sid) = 0;
+    virtual DocumentObject const* queryShape(ShapeID const& sid) const = 0;
     virtual void removeShape(ShapeID const& sid) = 0;
-
-
-
-    ShapeID hitTest(Vec2F const& point) const
-    {
-        for (auto child = getChildren().rbegin(); child != getChildren().rend(); ++child)
-        {
-            AShape const* const shape = static_cast<AShape const*>(child->get());
-            if (shape->hitTest(point))
-            {
-                return getChildren().size() - 1 - (child - getChildren().rbegin());
-            }
-        }
-
-        return NULLSHAPE;
-    }
+    std::optional<ShapeID> hitTest(Vec2F const& point) const = 0;
 
 private:
     explicit IDocument() = default;
