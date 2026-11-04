@@ -3,7 +3,7 @@
 
 #include "Utils/BoxF.hpp"
 #include "Utils/Event.hpp"
-#include "Vec2F.hpp"
+#include "Utils/Vec2F.hpp"
 
 #include <cstdint>
 #include <iostream>
@@ -17,10 +17,9 @@ class AObject
 {
 
 public:
-    AObject();
     virtual ~AObject() = default;
 
-    ObjectID ID() const;
+    ObjectID id() const;
     AObject* parent() const;
     void     setParent(AObject* new_parent);
 
@@ -31,8 +30,8 @@ public:
     AObject*       find(ObjectID id);
     const AObject* find(ObjectID id) const;
 
-    virtual bool processEvent(const Event& event);
-    virtual void render();
+    virtual bool processEvent(const Event& event) = 0;
+    virtual void render()                         = 0;
 
     virtual Vec2F mapLocalToGlobal(const Vec2F& pos) const = 0;
     virtual Vec2F mapGlobalToLocal(const Vec2F& pos) const = 0;
@@ -41,6 +40,9 @@ public:
     AObject(AObject&&)                 = delete;
     AObject& operator=(const AObject&) = delete;
     AObject& operator=(AObject&&)      = delete;
+
+protected:
+    AObject();
 
 private:
     static ObjectID generateID();
@@ -65,7 +67,7 @@ AObject::AObject()
     id_ = generateID();
 }
 
-ObjectID AObject::ID() const
+ObjectID AObject::id() const
 {
     return id_;
 }
@@ -96,30 +98,9 @@ void AObject::addChild(std::unique_ptr<AObject> child)
     children_.push_back(std::move(child));
 }
 
-bool AObject::processEvent(const Event& event)
-{
-    for (auto child = children_.rbegin(); child != children_.rend(); child++)
-    {
-        if ((*child)->processEvent(event))
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void AObject::render()
-{
-    for (auto child = children_.begin(); child != children_.end(); child++)
-    {
-        (*child)->render();
-    }
-}
-
 AObject* AObject::find(ObjectID id)
 {
-    if (ID() == id)
+    if (id() == id)
     {
         return this;
     }
@@ -135,16 +116,16 @@ AObject* AObject::find(ObjectID id)
     return nullptr;
 }
 
-const AObject* AObject::find(ObjectID id) const
+const AObject* AObject::find(ObjectID id_) const
 {
-    if (ID() == id)
+    if (id() == id_)
     {
         return this;
     }
 
     for (const auto& child : children_)
     {
-        if (const AObject* result = child->find(id))
+        if (const AObject* result = child->find(id_))
         {
             return result;
         }
