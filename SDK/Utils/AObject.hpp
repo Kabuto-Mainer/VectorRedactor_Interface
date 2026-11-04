@@ -3,22 +3,24 @@
 
 #include "Utils/BoxF.hpp"
 #include "Utils/Event.hpp"
+#include "Vec2F.hpp"
 
+#include <cstdint>
 #include <iostream>
 #include <list>
 #include <memory>
+#include <random>
+
+using ObjectID = uint64_t;
 
 class AObject
 {
-private:
-    BoxF                                box_;
-    std::list<std::unique_ptr<AObject>> children_;
-    AObject*                            parent_ = nullptr;
 
 public:
-    AObject()          = default;
+    AObject();
     virtual ~AObject() = default;
 
+    ObjectID ID() const;
     AObject* parent() const;
     void     setParent(AObject* new_parent);
 
@@ -26,13 +28,47 @@ public:
     std::list<std::unique_ptr<AObject>>&       children();
     void                                       addChild(std::unique_ptr<AObject> child);
 
-    /* default impl = send to children */
+    AObject*       find(ObjectID id);
+    const AObject* find(ObjectID id) const;
+
     virtual bool processEvent(const Event& event);
-    /* default impl = render children */
     virtual void render();
+
+    virtual Vec2F mapLocalToGlobal(const Vec2F& pos) const = 0;
+    virtual Vec2F mapGlobalToLocal(const Vec2F& pos) const = 0;
+
+    AObject(const AObject&)            = delete;
+    AObject(AObject&&)                 = delete;
+    AObject& operator=(const AObject&) = delete;
+    AObject& operator=(AObject&&)      = delete;
+
+private:
+    static ObjectID generateID();
+
+    ObjectID                            id_;
+    std::list<std::unique_ptr<AObject>> children_;
+    AObject*                            parent_ = nullptr;
 };
 
 /* ====================== Implementation ====================== */
+
+ObjectID AObject::generateID()
+{
+    static std::mt19937_64                         generator(std::random_device{}());
+    static std::uniform_int_distribution<ObjectID> distribution;
+
+    return distribution(generator);
+}
+
+AObject::AObject()
+{
+    id_ = generateID();
+}
+
+ObjectID AObject::ID() const
+{
+    return id_;
+}
 
 void AObject::setParent(AObject* new_parent)
 {
@@ -79,6 +115,42 @@ void AObject::render()
     {
         (*child)->render();
     }
+}
+
+AObject* AObject::find(ObjectID id)
+{
+    if (ID() == id)
+    {
+        return this;
+    }
+
+    for (auto& child : children_)
+    {
+        if (AObject* result = child->find(id))
+        {
+            return result;
+        }
+    }
+
+    return nullptr;
+}
+
+const AObject* AObject::find(ObjectID id) const
+{
+    if (ID() == id)
+    {
+        return this;
+    }
+
+    for (const auto& child : children_)
+    {
+        if (const AObject* result = child->find(id))
+        {
+            return result;
+        }
+    }
+
+    return nullptr;
 }
 
 #endif
