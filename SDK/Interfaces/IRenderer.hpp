@@ -2,22 +2,24 @@
 #define I_RENDERER_HPP
 
 #include "Interfaces/IID.hpp"
-#include "Utils/BoxF.hpp"
-#include "Utils/Vec2F.hpp"
 
 #include <cstdint>
 
-constexpr static const IID IID_RENDERER = 0;
+// forward declaration
+class BoxF;
+class Vec2F;
 
 struct Color
 {
-    uint8_t r = 0;
-    uint8_t g = 0;
-    uint8_t b = 0;
-    uint8_t a = 0;
+    uint8_t r{0};
+    uint8_t g{0};
+    uint8_t b{0};
+    uint8_t a{0};
 };
 
 // TODO: add basic colors (like Color::RED, Color::GREEN, etc)
+
+constexpr static IID IID_RENDERER{0};
 
 class IRenderer
 {
@@ -25,7 +27,8 @@ public:
     using ResourceID = uint64_t;
     using FontID     = uint64_t;
 
-    virtual ~IRenderer() = default;
+public:
+    virtual ~IRenderer() = 0;
 
     virtual ResourceID loadTexture(const char* path)  = 0;
     virtual FontID     loadFont(const char* filename) = 0;
@@ -39,11 +42,19 @@ public:
     virtual void renderLine(const Vec2F& origin, const Vec2F& end, const Color& color)      = 0;
     virtual void renderVector(const Vec2F& origin, const Vec2F& vector, const Color& color) = 0;
     virtual void renderPixel(const Vec2F& pos, const Color& color)                          = 0;
-
-    virtual void update()                  = 0;
-    virtual void clear()                   = 0;
     virtual void renderText(const char* text, const Color& color, const BoxF& box, const FontID& font_id,
-                            int font_size) = 0;
+                            int font_size)                                                  = 0;
+
+    virtual void update() = 0;
+    virtual void clear()  = 0;
+
+protected:
+    IRenderer();
 };
+
+/* ======================== Implementation ======================== */
+
+inline IRenderer::IRenderer()  = default;
+inline IRenderer::~IRenderer() = default;
 
 #endif

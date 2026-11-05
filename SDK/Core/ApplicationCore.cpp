@@ -1,43 +1,21 @@
 #include "Core/ApplicationCore.hpp"
 
-#include "Interfaces/IID.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/AObject.hpp"
+#include "Utils/ApplicationRoot.hpp"
 
 #include <cassert>
 #include <cstdarg>
 #include <cstdio>
 #include <dlfcn.h>
-#include <memory>
-#include <optional>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
-
-ApplicationCore::ApplicationCore() : root_(std::make_unique<AObject>())
-{
-}
-
-ApplicationCore::~ApplicationCore()
-{
-    /* XXX: never change or replace this */
-    root_.reset();
-    /* --------------------------------- */
-
-    for (auto handle = package_handles_.rbegin(); handle != package_handles_.rend(); ++handle)
-    {
-        dlclose(*handle);
-    }
-}
-
-const char* ApplicationCore::strError(Error error)
+const char* ApplicationCore::strError(Error const error)
 {
     using enum Error;
 
-    const char* str = "Unknow error";
+    const char* str{"Unknown error"};
 
     switch (error)
     {
@@ -79,80 +57,9 @@ const char* ApplicationCore::strError(Error error)
     return str;
 }
 
-ApplicationCore& ApplicationCore::instance()
+void ApplicationCore::log(LogLevel const level, const char fmt[], ...)
 {
-    static ApplicationCore instance;
-    return instance;
-}
-
-AObject* ApplicationCore::root() const
-{
-    return root_.get();
-}
-
-ApplicationCore::Error ApplicationCore::queryInterface(IID iid, void** interface) const
-{
-    if (interface == nullptr)
-    {
-        return Error::INVALID_ARGS;
-    }
-
-    auto found = registry_.find(iid);
-    if (found != registry_.end())
-    {
-        *interface = found->second;
-        assert(*interface);
-
-        return Error::SUCCESS;
-    }
-
-    return Error::INTERFACE_NOT_FOUND;
-}
-
-ApplicationCore::Error ApplicationCore::run()
-{
-    /* already running => return */
-    if (is_running_)
-    {
-        return Error::APPLICATION_ALREADY_RUNNING;
-    }
-
-    IRenderer* renderer = nullptr;
-    if (queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer)) != Error::SUCCESS)
-    {
-        return Error::NOT_LOADED_RENDERER;
-    }
-
-    IInputPump* input_pump = nullptr;
-    if (queryInterface(IID_INPUT_PUMP, reinterpret_cast<void**>(&input_pump)) != Error::SUCCESS)
-    {
-        return Error::NOT_LOADED_INPUT_PUMP;
-    }
-
-    is_running_ = true;
-    while (is_running_)
-    {
-        auto polled = input_pump->pollEvent();
-        if (polled.has_value())
-        {
-            root_->processEvent(polled.value());
-        }
-
-        root_->render();
-        renderer->update();
-    }
-
-    return Error::SUCCESS;
-}
-
-void ApplicationCore::stop()
-{
-    is_running_ = false;
-}
-
-void ApplicationCore::log(LogLevel level, const char* fmt, ...)
-{
-    const char* log_level_str = "";
+    const char* log_level_str{""};
 
     switch (level)
     {
@@ -175,7 +82,7 @@ void ApplicationCore::log(LogLevel level, const char* fmt, ...)
 
     std::fprintf(stderr, "%s ", log_level_str);
 
-    std::va_list args;
+    std::va_list args{};
     va_start(args, fmt);
     std::vfprintf(stderr, fmt, args);
     va_end(args);
@@ -184,7 +91,32 @@ void ApplicationCore::log(LogLevel level, const char* fmt, ...)
     std::fputc('\n', stderr);
 }
 
-ApplicationCore::Error ApplicationCore::registerInterface(IID iid, void* interface)
+ApplicationCore& ApplicationCore::instance()
+{
+    static ApplicationCore instance{};
+    return instance;
+}
+
+ApplicationCore::ApplicationCore() : root_{std::make_unique<ApplicationRoot>()}
+{
+}
+
+ApplicationCore::~ApplicationCore()
+{
+    /* XXX: never change or replace this */
+    root_.reset();
+    /* --------------------------------- */
+
+    auto end_iterator{package_handles_.rend()};
+    for (auto handle{package_handles_.rbegin()}; handle != end_iterator; ++handle)
+    {
+        dlclose(*handle);
+    }
+}
+
+ApplicationCore::ApplicationCore(ApplicationCore&&) = default;
+
+ApplicationCore::Error ApplicationCore::registerInterface(IID const iid, void* const interface)
 {
     if (interface == nullptr)
     {
@@ -202,13 +134,13 @@ ApplicationCore::Error ApplicationCore::registerInterface(IID iid, void* interfa
 
 ApplicationCore::Error ApplicationCore::loadPackage(const std::string& path)
 {
-    void* handle = dlopen(path.c_str(), RTLD_NOW);
+    void* const handle{dlopen(path.c_str(), RTLD_NOW)};
     if (handle == nullptr)
     {
         return Error::PACKAGE_NOT_FOUND;
     }
 
-    InitPackageFunc* init_package = reinterpret_cast<InitPackageFunc*>(dlsym(handle, INIT_PACKAGE_FUNC_NAME_STR));
+    InitPackageFunc* const init_package = reinterpret_cast<InitPackageFunc*>(dlsym(handle, INIT_PACKAGE_FUNC_NAME_STR));
     if (init_package == nullptr)
     {
         dlclose(handle);
@@ -223,4 +155,93 @@ ApplicationCore::Error ApplicationCore::loadPackage(const std::string& path)
     package_handles_.push_back(handle);
 
     return Error::SUCCESS;
+}
+
+ApplicationRoot* ApplicationCore::root()
+{
+    return root_.get();
+}
+
+ApplicationRoot const* ApplicationCore::root() const
+{
+    return root_.get();
+}
+
+ApplicationCore::Error ApplicationCore::queryInterface(IID const iid, void** const interface)
+{
+    if (interface == nullptr)
+    {
+        return Error::INVALID_ARGS;
+    }
+
+    auto const found{registry_.find(iid)};
+    if (found != registry_.end())
+    {
+        *interface = found->second;
+        assert(*interface);
+
+        return Error::SUCCESS;
+    }
+
+    return Error::INTERFACE_NOT_FOUND;
+}
+
+ApplicationCore::Error ApplicationCore::queryInterface(IID const iid, void const** const interface) const
+{
+    if (interface == nullptr)
+    {
+        return Error::INVALID_ARGS;
+    }
+
+    auto const found{registry_.find(iid)};
+    if (found != registry_.end())
+    {
+        *interface = found->second;
+        assert(*interface);
+
+        return Error::SUCCESS;
+    }
+
+    return Error::INTERFACE_NOT_FOUND;
+}
+
+ApplicationCore::Error ApplicationCore::run()
+{
+    /* already running => return */
+    if (is_running_)
+    {
+        return Error::APPLICATION_ALREADY_RUNNING;
+    }
+
+    IRenderer* renderer{nullptr};
+    if (queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer)) != Error::SUCCESS)
+    {
+        return Error::NOT_LOADED_RENDERER;
+    }
+
+    IInputPump* input_pump{nullptr};
+    if (queryInterface(IID_INPUT_PUMP, reinterpret_cast<void**>(&input_pump)) != Error::SUCCESS)
+    {
+        return Error::NOT_LOADED_INPUT_PUMP;
+    }
+
+    is_running_ = true;
+    while (is_running_)
+    {
+        auto const polled{input_pump->pollEvent()};
+        if (polled.has_value())
+        {
+            root_->processEvent(polled.value());
+        }
+
+        root_->render();
+        renderer->update();
+    }
+
+    return Error::SUCCESS;
+}
+
+void ApplicationCore::stop()
+{
+    is_running_ = false;
 }

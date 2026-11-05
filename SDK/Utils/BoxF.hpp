@@ -6,60 +6,70 @@
 class BoxF
 {
 public:
-    BoxF() = default;
+    BoxF();
+    ~BoxF();
+
     BoxF(float left_top_x, float left_top_y, float right_bottom_x, float right_bottom_y);
     BoxF(const Vec2F& left_top, const Vec2F& right_bottom);
     explicit BoxF(const Vec2F& size);
-    ~BoxF() = default;
 
-    bool  contains(const Vec2F& point) const;
     Vec2F size() const;
-    Vec2F center() const;
-
-    Vec2F topLeft() const;
-    Vec2F topRight() const;
-    Vec2F bottomLeft() const;
-    Vec2F bottomRight() const;
 
     float left() const;
     float right() const;
     float top() const;
     float bottom() const;
 
-    void setLeft(float x);
-    void setRight(float x);
-    void setTop(float y);
-    void setBottom(float y);
+    Vec2F center() const;
+    Vec2F topLeft() const;
+    Vec2F topRight() const;
+    Vec2F bottomLeft() const;
+    Vec2F bottomRight() const;
 
+    void setLeft(float new_x);
+    void setRight(float new_x);
+    void setTop(float new_y);
+    void setBottom(float new_y);
+
+    void setCenter(const Vec2F& point);
     void setTopLeft(const Vec2F& point);
     void setTopRight(const Vec2F& point);
     void setBottomLeft(const Vec2F& point);
     void setBottomRight(const Vec2F& point);
-    void setCenter(const Vec2F& point);
+
+    bool contains(const Vec2F& point) const;
 
 private:
-    Vec2F left_top_, right_bottom_;
+    Vec2F left_top_{};
+    Vec2F right_bottom_{};
 };
 
-/* ======================= Implementation ======================= */
+/* ======================== Implementation ======================== */
 
-inline BoxF::BoxF(float left_top_x, float left_top_y, float right_bottom_x, float right_bottom_y) :
-    left_top_(Vec2F{left_top_x, left_top_y}), right_bottom_(Vec2F{right_bottom_x, right_bottom_y})
+inline BoxF::BoxF()  = default;
+inline BoxF::~BoxF() = default;
+
+inline BoxF::BoxF(float const left_top_x, float const left_top_y, float const right_bottom_x,
+                  float const right_bottom_y) :
+    left_top_{
+        Vec2F{left_top_x, left_top_y},
+},
+    right_bottom_{Vec2F{right_bottom_x, right_bottom_y}}
 {
 }
 
-inline BoxF::BoxF(const Vec2F& left_top, const Vec2F& right_bottom) : left_top_(left_top), right_bottom_(right_bottom)
+inline BoxF::BoxF(const Vec2F& left_top, const Vec2F& right_bottom) : left_top_{left_top}, right_bottom_{right_bottom}
 {
 }
 
-inline BoxF::BoxF(const Vec2F& size) : left_top_(Vec2F{0.0F, 0.0F}), right_bottom_(size)
+inline BoxF::BoxF(const Vec2F& size) :
+    left_top_{
+        Vec2F{0.0F, 0.0F},
+},
+    right_bottom_{size}
 {
 }
 
-inline bool BoxF::contains(const Vec2F& point) const
-{
-    return (left() <= point.x() && point.x() <= right() && top() <= point.y() && point.y() <= bottom());
-}
 /* ------------------- getters ------------------- */
 
 inline Vec2F BoxF::size() const
@@ -70,26 +80,6 @@ inline Vec2F BoxF::size() const
 inline Vec2F BoxF::center() const
 {
     return (left_top_ + right_bottom_) / 2;
-}
-
-inline Vec2F BoxF::topLeft() const
-{
-    return Vec2F{left(), top()};
-}
-
-inline Vec2F BoxF::topRight() const
-{
-    return Vec2F{right(), top()};
-}
-
-inline Vec2F BoxF::bottomLeft() const
-{
-    return Vec2F{left(), bottom()};
-}
-
-inline Vec2F BoxF::bottomRight() const
-{
-    return Vec2F{right(), bottom()};
 }
 
 inline float BoxF::left() const
@@ -111,26 +101,46 @@ inline float BoxF::bottom() const
 {
     return right_bottom_.y();
 }
+
+inline Vec2F BoxF::topLeft() const
+{
+    return Vec2F{left(), top()};
+}
+
+inline Vec2F BoxF::topRight() const
+{
+    return Vec2F{right(), top()};
+}
+
+inline Vec2F BoxF::bottomLeft() const
+{
+    return Vec2F{left(), bottom()};
+}
+
+inline Vec2F BoxF::bottomRight() const
+{
+    return Vec2F{right(), bottom()};
+}
 /* ------------------- setters ------------------- */
 
-inline void BoxF::setLeft(float x)
+inline void BoxF::setLeft(float const new_x)
 {
-    left_top_.setX(x);
+    left_top_.setX(new_x);
 }
 
-inline void BoxF::setRight(float x)
+inline void BoxF::setRight(float const new_x)
 {
-    right_bottom_.setX(x);
+    right_bottom_.setX(new_x);
 }
 
-inline void BoxF::setTop(float y)
+inline void BoxF::setTop(float const new_y)
 {
-    left_top_.setY(y);
+    left_top_.setY(new_y);
 }
 
-inline void BoxF::setBottom(float y)
+inline void BoxF::setBottom(float const new_y)
 {
-    right_bottom_.setY(y);
+    right_bottom_.setY(new_y);
 }
 
 inline void BoxF::setTopLeft(const Vec2F& point)
@@ -159,9 +169,15 @@ inline void BoxF::setBottomRight(const Vec2F& point)
 
 inline void BoxF::setCenter(const Vec2F& point)
 {
-    Vec2F size    = this->size();
-    left_top_     = point - size / 2;
-    right_bottom_ = point + size / 2;
+    Vec2F const size = this->size();
+    left_top_        = point - size / 2;
+    right_bottom_    = point + size / 2;
+}
+/* -------------------- Usage -------------------- */
+
+inline bool BoxF::contains(const Vec2F& point) const
+{
+    return (left() <= point.x() && point.x() <= right() && top() <= point.y() && point.y() <= bottom());
 }
 
 #endif

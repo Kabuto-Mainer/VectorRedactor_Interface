@@ -48,7 +48,7 @@ clang++ -std=c++23 -fpic -shared -g -ldl -Wall -Wextra some_package.cpp
 
 **Весь код должен соответствовать правилам `clang-format`.**
 
-Инструкции по настройке и использованию см. в файле [`Formater.md`](Formater.md).
+Инструкции по настройке и использованию см. в файле [`Codestyle.md`](Codestyle.md).
 
 ## Соглашение о сообщениях коммитов
 

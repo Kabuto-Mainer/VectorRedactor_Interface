@@ -4,9 +4,17 @@
 class ACommand
 {
 public:
-    virtual ~ACommand() = default;
+    virtual ~ACommand() = 0;
 
     virtual void execute() const = 0;
+
+protected:
+    ACommand();
 };
+
+/* ======================== Implementation ======================== */
+
+inline ACommand::ACommand()  = default;
+inline ACommand::~ACommand() = default;
 
 #endif

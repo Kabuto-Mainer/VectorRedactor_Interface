@@ -5,32 +5,32 @@
 
 #include <variant>
 
-class EventMouse
+class MouseEvent
 {
 public:
     enum class Type
     {
-        MOTION,
-        LEFT_BUTTON_PRESSING,
-        LEFT_BUTTON_RELEASING,
-        RIGHT_BUTTON_PRESSING,
-        RIGHT_BUTTON_RELEASING,
+        MOVED,
+        LEFT_BUTTON_PRESSED,
+        LEFT_BUTTON_RELEASED,
+        RIGHT_BUTTON_PRESSED,
+        RIGHT_BUTTON_RELEASED,
         MIDDLE_BUTTON_PRESSING,
         MIDDLE_BUTTON_RELEASING,
     };
 
-    EventMouse(Type type, const Vec2F& cursor_pos);
-    ~EventMouse() = default;
+    MouseEvent(Type type, const Vec2F& cursor_pos);
+    ~MouseEvent();
 
     Type  type() const;
     Vec2F cursorPos() const;
 
 private:
-    Type  type_;
-    Vec2F cursor_pos_;
+    Type  type_{};
+    Vec2F cursor_pos_{};
 };
 
-class EventKeyboard
+class KeyboardEvent
 {
 public:
     enum class Type
@@ -45,35 +45,45 @@ public:
     // Maybe string comparing?
     // "C-A", "C-B" instead enum
     //
-    EventKeyboard()  = default;
-    ~EventKeyboard() = default;
+    KeyboardEvent();
+    ~KeyboardEvent();
 };
 
-class EventQuit
+class CloseEvent
 {
 public:
-    EventQuit()  = default;
-    ~EventQuit() = default;
+    CloseEvent();
+    ~CloseEvent();
 };
 
-using Event = std::variant<EventMouse, EventKeyboard, EventQuit /*, ... */>;
+using Event = std::variant<MouseEvent, KeyboardEvent, CloseEvent /*, ... */>;
 
 /* ======================== Implementation ======================== */
 
-/* EventMouse */
+/* MouseEvent */
 
-inline EventMouse::EventMouse(Type type, const Vec2F& cursor_pos) : type_(type), cursor_pos_(cursor_pos)
+inline MouseEvent::MouseEvent(Type const type, const Vec2F& cursor_pos) : type_{type}, cursor_pos_{cursor_pos}
 {
 }
 
-inline EventMouse::Type EventMouse::type() const
+inline MouseEvent::~MouseEvent() = default;
+
+inline MouseEvent::Type MouseEvent::type() const
 {
     return type_;
 }
 
-inline Vec2F EventMouse::cursorPos() const
+inline Vec2F MouseEvent::cursorPos() const
 {
     return cursor_pos_;
 }
+
+/* KeyboardEvent */
+// TBD
+
+/* CloseEvent */
+
+inline CloseEvent::CloseEvent()  = default;
+inline CloseEvent::~CloseEvent() = default;
 
 #endif

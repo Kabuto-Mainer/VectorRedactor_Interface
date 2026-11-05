@@ -29,6 +29,6 @@ public:
     MainWindow()  = default;
     ~MainWindow() = default;
 
-    void render() override;
+    void render() const override;
     bool processEvent(const Event& event) override;
 };
