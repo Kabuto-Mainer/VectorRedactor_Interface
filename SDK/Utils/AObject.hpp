@@ -8,6 +8,7 @@
 #include <list>
 #include <memory>
 #include <random>
+#include <utility>
 
 using ObjectID = uint64_t;
 
@@ -55,7 +56,7 @@ private:
 
 /* ====================== Implementation ====================== */
 
-void AObject::renderChildren()
+inline void AObject::renderChildren()
 {
     for (auto child = children_.begin(); child != children_.end(); child++)
     {
@@ -63,7 +64,7 @@ void AObject::renderChildren()
     }
 }
 
-bool AObject::processEventChildren(const Event& event)
+inline bool AObject::processEventChildren(const Event& event)
 {
     for (auto child = children_.rbegin(); child != children_.rend(); child++)
     {
@@ -76,7 +77,7 @@ bool AObject::processEventChildren(const Event& event)
     return false;
 }
 
-ObjectID AObject::generateID()
+inline ObjectID AObject::generateID()
 {
     static std::mt19937_64                         generator(std::random_device{}());
     static std::uniform_int_distribution<ObjectID> distribution;
@@ -84,12 +85,12 @@ ObjectID AObject::generateID()
     return distribution(generator);
 }
 
-AObject::AObject()
+inline AObject::AObject()
 {
     id_ = generateID();
 }
 
-ObjectID AObject::id() const
+inline ObjectID AObject::id() const
 {
     return id_;
 }
@@ -120,25 +121,12 @@ inline void AObject::addChild(std::unique_ptr<AObject> child)
     children_.push_back(std::move(child));
 }
 
-AObject* AObject::find(ObjectID object_id)
+inline AObject* AObject::find(ObjectID object_id)
 {
-    if (id() == object_id)
-    {
-        return this;
-    }
-
-    for (auto& child : children_)
-    {
-        if (AObject* result = child->find(object_id))
-        {
-            return result;
-        }
-    }
-
-    return nullptr;
+	return const_cast<AObject*>(std::as_const(*this).find(object_id));
 }
 
-const AObject* AObject::find(ObjectID object_id) const
+inline const AObject* AObject::find(ObjectID object_id) const
 {
     if (id() == object_id)
     {
