@@ -98,16 +98,16 @@ inline void AObject::addChild(std::unique_ptr<AObject> child)
     children_.push_back(std::move(child));
 }
 
-AObject* AObject::find(ObjectID id)
+AObject* AObject::find(ObjectID object_id)
 {
-    if (id() == id)
+    if (id() == object_id)
     {
         return this;
     }
 
     for (auto& child : children_)
     {
-        if (AObject* result = child->find(id))
+        if (AObject* result = child->find(object_id))
         {
             return result;
         }
@@ -116,16 +116,16 @@ AObject* AObject::find(ObjectID id)
     return nullptr;
 }
 
-const AObject* AObject::find(ObjectID id_) const
+const AObject* AObject::find(ObjectID object_id) const
 {
-    if (id() == id_)
+    if (id() == object_id)
     {
         return this;
     }
 
     for (const auto& child : children_)
     {
-        if (const AObject* result = child->find(id_))
+        if (const AObject* result = child->find(object_id))
         {
             return result;
         }
