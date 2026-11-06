@@ -5,6 +5,7 @@
 #include "Utils/Transformable.hpp"
 
 // forward declaration
+class BoxF;
 class Color;
 
 class AShape : public AObject, public Transformable
