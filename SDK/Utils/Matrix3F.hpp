@@ -195,7 +195,7 @@ public:
         }
 
         const float inv = 1.0F / det;
-        Storage inverse_values{};
+        Storage     inverse_values{};
 
         inverse_values[0][0] = (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1])) * inv;
         inverse_values[0][1] = (((*this)[0][2] * (*this)[2][1]) - ((*this)[0][1] * (*this)[2][2])) * inv;

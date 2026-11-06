@@ -1,15 +1,14 @@
 #ifndef A_OBJECT_HPP
 #define A_OBJECT_HPP
 
-#include "Utils/BoxF.hpp"
 #include "Utils/Event.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <cstdint>
-#include <iostream>
 #include <list>
 #include <memory>
 #include <random>
+#include <utility>
 
 using ObjectID = uint64_t;
 
@@ -44,6 +43,9 @@ public:
 protected:
     AObject();
 
+    void renderChildren();
+    bool processEventChildren(const Event& event);
+
 private:
     static ObjectID generateID();
 
@@ -54,7 +56,28 @@ private:
 
 /* ====================== Implementation ====================== */
 
-ObjectID AObject::generateID()
+inline void AObject::renderChildren()
+{
+    for (auto child = children_.begin(); child != children_.end(); child++)
+    {
+        (*child)->render();
+    }
+}
+
+inline bool AObject::processEventChildren(const Event& event)
+{
+    for (auto child = children_.rbegin(); child != children_.rend(); child++)
+    {
+        if ((*child)->processEvent(event))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+inline ObjectID AObject::generateID()
 {
     static std::mt19937_64                         generator(std::random_device{}());
     static std::uniform_int_distribution<ObjectID> distribution;
@@ -62,12 +85,12 @@ ObjectID AObject::generateID()
     return distribution(generator);
 }
 
-AObject::AObject()
+inline AObject::AObject()
 {
     id_ = generateID();
 }
 
-ObjectID AObject::id() const
+inline ObjectID AObject::id() const
 {
     return id_;
 }
@@ -98,34 +121,21 @@ inline void AObject::addChild(std::unique_ptr<AObject> child)
     children_.push_back(std::move(child));
 }
 
-AObject* AObject::find(ObjectID id)
+inline AObject* AObject::find(ObjectID object_id)
 {
-    if (id() == id)
-    {
-        return this;
-    }
-
-    for (auto& child : children_)
-    {
-        if (AObject* result = child->find(id))
-        {
-            return result;
-        }
-    }
-
-    return nullptr;
+	return const_cast<AObject*>(std::as_const(*this).find(object_id));
 }
 
-const AObject* AObject::find(ObjectID id_) const
+inline const AObject* AObject::find(ObjectID object_id) const
 {
-    if (id() == id_)
+    if (id() == object_id)
     {
         return this;
     }
 
     for (const auto& child : children_)
     {
-        if (const AObject* result = child->find(id_))
+        if (const AObject* result = child->find(object_id))
         {
             return result;
         }

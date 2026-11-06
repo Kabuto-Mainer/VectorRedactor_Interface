@@ -5,6 +5,7 @@
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/AObject.hpp"
+#include "Utils/Vec2F.hpp"
 
 #include <cassert>
 #include <cstdarg>
@@ -16,8 +17,36 @@
 #include <unordered_map>
 #include <vector>
 
+/* Root */
 
-ApplicationCore::ApplicationCore() : root_(std::make_unique<AObject>())
+void ApplicationCore::Root::render()
+{
+    renderChildren();
+}
+
+bool ApplicationCore::Root::processEvent(const Event& event)
+{
+    if (children().empty())
+    {
+        return false;
+    }
+
+    return children().back()->processEvent(event);
+}
+
+Vec2F ApplicationCore::Root::mapGlobalToLocal(const Vec2F &pos) const
+{
+	return pos;
+}
+
+Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F &pos) const
+{
+	return pos;
+}
+
+/* ApplicationCore */
+
+ApplicationCore::ApplicationCore() : root_(std::make_unique<Root>())
 {
 }
 
