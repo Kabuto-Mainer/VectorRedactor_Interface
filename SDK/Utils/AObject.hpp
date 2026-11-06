@@ -1,12 +1,10 @@
 #ifndef A_OBJECT_HPP
 #define A_OBJECT_HPP
 
-#include "Utils/BoxF.hpp"
 #include "Utils/Event.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <cstdint>
-#include <iostream>
 #include <list>
 #include <memory>
 #include <random>
@@ -44,6 +42,9 @@ public:
 protected:
     AObject();
 
+    void renderChildren();
+    bool processEventChildren(const Event& event);
+
 private:
     static ObjectID generateID();
 
@@ -53,6 +54,27 @@ private:
 };
 
 /* ====================== Implementation ====================== */
+
+void AObject::renderChildren()
+{
+    for (auto child = children_.begin(); child != children_.end(); child++)
+    {
+        (*child)->render();
+    }
+}
+
+bool AObject::processEventChildren(const Event& event)
+{
+    for (auto child = children_.rbegin(); child != children_.rend(); child++)
+    {
+        if ((*child)->processEvent(event))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 ObjectID AObject::generateID()
 {
@@ -72,42 +94,42 @@ ObjectID AObject::id() const
     return id_;
 }
 
-void AObject::setParent(AObject* new_parent)
+inline void AObject::setParent(AObject* new_parent)
 {
     parent_ = new_parent;
 }
 
-AObject* AObject::parent() const
+inline AObject* AObject::parent() const
 {
     return parent_;
 }
 
-const std::list<std::unique_ptr<AObject>>& AObject::children() const
+inline const std::list<std::unique_ptr<AObject>>& AObject::children() const
 {
     return children_;
 }
 
-std::list<std::unique_ptr<AObject>>& AObject::children()
+inline std::list<std::unique_ptr<AObject>>& AObject::children()
 {
     return children_;
 }
 
-void AObject::addChild(std::unique_ptr<AObject> child)
+inline void AObject::addChild(std::unique_ptr<AObject> child)
 {
     child->setParent(this);
     children_.push_back(std::move(child));
 }
 
-AObject* AObject::find(ObjectID id)
+AObject* AObject::find(ObjectID object_id)
 {
-    if (id() == id)
+    if (id() == object_id)
     {
         return this;
     }
 
     for (auto& child : children_)
     {
-        if (AObject* result = child->find(id))
+        if (AObject* result = child->find(object_id))
         {
             return result;
         }
@@ -116,16 +138,16 @@ AObject* AObject::find(ObjectID id)
     return nullptr;
 }
 
-const AObject* AObject::find(ObjectID id_) const
+const AObject* AObject::find(ObjectID object_id) const
 {
-    if (id() == id_)
+    if (id() == object_id)
     {
         return this;
     }
 
     for (const auto& child : children_)
     {
-        if (const AObject* result = child->find(id_))
+        if (const AObject* result = child->find(object_id))
         {
             return result;
         }

@@ -62,16 +62,16 @@ using Event = std::variant<EventMouse, EventKeyboard, EventQuit /*, ... */>;
 
 /* EventMouse */
 
-EventMouse::EventMouse(Type type, const Vec2F& cursor_pos) : type_(type), cursor_pos_(cursor_pos)
+inline EventMouse::EventMouse(Type type, const Vec2F& cursor_pos) : type_(type), cursor_pos_(cursor_pos)
 {
 }
 
-EventMouse::Type EventMouse::type() const
+inline EventMouse::Type EventMouse::type() const
 {
     return type_;
 }
 
-Vec2F EventMouse::cursorPos() const
+inline Vec2F EventMouse::cursorPos() const
 {
     return cursor_pos_;
 }
