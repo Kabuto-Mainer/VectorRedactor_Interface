@@ -1,26 +1,20 @@
 #ifndef A_SHAPE_HPP
 #define A_SHAPE_HPP
 
-#include "Utils/AObject.hpp"
-#include "Utils/Transformable.hpp"
+#include "Interfaces/IRenderer.hpp"
+#include "Utils/ADocumentObject.hpp"
 
-// forward declaration
-class BoxF;
-class Color;
-
-class AShape : public AObject, public Transformable
+class AShape : public ADocumentObject
 {
 public:
     AShape();
     ~AShape() override = 0;
 
-    Vec2F mapLocalToGlobal(Vec2F const& pos) const override final;
-    Vec2F mapGlobalToLocal(Vec2F const& pos) const override final;
+    Color color() const;
+    void  setColor(Color color) override final;
 
-    virtual Color&       color()       = 0;
-    virtual Color const& color() const = 0;
-
-    virtual BoxF axesAlignedBoundingBox() const = 0;
+private:
+    Color color_{};
 };
 
 /* ====================== Implementation ====================== */
@@ -28,14 +22,14 @@ public:
 inline AShape::AShape()  = default;
 inline AShape::~AShape() = default;
 
-inline Vec2F AShape::mapLocalToGlobal(Vec2F const& pos) const
+inline Color AShape::color() const
 {
-    return parent()->mapLocalToGlobal(transform().transformPoint(pos));
+    return color_;
 }
 
-inline Vec2F AShape::mapGlobalToLocal(Vec2F const& pos) const
+inline void AShape::setColor(Color const color)
 {
-    return transform().inverted().transformPoint(parent()->mapGlobalToLocal(pos));
+    color_ = color;
 }
 
 #endif

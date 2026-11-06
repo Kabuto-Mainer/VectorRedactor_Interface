@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 
 class RectangleShape : public AShape
 {
@@ -21,9 +22,7 @@ public:
     bool processEvent(Event const& event) override final;
     void render() const override final;
 
-    virtual Color&       color() override final;
-    virtual Color const& color() const override final;
-
+    bool         hitTest(Vec2F const& pos) const override final;
     virtual BoxF axesAlignedBoundingBox() const override final;
 
 private:
@@ -40,18 +39,9 @@ inline RectangleShape::RectangleShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline Color& RectangleShape::color()
-{
-    return color_;
-}
-
-inline Color const& RectangleShape::color() const
-{
-    return color_;
-}
-
 inline bool RectangleShape::processEvent(Event const& event)
 {
+    ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "RectangleShape can't process events\n");
     return false;
 }
 
@@ -61,9 +51,18 @@ inline void RectangleShape::render() const
     ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));
     assert(renderer);
 
-    BoxF to_render{scaling()};
+    BoxF to_render{
+        Vec2F{std::abs(scaling().x()), std::abs(scaling().y())}
+    };
     to_render.setCenter(translation());
     renderer->renderRect(color(), to_render, rotation());
+
+    assert(children().empty());
+}
+
+inline bool RectangleShape::hitTest(Vec2F const& pos) const
+{
+    return BoxF{-1, -1, 1, 1}.contains(mapGlobalToLocal(pos));
 }
 
 inline BoxF RectangleShape::axesAlignedBoundingBox() const

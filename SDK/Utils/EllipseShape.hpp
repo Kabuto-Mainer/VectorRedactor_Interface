@@ -21,9 +21,7 @@ public:
     bool processEvent(Event const& event) override final;
     void render() const override final;
 
-    virtual Color&       color() override final;
-    virtual Color const& color() const override final;
-
+    bool         hitTest(Vec2F const& pos) const override final;
     virtual BoxF axesAlignedBoundingBox() const override final;
 
 private:
@@ -40,18 +38,9 @@ inline EllipseShape::EllipseShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline Color& EllipseShape::color()
-{
-    return color_;
-}
-
-inline Color const& EllipseShape::color() const
-{
-    return color_;
-}
-
 inline bool EllipseShape::processEvent(Event const& event)
 {
+    ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "EllipseShape can't process events\n");
     return false;
 }
 
@@ -61,9 +50,16 @@ inline void EllipseShape::render() const
     ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));
     assert(renderer);
 
-    BoxF to_render{scaling()};
+    BoxF to_render{
+        Vec2F{std::abs(scaling().x()), std::abs(scaling().y())}
+    };
     to_render.setCenter(translation());
     renderer->renderEllipse(color(), to_render, rotation());
+}
+
+inline bool EllipseShape::hitTest(Vec2F const& pos) const
+{
+    return mapGlobalToLocal(pos).len2() <= 1.0F;
 }
 
 // I can't prove that
