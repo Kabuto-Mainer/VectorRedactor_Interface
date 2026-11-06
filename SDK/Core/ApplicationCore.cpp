@@ -5,6 +5,7 @@
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/AObject.hpp"
+#include "Utils/Vec2F.hpp"
 
 #include <cassert>
 #include <cstdarg>
@@ -31,6 +32,16 @@ bool ApplicationCore::Root::processEvent(const Event& event)
     }
 
     return children().back()->processEvent(event);
+}
+
+Vec2F ApplicationCore::Root::mapGlobalToLocal(const Vec2F &pos) const
+{
+	return pos;
+}
+
+Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F &pos) const
+{
+	return pos;
 }
 
 /* ApplicationCore */
