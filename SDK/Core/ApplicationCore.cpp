@@ -16,8 +16,26 @@
 #include <unordered_map>
 #include <vector>
 
+/* Root */
 
-ApplicationCore::ApplicationCore() : root_(std::make_unique<AObject>())
+void ApplicationCore::Root::render()
+{
+    renderChildren();
+}
+
+bool ApplicationCore::Root::processEvent(const Event& event)
+{
+    if (children().empty())
+    {
+        return false;
+    }
+
+    return children().back()->processEvent(event);
+}
+
+/* ApplicationCore */
+
+ApplicationCore::ApplicationCore() : root_(std::make_unique<Root>())
 {
 }
 

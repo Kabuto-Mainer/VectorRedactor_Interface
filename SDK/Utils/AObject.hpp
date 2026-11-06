@@ -1,12 +1,10 @@
 #ifndef A_OBJECT_HPP
 #define A_OBJECT_HPP
 
-#include "Utils/BoxF.hpp"
 #include "Utils/Event.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <cstdint>
-#include <iostream>
 #include <list>
 #include <memory>
 #include <random>
@@ -44,6 +42,9 @@ public:
 protected:
     AObject();
 
+    void renderChildren();
+    bool processEventChildren(const Event& event);
+
 private:
     static ObjectID generateID();
 
@@ -53,6 +54,27 @@ private:
 };
 
 /* ====================== Implementation ====================== */
+
+void AObject::renderChildren()
+{
+    for (auto child = children_.begin(); child != children_.end(); child++)
+    {
+        (*child)->render();
+    }
+}
+
+bool AObject::processEventChildren(const Event& event)
+{
+    for (auto child = children_.rbegin(); child != children_.rend(); child++)
+    {
+        if ((*child)->processEvent(event))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 ObjectID AObject::generateID()
 {
