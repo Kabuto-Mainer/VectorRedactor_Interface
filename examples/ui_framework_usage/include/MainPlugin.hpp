@@ -22,10 +22,3 @@ public:
 
     static IMainPlugin& instance();
 };
-
-class MainWindow final : public AObject
-{
-public:
-    MainWindow()  = default;
-    ~MainWindow() = default;
-};

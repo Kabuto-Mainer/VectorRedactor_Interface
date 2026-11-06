@@ -97,9 +97,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    auto main_window = std::make_unique<MainWindow>();
-    main_window->addChild(std::move(window));
-    ApplicationCore::instance().root()->addChild(std::move(main_window));
+    ApplicationCore::instance().root()->addChild(std::move(window));
 
     return true;
 }

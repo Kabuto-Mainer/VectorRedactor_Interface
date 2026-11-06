@@ -1,10 +1,10 @@
-#include "IUIFramework.hpp"
-
 #include "Core/ApplicationCore.hpp"
+#include "IUIFramework.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/ACommand.hpp"
 #include "Utils/AObject.hpp"
+#include "Utils/AWidget.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/Event.hpp"
 #include "Utils/Vec2F.hpp"
@@ -102,9 +102,9 @@ Palette derive(const Color& base, const Color& surface, const Color& canvas)
 
 struct Theme
 {
-    Color                                                    window;
-    Color                                                    surface;
-    Color                                                    accent;
+    Color                                                  window;
+    Color                                                  surface;
+    Color                                                  accent;
     std::array<Color, static_cast<std::size_t>(Role::MAX)> role_bases;
 
     Palette palette(Role role) const;
@@ -118,7 +118,7 @@ inline Palette Theme::palette(Role role) const
 Theme makeTheme(const Color& primary, const Color& secondary, const Color& neutral, const Color& accent,
                 const Color& unical)
 {
-    const bool  dark    = luminance(neutral) < LIGHTNESS_THRESHOLD;
+    const bool  dark = luminance(neutral) < LIGHTNESS_THRESHOLD;
     const Color white{255, 255, 255, OPAQUE_ALPHA};
     const Color surface = mix(neutral, white, dark ? DARK_SURFACE_LIFT : LIGHT_SURFACE_LIFT);
     const Color button  = mix(neutral, secondary, SECONDARY_TINT);
@@ -237,7 +237,7 @@ Vec2F menuSize(Direct direct, std::size_t count)
 
 using Placement = std::optional<BoxF>;
 
-std::vector<Placement> slotsFor(const BoxF& bounds, Direct direct, std::size_t count)
+std::vector<Placement> slotsFor(const Vec2F& size, Direct direct, std::size_t count)
 {
     std::vector<Placement> slots;
     if (count == 0)
@@ -246,12 +246,11 @@ std::vector<Placement> slotsFor(const BoxF& bounds, Direct direct, std::size_t c
     }
 
     const auto  divider = static_cast<float>(count);
-    const Vec2F size    = bounds.size();
-    const Vec2F slot    = direct == Direct::Vertical ? Vec2F(size.x(), size.y() / divider) :
-                                                       Vec2F(size.x() / divider, size.y());
-    const Vec2F step    = direct == Direct::Vertical ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
+    const Vec2F slot =
+        direct == Direct::Vertical ? Vec2F(size.x(), size.y() / divider) : Vec2F(size.x() / divider, size.y());
+    const Vec2F step = direct == Direct::Vertical ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
 
-    Vec2F position = bounds.topLeft();
+    Vec2F position;
     for (std::size_t i = 0; i < count; ++i)
     {
         slots.emplace_back(makeBox(position, slot));
@@ -338,7 +337,19 @@ void runAction(Action& action)
     }
 }
 
-class ButtonObject final : public AObject
+Vec2F globalCenter(const AWidget& widget)
+{
+    return widget.mapLocalToGlobal(widget.box().size() / 2.0F);
+}
+
+BoxF globalBounds(const AWidget& widget)
+{
+    BoxF bounds(widget.box().size());
+    bounds.setCenter(globalCenter(widget));
+    return bounds;
+}
+
+class ButtonObject final : public AWidget
 {
 public:
     ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
@@ -350,7 +361,6 @@ public:
 
 private:
     const RenderContext&                 context_;
-    BoxF                                 bounds_;
     std::optional<std::string>           text_;
     std::optional<IRenderer::ResourceID> icon_;
     Role                                 role_;
@@ -360,13 +370,14 @@ private:
 
 inline ButtonObject::ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
                                   std::optional<IRenderer::ResourceID> icon, Role role, Action on_press) :
-    context_(context), bounds_(bounds), text_(std::move(text)), icon_(icon), role_(role), on_press_(std::move(on_press))
+    context_(context), text_(std::move(text)), icon_(icon), role_(role), on_press_(std::move(on_press))
 {
+    setBox(bounds);
 }
 
 inline bool ButtonObject::processEvent(const Event& event)
 {
-    switch (press_.process(bounds_, event))
+    switch (press_.process(globalBounds(*this), event))
     {
         case PressResult::CLICKED:
             runAction(on_press_);
@@ -387,11 +398,12 @@ inline void ButtonObject::render()
     }
 
     const Palette palette = context_.theme->palette(role_);
-    drawPanel(renderer, press_.background(palette.base, palette), palette.border, bounds_);
-    drawContent(renderer, context_, icon_, text_, palette.text, bounds_);
+    const BoxF    bounds  = globalBounds(*this);
+    drawPanel(renderer, press_.background(palette.base, palette), palette.border, bounds);
+    drawContent(renderer, context_, icon_, text_, palette.text, bounds);
 }
 
-class SwitcherObject final : public AObject
+class SwitcherObject final : public AWidget
 {
 public:
     SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
@@ -403,7 +415,6 @@ public:
 
 private:
     const RenderContext&                 context_;
-    BoxF                                 bounds_;
     std::optional<std::string>           text_;
     std::optional<IRenderer::ResourceID> icon_;
     Role                                 role_;
@@ -416,14 +427,15 @@ private:
 inline SwitcherObject::SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
                                       std::optional<IRenderer::ResourceID> icon, Role role, Action on_active,
                                       Action on_deactive) :
-    context_(context), bounds_(bounds), text_(std::move(text)), icon_(icon), role_(role),
-    on_active_(std::move(on_active)), on_deactive_(std::move(on_deactive))
+    context_(context), text_(std::move(text)), icon_(icon), role_(role), on_active_(std::move(on_active)),
+    on_deactive_(std::move(on_deactive))
 {
+    setBox(bounds);
 }
 
 inline bool SwitcherObject::processEvent(const Event& event)
 {
-    switch (press_.process(bounds_, event))
+    switch (press_.process(globalBounds(*this), event))
     {
         case PressResult::CLICKED:
             active_ = !active_;
@@ -445,14 +457,15 @@ inline void SwitcherObject::render()
     }
 
     const Palette palette = context_.theme->palette(role_);
+    const BoxF    bounds  = globalBounds(*this);
     const Color   idle    = active_ ? palette.base : palette.surface;
     const Color   text    = active_ ? palette.text : palette.surface_text;
     const Color   border  = active_ ? context_.theme->accent : palette.border;
-    drawPanel(renderer, press_.background(idle, palette), border, bounds_);
-    drawContent(renderer, context_, icon_, text_, text, bounds_);
+    drawPanel(renderer, press_.background(idle, palette), border, bounds);
+    drawContent(renderer, context_, icon_, text_, text, bounds);
 }
 
-class ContextMenuObject final : public AObject
+class ContextMenuObject final : public AWidget
 {
 public:
     ContextMenuObject(const RenderContext& context, const BoxF& bounds, Role role,
@@ -466,7 +479,6 @@ private:
     bool isPressOutside(const Event& event) const;
 
     const RenderContext&        context_;
-    BoxF                        bounds_;
     Role                        role_;
     std::optional<EventHandler> on_event_;
     bool                        visible_ = true;
@@ -474,8 +486,9 @@ private:
 
 inline ContextMenuObject::ContextMenuObject(const RenderContext& context, const BoxF& bounds, Role role,
                                             std::optional<EventHandler> on_event) :
-    context_(context), bounds_(bounds), role_(role), on_event_(std::move(on_event))
+    context_(context), role_(role), on_event_(std::move(on_event))
 {
+    setBox(bounds);
 }
 
 inline bool ContextMenuObject::processEvent(const Event& event)
@@ -496,7 +509,7 @@ inline bool ContextMenuObject::processEvent(const Event& event)
     {
         visible_ = false;
     }
-    return AObject::processEvent(event);
+    return processEventChildren(event);
 }
 
 inline void ContextMenuObject::render()
@@ -508,32 +521,41 @@ inline void ContextMenuObject::render()
     }
 
     const Palette palette = context_.theme->palette(role_);
-    drawPanel(renderer, palette.surface, palette.border, bounds_);
-    AObject::render();
+    drawPanel(renderer, palette.surface, palette.border, globalBounds(*this));
+    renderChildren();
 }
 
 inline bool ContextMenuObject::isPressOutside(const Event& event) const
 {
     const EventMouse* mouse = asMouse(event);
-    return mouse && mouse->type() == EventMouse::Type::LEFT_BUTTON_PRESSING && !bounds_.contains(mouse->cursorPos());
+    return mouse &&
+           mouse->type() == EventMouse::Type::LEFT_BUTTON_PRESSING &&
+           !globalBounds(*this).contains(mouse->cursorPos());
 }
 
-class PoolMenuObject final : public AObject
+class PoolMenuObject final : public AWidget
 {
 public:
     PoolMenuObject(const RenderContext& context, const BoxF& bounds, Role role);
+
+    bool processEvent(const Event& event) override;
 
     void render() override;
 
 private:
     const RenderContext& context_;
-    BoxF                 bounds_;
     Role                 role_;
 };
 
 inline PoolMenuObject::PoolMenuObject(const RenderContext& context, const BoxF& bounds, Role role) :
-    context_(context), bounds_(bounds), role_(role)
+    context_(context), role_(role)
 {
+    setBox(bounds);
+}
+
+inline bool PoolMenuObject::processEvent(const Event& event)
+{
+    return processEventChildren(event);
 }
 
 inline void PoolMenuObject::render()
@@ -545,11 +567,11 @@ inline void PoolMenuObject::render()
     }
 
     const Palette palette = context_.theme->palette(role_);
-    drawPanel(renderer, palette.surface, palette.border, bounds_);
-    AObject::render();
+    drawPanel(renderer, palette.surface, palette.border, globalBounds(*this));
+    renderChildren();
 }
 
-class WindowObject final : public AObject
+class WindowObject final : public AWidget
 {
 public:
     WindowObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label, Role role,
@@ -561,7 +583,6 @@ public:
 
 private:
     const RenderContext&        context_;
-    BoxF                        bounds_;
     std::optional<std::string>  label_;
     Role                        role_;
     std::optional<EventHandler> on_event_;
@@ -569,8 +590,9 @@ private:
 
 inline WindowObject::WindowObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label,
                                   Role role, std::optional<EventHandler> on_event) :
-    context_(context), bounds_(bounds), label_(std::move(label)), role_(role), on_event_(std::move(on_event))
+    context_(context), label_(std::move(label)), role_(role), on_event_(std::move(on_event))
 {
+    setBox(bounds);
 }
 
 inline bool WindowObject::processEvent(const Event& event)
@@ -579,7 +601,7 @@ inline bool WindowObject::processEvent(const Event& event)
     {
         return true;
     }
-    return AObject::processEvent(event);
+    return processEventChildren(event);
 }
 
 inline void WindowObject::render()
@@ -591,14 +613,15 @@ inline void WindowObject::render()
     }
 
     const Palette palette    = context_.theme->palette(role_);
-    const Vec2F   origin     = bounds_.topLeft();
-    const BoxF    header_box = makeBox(origin, Vec2F(bounds_.size().x(), HEADER_HEIGHT));
+    const BoxF    bounds     = globalBounds(*this);
+    const Vec2F   origin     = bounds.topLeft();
+    const BoxF    header_box = makeBox(origin, Vec2F(bounds.size().x(), HEADER_HEIGHT));
 
-    drawPanel(renderer, palette.canvas, palette.border, bounds_);
+    drawPanel(renderer, palette.canvas, palette.border, bounds);
     drawPanel(renderer, palette.base, palette.border, header_box);
     renderer->renderRect(context_.theme->accent,
                          makeBox(Vec2F(origin.x(), origin.y() + HEADER_HEIGHT - ACCENT_LINE_HEIGHT),
-                                 Vec2F(bounds_.size().x(), ACCENT_LINE_HEIGHT)),
+                                 Vec2F(bounds.size().x(), ACCENT_LINE_HEIGHT)),
                          NO_ANGLE);
 
     if (label_)
@@ -608,7 +631,7 @@ inline void WindowObject::render()
         drawText(renderer, context_, *label_, palette.text, label_box);
     }
 
-    AObject::render();
+    renderChildren();
 }
 
 class Builder final : public ADescriptionVisitor
@@ -668,7 +691,7 @@ inline bool Builder::doForContextMenu(ADescription& description)
 
     auto object =
         std::make_unique<ContextMenuObject>(context_, bounds, resolveRole(menu.role), std::move(menu.on_event));
-    if (!addChildren(*object, menu.objects, slotsFor(bounds, menu.direct, count)))
+    if (!addChildren(*object, menu.objects, slotsFor(bounds.size(), menu.direct, count)))
     {
         return false;
     }
@@ -682,7 +705,7 @@ inline bool Builder::doForPoolMenu(ADescription& description)
     const BoxF bounds = placement_.value_or(makeBox(pool.min_point, pool.size));
 
     auto object = std::make_unique<PoolMenuObject>(context_, bounds, resolveRole(pool.role));
-    if (!addChildren(*object, pool.objects, slotsFor(bounds, pool.direct, pool.objects.size())))
+    if (!addChildren(*object, pool.objects, slotsFor(bounds.size(), pool.direct, pool.objects.size())))
     {
         return false;
     }
@@ -701,9 +724,8 @@ inline bool Builder::doForWindow(ADescription& description)
 
     if (window.on_close)
     {
-        const Vec2F origin = bounds.topLeft();
-        const Vec2F size   = bounds.size();
-        const Vec2F close_pos(origin.x() + size.x() - CLOSE_BUTTON_SIZE - PADDING, origin.y() + PADDING);
+        const Vec2F size = bounds.size();
+        const Vec2F close_pos(size.x() - CLOSE_BUTTON_SIZE - PADDING, PADDING);
         object->addChild(std::make_unique<ButtonObject>(context_,
                                                         makeBox(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
                                                         std::optional<std::string>("X"), std::nullopt, role,
@@ -791,6 +813,6 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     static UI::UIWi framework;
 
     return ApplicationCore::instance().registerInterface(
-               IID_IUIFramework, reinterpret_cast<void*>(static_cast<UI::IFramework*>(&framework))) ==
-           ApplicationCore::Error::SUCCESS;
+               IID_IUIFramework, reinterpret_cast<void*>(static_cast<UI::IFramework*>(&framework))
+           ) == ApplicationCore::Error::SUCCESS;
 }
