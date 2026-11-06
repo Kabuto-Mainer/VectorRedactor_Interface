@@ -40,22 +40,22 @@ constexpr bool hasFlip(Flip value, Flip flag) noexcept
 class IRenderer
 {
 public:
-    using ResourceID = uint64_t;
-    using FontID     = uint64_t;
+    using TextureID = uint64_t;
+    using FontID    = uint64_t;
 
     virtual ~IRenderer() = default;
 
-    virtual ResourceID loadTexture(const char* path)  = 0;
-    virtual FontID     loadFont(const char* filename) = 0;
+    virtual std::optional<TextureID> loadTexture(const char* path)  = 0;
+    virtual std::optional<FontID>    loadFont(const char* filename) = 0;
 
-    virtual void renderRect(const Color& color, const BoxF& box, float angle = 0)                                   = 0;
-    virtual void renderRectLines(const Color& color, const BoxF& box, float angle = 0)                              = 0;
-    virtual void renderTexture(const ResourceID& texture, const BoxF& box, float angle = 0, Flip flip = Flip::None) = 0;
-    virtual void renderEllipse(const Color& color, const BoxF& box, float angle = 0)                                = 0;
-    virtual void renderEllipseLines(const Color& color, const BoxF& box, float angle = 0)                           = 0;
-    virtual void renderLine(const Vec2F& origin, const Vec2F& end, const Color& color)                              = 0;
-    virtual void renderVector(const Vec2F& origin, const Vec2F& vector, const Color& color)                         = 0;
-    virtual void renderPixel(const Vec2F& pos, const Color& color)                                                  = 0;
+    virtual void renderRect(const Color& color, const BoxF& box, float angle = 0)                                  = 0;
+    virtual void renderRectLines(const Color& color, const BoxF& box, float angle = 0)                             = 0;
+    virtual void renderTexture(const TextureID& texture, const BoxF& box, float angle = 0, Flip flip = Flip::None) = 0;
+    virtual void renderEllipse(const Color& color, const BoxF& box, float angle = 0)                               = 0;
+    virtual void renderEllipseLines(const Color& color, const BoxF& box, float angle = 0)                          = 0;
+    virtual void renderLine(const Vec2F& origin, const Vec2F& end, const Color& color)                             = 0;
+    virtual void renderVector(const Vec2F& origin, const Vec2F& vector, const Color& color)                        = 0;
+    virtual void renderPixel(const Vec2F& pos, const Color& color)                                                 = 0;
 
     virtual void update()                                          = 0;
     virtual void clear()                                           = 0;
