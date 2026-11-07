@@ -102,7 +102,7 @@ Palette derive(const Color& base, const Color& surface, const Color& canvas)
 
 struct Theme
 {
-    Color                                                  window;
+    Color                                                  WindowDescription;
     Color                                                  surface;
     Color                                                  accent;
     std::array<Color, static_cast<std::size_t>(Role::MAX)> role_bases;
@@ -112,7 +112,7 @@ struct Theme
 
 inline Palette Theme::palette(Role role) const
 {
-    return derive(role_bases[static_cast<std::size_t>(role)], surface, window);
+    return derive(role_bases[static_cast<std::size_t>(role)], surface, WindowDescription);
 }
 
 Theme makeTheme(const Color& primary, const Color& secondary, const Color& neutral, const Color& accent,
@@ -187,7 +187,7 @@ Role resolveRole(const std::optional<Role>& role)
     return role.value_or(Role::Default);
 }
 
-std::optional<IRenderer::ResourceID> loadIcon(const std::optional<std::string>& path)
+std::optional<IRenderer::TextureID> loadIcon(const std::optional<std::string>& path)
 {
     IRenderer* renderer = queryRenderer();
     if (!path || !renderer)
@@ -213,7 +213,7 @@ void drawText(IRenderer* renderer, const RenderContext& context, const std::stri
     renderer->renderText(text.c_str(), color, box, *context.font, FONT_SIZE);
 }
 
-void drawContent(IRenderer* renderer, const RenderContext& context, const std::optional<IRenderer::ResourceID>& icon,
+void drawContent(IRenderer* renderer, const RenderContext& context, const std::optional<IRenderer::TextureID>& icon,
                  const std::optional<std::string>& text, const Color& color, const BoxF& box)
 {
     if (icon)
@@ -228,16 +228,16 @@ void drawContent(IRenderer* renderer, const RenderContext& context, const std::o
     }
 }
 
-Vec2F menuSize(Direct direct, std::size_t count)
+Vec2F menuSize(Direction direction, std::size_t count)
 {
     const auto items = static_cast<float>(count);
-    return direct == Direct::Vertical ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items) :
-                                        Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
+    return direction == Direction::Vertical ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items) :
+                                              Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
 }
 
 using Placement = std::optional<BoxF>;
 
-std::vector<Placement> slotsFor(const Vec2F& size, Direct direct, std::size_t count)
+std::vector<Placement> slotsFor(const Vec2F& size, Direction direction, std::size_t count)
 {
     std::vector<Placement> slots;
     if (count == 0)
@@ -247,8 +247,8 @@ std::vector<Placement> slotsFor(const Vec2F& size, Direct direct, std::size_t co
 
     const auto  divider = static_cast<float>(count);
     const Vec2F slot =
-        direct == Direct::Vertical ? Vec2F(size.x(), size.y() / divider) : Vec2F(size.x() / divider, size.y());
-    const Vec2F step = direct == Direct::Vertical ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
+        direction == Direction::Vertical ? Vec2F(size.x(), size.y() / divider) : Vec2F(size.x() / divider, size.y());
+    const Vec2F step = direction == Direction::Vertical ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
 
     Vec2F position;
     for (std::size_t i = 0; i < count; ++i)
@@ -353,23 +353,23 @@ class ButtonObject final : public AWidget
 {
 public:
     ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                 std::optional<IRenderer::ResourceID> icon, Role role, Action on_press);
+                 std::optional<IRenderer::TextureID> icon, Role role, Action on_press);
 
     bool processEvent(const Event& event) override;
 
     void render() override;
 
 private:
-    const RenderContext&                 context_;
-    std::optional<std::string>           text_;
-    std::optional<IRenderer::ResourceID> icon_;
-    Role                                 role_;
-    Action                               on_press_;
-    PressTracker                         press_;
+    const RenderContext&                context_;
+    std::optional<std::string>          text_;
+    std::optional<IRenderer::TextureID> icon_;
+    Role                                role_;
+    Action                              on_press_;
+    PressTracker                        press_;
 };
 
 inline ButtonObject::ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                                  std::optional<IRenderer::ResourceID> icon, Role role, Action on_press) :
+                                  std::optional<IRenderer::TextureID> icon, Role role, Action on_press) :
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_press_(std::move(on_press))
 {
     setBox(bounds);
@@ -407,25 +407,25 @@ class SwitcherObject final : public AWidget
 {
 public:
     SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                   std::optional<IRenderer::ResourceID> icon, Role role, Action on_active, Action on_deactive);
+                   std::optional<IRenderer::TextureID> icon, Role role, Action on_active, Action on_deactive);
 
     bool processEvent(const Event& event) override;
 
     void render() override;
 
 private:
-    const RenderContext&                 context_;
-    std::optional<std::string>           text_;
-    std::optional<IRenderer::ResourceID> icon_;
-    Role                                 role_;
-    Action                               on_active_;
-    Action                               on_deactive_;
-    PressTracker                         press_;
-    bool                                 active_ = false;
+    const RenderContext&                context_;
+    std::optional<std::string>          text_;
+    std::optional<IRenderer::TextureID> icon_;
+    Role                                role_;
+    Action                              on_active_;
+    Action                              on_deactive_;
+    PressTracker                        press_;
+    bool                                active_ = false;
 };
 
 inline SwitcherObject::SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                                      std::optional<IRenderer::ResourceID> icon, Role role, Action on_active,
+                                      std::optional<IRenderer::TextureID> icon, Role role, Action on_active,
                                       Action on_deactive) :
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_active_(std::move(on_active)),
     on_deactive_(std::move(on_deactive))
@@ -465,11 +465,11 @@ inline void SwitcherObject::render()
     drawContent(renderer, context_, icon_, text_, text, bounds);
 }
 
-class ContextMenuObject final : public AWidget
+class ContextMenuDescriptionObject final : public AWidget
 {
 public:
-    ContextMenuObject(const RenderContext& context, const BoxF& bounds, Role role,
-                      std::optional<EventHandler> on_event);
+    ContextMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role,
+                                 std::optional<EventHandler> on_event);
 
     bool processEvent(const Event& event) override;
 
@@ -484,14 +484,14 @@ private:
     bool                        visible_ = true;
 };
 
-inline ContextMenuObject::ContextMenuObject(const RenderContext& context, const BoxF& bounds, Role role,
-                                            std::optional<EventHandler> on_event) :
+inline ContextMenuDescriptionObject::ContextMenuDescriptionObject(const RenderContext& context, const BoxF& bounds,
+                                                                  Role role, std::optional<EventHandler> on_event) :
     context_(context), role_(role), on_event_(std::move(on_event))
 {
     setBox(bounds);
 }
 
-inline bool ContextMenuObject::processEvent(const Event& event)
+inline bool ContextMenuDescriptionObject::processEvent(const Event& event)
 {
     if (!visible_)
     {
@@ -512,7 +512,7 @@ inline bool ContextMenuObject::processEvent(const Event& event)
     return processEventChildren(event);
 }
 
-inline void ContextMenuObject::render()
+inline void ContextMenuDescriptionObject::render()
 {
     IRenderer* renderer = queryRenderer();
     if (!visible_ || !renderer)
@@ -525,7 +525,7 @@ inline void ContextMenuObject::render()
     renderChildren();
 }
 
-inline bool ContextMenuObject::isPressOutside(const Event& event) const
+inline bool ContextMenuDescriptionObject::isPressOutside(const Event& event) const
 {
     const EventMouse* mouse = asMouse(event);
     return mouse &&
@@ -533,10 +533,10 @@ inline bool ContextMenuObject::isPressOutside(const Event& event) const
            !globalBounds(*this).contains(mouse->cursorPos());
 }
 
-class PoolMenuObject final : public AWidget
+class PoolMenuDescriptionObject final : public AWidget
 {
 public:
-    PoolMenuObject(const RenderContext& context, const BoxF& bounds, Role role);
+    PoolMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role);
 
     bool processEvent(const Event& event) override;
 
@@ -547,18 +547,18 @@ private:
     Role                 role_;
 };
 
-inline PoolMenuObject::PoolMenuObject(const RenderContext& context, const BoxF& bounds, Role role) :
-    context_(context), role_(role)
+inline PoolMenuDescriptionObject::PoolMenuDescriptionObject(const RenderContext& context, const BoxF& bounds,
+                                                            Role role) : context_(context), role_(role)
 {
     setBox(bounds);
 }
 
-inline bool PoolMenuObject::processEvent(const Event& event)
+inline bool PoolMenuDescriptionObject::processEvent(const Event& event)
 {
     return processEventChildren(event);
 }
 
-inline void PoolMenuObject::render()
+inline void PoolMenuDescriptionObject::render()
 {
     IRenderer* renderer = queryRenderer();
     if (!renderer)
@@ -571,11 +571,11 @@ inline void PoolMenuObject::render()
     renderChildren();
 }
 
-class WindowObject final : public AWidget
+class WindowDescriptionObject final : public AWidget
 {
 public:
-    WindowObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label, Role role,
-                 std::optional<EventHandler> on_event);
+    WindowDescriptionObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label,
+                            Role role, std::optional<EventHandler> on_event);
 
     bool processEvent(const Event& event) override;
 
@@ -588,14 +588,15 @@ private:
     std::optional<EventHandler> on_event_;
 };
 
-inline WindowObject::WindowObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label,
-                                  Role role, std::optional<EventHandler> on_event) :
+inline WindowDescriptionObject::WindowDescriptionObject(const RenderContext& context, const BoxF& bounds,
+                                                        std::optional<std::string> label, Role role,
+                                                        std::optional<EventHandler> on_event) :
     context_(context), label_(std::move(label)), role_(role), on_event_(std::move(on_event))
 {
     setBox(bounds);
 }
 
-inline bool WindowObject::processEvent(const Event& event)
+inline bool WindowDescriptionObject::processEvent(const Event& event)
 {
     if (on_event_ && (*on_event_)(event))
     {
@@ -604,7 +605,7 @@ inline bool WindowObject::processEvent(const Event& event)
     return processEventChildren(event);
 }
 
-inline void WindowObject::render()
+inline void WindowDescriptionObject::render()
 {
     IRenderer* renderer = queryRenderer();
     if (!renderer)
@@ -641,11 +642,11 @@ public:
 
     std::unique_ptr<AObject> take();
 
-    bool doForButton(ADescription& description) override;
-    bool doForSwitcher(ADescription& description) override;
-    bool doForContextMenu(ADescription& description) override;
-    bool doForPoolMenu(ADescription& description) override;
-    bool doForWindow(ADescription& description) override;
+    bool visitButton(ADescription& description) override;
+    bool visitSwitcher(ADescription& description) override;
+    bool visitContextMenu(ADescription& description) override;
+    bool visitPoolMenu(ADescription& description) override;
+    bool visitWindow(ADescription& description) override;
 
 private:
     bool addChildren(AObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
@@ -665,7 +666,7 @@ inline std::unique_ptr<AObject> Builder::take()
     return std::move(result_);
 }
 
-inline bool Builder::doForButton(ADescription& description)
+inline bool Builder::visitButton(ADescription& description)
 {
     auto& button = static_cast<ButtonDescription&>(description);
     result_ =
@@ -674,7 +675,7 @@ inline bool Builder::doForButton(ADescription& description)
     return true;
 }
 
-inline bool Builder::doForSwitcher(ADescription& description)
+inline bool Builder::visitSwitcher(ADescription& description)
 {
     auto& switcher = static_cast<SwitcherDescription&>(description);
     result_ = std::make_unique<SwitcherObject>(context_, placement_.value_or(switcher.box), std::move(switcher.text),
@@ -683,15 +684,15 @@ inline bool Builder::doForSwitcher(ADescription& description)
     return true;
 }
 
-inline bool Builder::doForContextMenu(ADescription& description)
+inline bool Builder::visitContextMenu(ADescription& description)
 {
-    auto&             menu   = static_cast<ContextMenu&>(description);
+    auto&             menu   = static_cast<ContextMenuDescription&>(description);
     const std::size_t count  = menu.objects.size();
-    const BoxF        bounds = placement_.value_or(makeBox(menu.min_point, menuSize(menu.direct, count)));
+    const BoxF        bounds = placement_.value_or(makeBox(menu.min_point, menuSize(menu.direction, count)));
 
-    auto object =
-        std::make_unique<ContextMenuObject>(context_, bounds, resolveRole(menu.role), std::move(menu.on_event));
-    if (!addChildren(*object, menu.objects, slotsFor(bounds.size(), menu.direct, count)))
+    auto object = std::make_unique<ContextMenuDescriptionObject>(context_, bounds, resolveRole(menu.role),
+                                                                 std::move(menu.on_event));
+    if (!addChildren(*object, menu.objects, slotsFor(bounds.size(), menu.direction, count)))
     {
         return false;
     }
@@ -699,13 +700,13 @@ inline bool Builder::doForContextMenu(ADescription& description)
     return true;
 }
 
-inline bool Builder::doForPoolMenu(ADescription& description)
+inline bool Builder::visitPoolMenu(ADescription& description)
 {
-    auto&      pool   = static_cast<PoolMenu&>(description);
+    auto&      pool   = static_cast<PoolMenuDescription&>(description);
     const BoxF bounds = placement_.value_or(makeBox(pool.min_point, pool.size));
 
-    auto object = std::make_unique<PoolMenuObject>(context_, bounds, resolveRole(pool.role));
-    if (!addChildren(*object, pool.objects, slotsFor(bounds.size(), pool.direct, pool.objects.size())))
+    auto object = std::make_unique<PoolMenuDescriptionObject>(context_, bounds, resolveRole(pool.role));
+    if (!addChildren(*object, pool.objects, slotsFor(bounds.size(), pool.direction, pool.objects.size())))
     {
         return false;
     }
@@ -713,14 +714,14 @@ inline bool Builder::doForPoolMenu(ADescription& description)
     return true;
 }
 
-inline bool Builder::doForWindow(ADescription& description)
+inline bool Builder::visitWindow(ADescription& description)
 {
-    auto&      window = static_cast<Window&>(description);
+    auto&      window = static_cast<WindowDescription&>(description);
     const BoxF bounds = placement_.value_or(window.box);
     const Role role   = resolveRole(window.role);
 
-    auto object =
-        std::make_unique<WindowObject>(context_, bounds, std::move(window.label), role, std::move(window.on_event));
+    auto object = std::make_unique<WindowDescriptionObject>(context_, bounds, std::move(window.label), role,
+                                                            std::move(window.on_event));
 
     if (window.on_close)
     {

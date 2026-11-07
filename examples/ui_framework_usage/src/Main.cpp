@@ -1,4 +1,5 @@
 #include "Core/ApplicationCore.hpp"
+
 #include <dlfcn.h>
 #include <string>
 #include <vector>
@@ -7,7 +8,7 @@ int main()
 {
     const std::vector<std::string> packages_to_load = {"./GUIEngine.so", "./UIWi.so", "./MainPlugin.so"};
 
-    ApplicationCore&             app   = ApplicationCore::instance();
+    ApplicationCore&       app   = ApplicationCore::instance();
     ApplicationCore::Error error = ApplicationCore::Error::SUCCESS;
 
     for (const auto& package : packages_to_load)

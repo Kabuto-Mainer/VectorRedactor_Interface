@@ -71,10 +71,10 @@ public:
     virtual void renderVector(const Vec2F& origin, const Vec2F& vector, const Color& color)                         = 0;
     virtual void renderPixel(const Vec2F& pos, const Color& color)                                                  = 0;
 
-    virtual void update()                                           = 0;
-    virtual void clear()                                            = 0;
-    virtual void renderText(const char* text, const Color& color, const BoxF& box, float angle, const FontID& font_id,
-                            int font_size, bool flip_by_oy = false) = 0;
+    virtual void update()                                             = 0;
+    virtual void clear()                                              = 0;
+    virtual void renderText(const char* text, const Color& color, const BoxF& box, const FontID& font_id, int font_size,
+                            float angle = 0, bool flip_by_oy = false) = 0;
 };
 
 #endif

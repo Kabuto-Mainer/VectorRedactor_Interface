@@ -36,7 +36,7 @@ UI::Action callback(std::function<void()> fn)
 
 std::unique_ptr<AObject> buildWindow(UI::IFramework& framework)
 {
-    auto window = std::make_unique<UI::Window>();
+    auto window = std::make_unique<UI::WindowDescription>();
 
     window->box   = BoxF(100.0F, 100.0F, 520.0F, 420.0F);
     window->label = std::string("UI Framework demo");
@@ -53,24 +53,24 @@ std::unique_ptr<AObject> buildWindow(UI::IFramework& framework)
     };
     window->on_close = callback([] { ApplicationCore::instance().stop(); });
 
-    auto hello         = std::make_unique<UI::ButtonDescription>();
-    hello->box         = BoxF(130.0F, 160.0F, 290.0F, 200.0F);
-    hello->text        = std::string("Hello");
-    hello->on_press    = callback([] { ApplicationCore::log(ApplicationCore::LogLevel::OK, "Hello pressed"); });
+    auto hello      = std::make_unique<UI::ButtonDescription>();
+    hello->box      = BoxF(130.0F, 160.0F, 290.0F, 200.0F);
+    hello->text     = std::string("Hello");
+    hello->on_press = callback([] { ApplicationCore::log(ApplicationCore::LogLevel::OK, "Hello pressed"); });
     window->objects.push_back(std::move(hello));
 
-    auto dark          = std::make_unique<UI::SwitcherDescription>();
-    dark->box          = BoxF(310.0F, 160.0F, 470.0F, 200.0F);
-    dark->text         = std::string("Dark theme");
-    dark->on_active    = callback([&framework] { framework.setTheme("dark"); });
-    dark->on_deactive  = callback([&framework] { framework.setTheme("default"); });
+    auto dark         = std::make_unique<UI::SwitcherDescription>();
+    dark->box         = BoxF(310.0F, 160.0F, 470.0F, 200.0F);
+    dark->text        = std::string("Dark theme");
+    dark->on_active   = callback([&framework] { framework.setTheme("dark"); });
+    dark->on_deactive = callback([&framework] { framework.setTheme("default"); });
     window->objects.push_back(std::move(dark));
 
-    auto quit          = std::make_unique<UI::ButtonDescription>();
-    quit->box          = BoxF(130.0F, 240.0F, 290.0F, 280.0F);
-    quit->text         = std::string("Quit");
-    quit->role         = UI::Role::Danger;
-    quit->on_press     = callback([] { ApplicationCore::instance().stop(); });
+    auto quit      = std::make_unique<UI::ButtonDescription>();
+    quit->box      = BoxF(130.0F, 240.0F, 290.0F, 280.0F);
+    quit->text     = std::string("Quit");
+    quit->role     = UI::Role::Danger;
+    quit->on_press = callback([] { ApplicationCore::instance().stop(); });
     window->objects.push_back(std::move(quit));
 
     return framework.create(*window);
@@ -87,8 +87,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    ApplicationCore::instance().registerInterface(IID_MAIN_PLUGIN,
-                                                  reinterpret_cast<void*>(&IMainPlugin::instance()));
+    ApplicationCore::instance().registerInterface(IID_MAIN_PLUGIN, reinterpret_cast<void*>(&IMainPlugin::instance()));
 
     std::unique_ptr<AObject> window = buildWindow(*framework);
     if (!window)

@@ -28,11 +28,11 @@ class ADescriptionVisitor
 public:
     ~ADescriptionVisitor() = default;
 
-    virtual bool doForButton(ADescription& button)      = 0;
-    virtual bool doForSwitcher(ADescription& button)    = 0;
-    virtual bool doForContextMenu(ADescription& button) = 0;
-    virtual bool doForPoolMenu(ADescription& button)    = 0;
-    virtual bool doForWindow(ADescription& button)      = 0;
+    virtual bool visitButton(ADescription& button)      = 0;
+    virtual bool visitSwitcher(ADescription& button)    = 0;
+    virtual bool visitContextMenu(ADescription& button) = 0;
+    virtual bool visitPoolMenu(ADescription& button)    = 0;
+    virtual bool visitWindow(ADescription& button)      = 0;
 }; // class ADescriptionVisitor
 
 class ADescription
@@ -57,10 +57,11 @@ struct Action
 
 using EventHandler = std::function<bool(const Event&)>;
 
-enum class Direct
+enum class Direction
 {
     Vertical,
     Horizontal,
+    MAX,
 };
 
 enum class Role
@@ -77,11 +78,11 @@ struct ButtonDescription : public ADescription
     std::optional<std::string> text;
     std::optional<std::string> icon;
     Action                     on_press;
-    std::optional<Role>        role;
+    Role                       role = Role::Default;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
-        return visitor.doForButton(*this);
+        return visitor.visitButton(*this);
     }
 }; // struct ButtonDescription
 
@@ -92,54 +93,54 @@ struct SwitcherDescription : public ADescription
     std::optional<std::string> icon;
     Action                     on_active;
     Action                     on_deactive;
-    std::optional<Role>        role;
+    Role                       role = Role::Default;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
-        return visitor.doForSwitcher(*this);
+        return visitor.visitSwitcher(*this);
     }
 }; // struct SwitcherDescription
 
-struct ContextMenu : public ADescription
+struct ContextMenuDescription : public ADescription
 {
     Vec2F                                      min_point;
-    Direct                                     direct;
+    Direction                                  direction = Direction::Vertical;
     std::vector<std::unique_ptr<ADescription>> objects;
     std::optional<EventHandler>                on_event;
-    std::optional<Role>                        role;
+    Role                                       role = Role::Default;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
-        return visitor.doForContextMenu(*this);
+        return visitor.visitContextMenu(*this);
     }
 }; // struct ContextMenu
 
-struct PoolMenu : public ADescription
+struct PoolMenuDescription : public ADescription
 {
     Vec2F                                      min_point;
     Vec2F                                      size;
-    Direct                                     direct;
+    Direction                                  direction = Direction::Vertical;
     std::vector<std::unique_ptr<ADescription>> objects;
-    std::optional<Role>                        role;
+    Role                                       role = Role::Default;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
-        return visitor.doForPoolMenu(*this);
+        return visitor.visitPoolMenu(*this);
     }
 }; // struct PoolMenu
 
-struct Window : public ADescription
+struct WindowDescription : public ADescription
 {
     BoxF                                       box;
     std::optional<EventHandler>                on_event;
     std::optional<Action>                      on_close;
     std::optional<std::string>                 label;
     std::vector<std::unique_ptr<ADescription>> objects;
-    std::optional<Role>                        role;
+    Role                                       role = Role::Default;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
-        return visitor.doForWindow(*this);
+        return visitor.visitWindow(*this);
     }
 }; // struct Window
 
@@ -148,11 +149,11 @@ class IFramework
 public:
     virtual ~IFramework() = default;
 
-    virtual std::unique_ptr<AObject> create(ADescription& description)                              = 0;
-    virtual void registryTheme(std::string name, const Color& primary, const Color& secondary,
-                               const Color& neutral, const Color& accent, const Color& unical) = 0;
-    virtual bool setTheme(std::string name)                                                         = 0;
-    virtual bool setFont(std::string path)                                                          = 0;
+    virtual std::unique_ptr<AObject> create(ADescription& description)   = 0;
+    virtual void registryTheme(std::string name, const Color& primary, const Color& secondary, const Color& neutral,
+                               const Color& accent, const Color& unical) = 0;
+    virtual bool setTheme(std::string name)                              = 0;
+    virtual bool setFont(std::string path)                               = 0;
 }; // class IFramework
 
 } // namespace UI
