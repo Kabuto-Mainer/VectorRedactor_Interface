@@ -14,7 +14,12 @@ public:
     ITool()          = default;
     virtual ~ITool() = default;
 
-    virtual ToolID ID()                             = 0;
+    ITool(const ITool&)            = delete;
+    ITool(ITool&&)                 = delete;
+    ITool& operator=(const ITool&) = delete;
+    ITool& operator=(ITool&&)      = delete;
+    
+    virtual ToolID ID() const                       = 0;
     virtual bool   processEvent(const Event& event) = 0;
 };
 
