@@ -1,8 +1,8 @@
 #ifndef A_OBJECT_HPP
 #define A_OBJECT_HPP
 
-#include "Utils/Event.hpp"
-#include "Utils/Vec2F.hpp"
+#include "Utils/Base/Event.hpp"
+#include "Utils/Math/Vec2F.hpp"
 
 #include <cstdint>
 #include <list>
@@ -123,7 +123,7 @@ inline void AObject::addChild(std::unique_ptr<AObject> child)
 
 inline AObject* AObject::find(ObjectID object_id)
 {
-	return const_cast<AObject*>(std::as_const(*this).find(object_id));
+    return const_cast<AObject*>(std::as_const(*this).find(object_id));
 }
 
 inline const AObject* AObject::find(ObjectID object_id) const

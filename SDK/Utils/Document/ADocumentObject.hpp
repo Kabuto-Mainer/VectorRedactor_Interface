@@ -1,8 +1,8 @@
 #ifndef A_DOCUMENT_OBJECT_HPP
 #define A_DOCUMENT_OBJECT_HPP
 
-#include "Utils/AObject.hpp"
-#include "Utils/Transformable.hpp"
+#include "Utils/Base/AObject.hpp"
+#include "Utils/Document/Transformable.hpp"
 
 // forward declaration
 class BoxF;

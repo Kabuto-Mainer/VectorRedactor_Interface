@@ -2,8 +2,8 @@
 #define I_RENDERER_HPP
 
 #include "Interfaces/IID.hpp"
-#include "Utils/BoxF.hpp"
-#include "Utils/Vec2F.hpp"
+#include "Utils/Math/BoxF.hpp"
+#include "Utils/Math/Vec2F.hpp"
 
 #include <cstdint>
 

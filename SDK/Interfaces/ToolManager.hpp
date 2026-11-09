@@ -2,7 +2,7 @@
 #define TOOLMANAGER_HPP
 
 #include "Interfaces/IID.hpp"
-#include "Utils/AObject.hpp"
+#include "Utils/Base/AObject.hpp"
 
 class IToolManager
 {

@@ -2,7 +2,7 @@
 #define A_SHAPE_HPP
 
 #include "Interfaces/IRenderer.hpp"
-#include "Utils/ADocumentObject.hpp"
+#include "Utils/Document/ADocumentObject.hpp"
 
 class AShape : public ADocumentObject
 {
