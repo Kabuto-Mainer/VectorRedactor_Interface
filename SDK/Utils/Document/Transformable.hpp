@@ -1,8 +1,8 @@
 #ifndef TRANSFORMABLE_HPP
 #define TRANSFORMABLE_HPP
 
-#include "Utils/Matrix3F.hpp"
-#include "Utils/Vec2F.hpp"
+#include "Utils/Math/Matrix3F.hpp"
+#include "Utils/Math/Vec2F.hpp"
 
 #include <cassert>
 #include <cmath>

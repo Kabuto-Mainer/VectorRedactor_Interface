@@ -1,9 +1,9 @@
 #ifndef A_WIDGET_HPP
 #define A_WIDGET_HPP
 
-#include "Utils/AObject.hpp"
-#include "Utils/BoxF.hpp"
-#include "Utils/Vec2F.hpp"
+#include "Utils/Base/AObject.hpp"
+#include "Utils/Math/BoxF.hpp"
+#include "Utils/Math/Vec2F.hpp"
 
 class AWidget : public AObject
 {

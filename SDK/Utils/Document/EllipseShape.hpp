@@ -3,9 +3,9 @@
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IRenderer.hpp"
-#include "Utils/AShape.hpp"
-#include "Utils/BoxF.hpp"
-#include "Utils/Vec2F.hpp"
+#include "Utils/Document/AShape.hpp"
+#include "Utils/Math/BoxF.hpp"
+#include "Utils/Math/Vec2F.hpp"
 
 #include <cassert>
 #include <cmath>

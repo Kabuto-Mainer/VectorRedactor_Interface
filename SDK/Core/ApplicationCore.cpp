@@ -4,8 +4,8 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/AObject.hpp"
-#include "Utils/Vec2F.hpp"
+#include "Utils/Base/AObject.hpp"
+#include "Utils/Math/Vec2F.hpp"
 
 #include <cassert>
 #include <cstdarg>
@@ -34,14 +34,30 @@ bool ApplicationCore::Root::processEvent(const Event& event)
     return children().back()->processEvent(event);
 }
 
-Vec2F ApplicationCore::Root::mapGlobalToLocal(const Vec2F &pos) const
+Vec2F ApplicationCore::Root::mapGlobalToLocal(const Vec2F& pos) const
 {
-	return pos;
+    return pos;
 }
 
-Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F &pos) const
+Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F& pos) const
 {
-	return pos;
+    return pos;
+}
+
+bool ApplicationCore::Root::pushModal(std::unique_ptr<AObject> window)
+{
+    children().push_back(window);
+    return true;
+}
+
+bool ApplicationCore::Root::popModal()
+{
+    if (children().size() < 2)
+    {
+        return false;
+    }
+    children().pop_back();
+    return true;
 }
 
 /* ApplicationCore */

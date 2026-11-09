@@ -2,7 +2,7 @@
 #define APPLICATION_CORE_HPP
 
 #include "Interfaces/IID.hpp"
-#include "Utils/AObject.hpp"
+#include "Utils/Base/AObject.hpp"
 
 #include <memory>
 #include <unordered_map>
@@ -76,6 +76,9 @@ public:
     void  render() override;
     Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
+
+    bool pushModal(std::unique_ptr<AObject> window);
+    bool popModal();
 };
 
 #endif

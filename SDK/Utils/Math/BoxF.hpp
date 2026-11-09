@@ -1,7 +1,7 @@
 #ifndef BOX_F_HPP
 #define BOX_F_HPP
 
-#include "Utils/Vec2F.hpp"
+#include "Utils/Math/Vec2F.hpp"
 
 class BoxF
 {
