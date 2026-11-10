@@ -11,7 +11,7 @@
 #include <cassert>
 #include <cmath>
 
-class RectangleShape : public AShape
+class RectangleShape final : public AShape
 {
 public:
     RectangleShape();
@@ -19,14 +19,11 @@ public:
 
     RectangleShape(Vec2F const& size);
 
-    bool processEvent(Event const& event) override final;
-    void render() const override final;
+    bool processEvent(Event const&) override final;
+    void render() override final;
 
     bool         hitTest(Vec2F const& pos) const override final;
     virtual BoxF axesAlignedBoundingBox() const override final;
-
-private:
-    Color color_{};
 };
 
 /* ====================== Implementation ====================== */
@@ -39,13 +36,13 @@ inline RectangleShape::RectangleShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline bool RectangleShape::processEvent(Event const& event)
+inline bool RectangleShape::processEvent(Event const&)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "RectangleShape can't process events\n");
     return false;
 }
 
-inline void RectangleShape::render() const
+inline void RectangleShape::render()
 {
     IRenderer* renderer{};
     ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));

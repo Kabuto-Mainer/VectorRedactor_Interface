@@ -10,7 +10,7 @@
 #include <cassert>
 #include <cmath>
 
-class EllipseShape : public AShape
+class EllipseShape final : public AShape
 {
 public:
     EllipseShape();
@@ -18,14 +18,11 @@ public:
 
     EllipseShape(Vec2F const& size);
 
-    bool processEvent(Event const& event) override final;
-    void render() const override final;
+    bool processEvent(Event const&) override final;
+    void render() override final;
 
     bool         hitTest(Vec2F const& pos) const override final;
     virtual BoxF axesAlignedBoundingBox() const override final;
-
-private:
-    Color color_{};
 };
 
 /* ====================== Implementation ====================== */
@@ -38,13 +35,13 @@ inline EllipseShape::EllipseShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline bool EllipseShape::processEvent(Event const& event)
+inline bool EllipseShape::processEvent(Event const&)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "EllipseShape can't process events\n");
     return false;
 }
 
-inline void EllipseShape::render() const
+inline void EllipseShape::render()
 {
     IRenderer* renderer{};
     ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));

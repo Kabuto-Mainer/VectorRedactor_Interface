@@ -3,6 +3,10 @@
 
 #include "Interfaces/IRenderer.hpp"
 #include "Utils/ADocumentObject.hpp"
+#include "Utils/ColorComponent.hpp"
+
+#include <cassert>
+#include <memory>
 
 class AShape : public ADocumentObject
 {
@@ -12,24 +16,31 @@ public:
 
     Color color() const;
     void  setColor(Color color) override final;
-
-private:
-    Color color_{};
-};
+}; // class AShape
 
 /* ====================== Implementation ====================== */
 
-inline AShape::AShape()  = default;
+inline AShape::AShape()
+{
+    addComponent(std::make_unique<ColorComponent>());
+}
+
 inline AShape::~AShape() = default;
 
 inline Color AShape::color() const
 {
-    return color_;
+    ColorComponent const* component = queryComponent<ColorComponent>();
+    assert(component != nullptr);
+
+    return component->color();
 }
 
 inline void AShape::setColor(Color const color)
 {
-    color_ = color;
+    ColorComponent* component = queryComponent<ColorComponent>();
+    assert(component != nullptr);
+
+    component->setColor(color);
 }
 
-#endif
+#endif // A_SHAPE_HPP
