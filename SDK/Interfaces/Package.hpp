@@ -1,8 +1,6 @@
 #ifndef PACKAGE_HPP
 #define PACKAGE_HPP
 
-class ApplicationCore;
-
 /* Returns:
  * true		package initialized successfully
  * false	errors occured

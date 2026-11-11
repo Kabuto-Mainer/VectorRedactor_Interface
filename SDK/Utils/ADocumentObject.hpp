@@ -4,6 +4,7 @@
 #include "Core/ApplicationCore.hpp"
 #include "Utils/ADocumentObjectComponent.hpp"
 #include "Utils/AObject.hpp"
+#include "Utils/BoxF.hpp"
 #include "Utils/Matrix3F.hpp"
 #include "Utils/Transformable.hpp"
 #include "Utils/Vec2F.hpp"
@@ -11,9 +12,6 @@
 #include <cassert>
 #include <memory>
 #include <unordered_map>
-
-// forward declaration
-class BoxF;
 
 class ADocumentObject : public AObject, public Transformable
 {

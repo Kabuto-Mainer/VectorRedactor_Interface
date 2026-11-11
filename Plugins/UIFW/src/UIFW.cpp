@@ -1,6 +1,6 @@
 #include "Core/ApplicationCore.hpp"
+#include "IUIFW.hpp"
 #include "Interfaces/IRenderer.hpp"
-#include "Interfaces/IUIFramework.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/ACommand.hpp"
 #include "Utils/AObject.hpp"
@@ -211,7 +211,7 @@ void drawText(IRenderer* renderer, const RenderContext& context, const std::stri
     {
         return;
     }
-    renderer->renderText(text, color, box, IRenderer::TextFormat { .font = *context.font, .font_size = FONT_SIZE }, NO_ANGLE);
+    renderer->renderText(color, box, text, IRenderer::TextFormat{.font = *context.font, .font_size = FONT_SIZE});
 }
 
 void drawContent(IRenderer* renderer, const RenderContext& context, const std::optional<IRenderer::TextureID>& icon,

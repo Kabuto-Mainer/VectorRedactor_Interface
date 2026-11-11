@@ -1,9 +1,8 @@
 #include "MainPlugin.hpp"
 
 #include "Core/ApplicationCore.hpp"
-#include "Interfaces/IUIFramework.hpp"
+#include "IUIFW.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/ACommand.hpp"
 #include "Utils/AObject.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/Event.hpp"

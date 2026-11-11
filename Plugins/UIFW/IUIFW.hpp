@@ -3,6 +3,8 @@
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IRenderer.hpp"
+#include "Utils/ACommand.hpp"
+#include "Utils/AObject.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/Event.hpp"
 #include "Utils/Vec2F.hpp"
@@ -12,9 +14,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-
-class ACommand;
-class AObject;
 
 constexpr IID IID_IUIFramework = 0x00'06;
 

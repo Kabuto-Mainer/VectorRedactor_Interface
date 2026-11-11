@@ -2,7 +2,6 @@
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/AObject.hpp"
 
 constexpr static const IID IID_MAIN_PLUGIN = 100;
 

@@ -1,12 +1,11 @@
 all:
-	@echo [Building MainPlugin.so]
-	clang++ -std=c++23 -fpic -shared -Iinclude -I../../SDK -ldl -g -Wall -Wextra -o MainPlugin.so src/MainPlugin.cpp
-	@echo [Building GUIEngine.so]
-	clang++ -std=c++23 -fpic -shared -Iinclude -I../../SDK -g -ldl -lSDL3 -lSDL3_gfx -Wall -Wextra -o GUIEngine.so src/GUIEngine.cpp
-	@echo [Building main]
-	clang++ -std=c++23 -rdynamic -Iinclude -I../../SDK -g -ldl -Wall -Wextra -o main src/Main.cpp ../../SDK/Core/ApplicationCore.cpp
+	make -C ../../Plugins/SDL_GUIEngine
+	make -C ../../Plugins/Launcher APPLICATION_EXECUTABLE_NAME=../../examples/plugins_usage/app
+	@echo [Building libMainPlugin.so]
+	clang++ -std=c++23 -fpic -shared -I../../SDK -Iinclude -I. -g -Wall -Wextra -o libMainPlugin.so src/MainPlugin.cpp
 
 clean:
-	rm -rf *.so main
+	rm -rf *.so app
 
 .PHONY: all clean
+

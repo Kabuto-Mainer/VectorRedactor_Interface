@@ -17,11 +17,11 @@ extern "C" InitPackageFunc INIT_PACKAGE_FUNC_NAME;
  * This singleton is hidden from other, it uses only
  * to provide access to IRenderer and IInputPump
  */
-class GUIEngine final : public IRenderer, public IInputPump
+class SDL_GUIEngine final : public IRenderer, public IInputPump
 {
 private:
-    GUIEngine();
-    ~GUIEngine();
+    SDL_GUIEngine();
+    ~SDL_GUIEngine();
 
     SDL_Window*   window_   = nullptr;
     SDL_Renderer* renderer_ = nullptr;
@@ -31,12 +31,12 @@ private:
     void closeWindow();
 
 public:
-    GUIEngine(const GUIEngine&)            = delete;
-    GUIEngine(GUIEngine&&)                 = delete;
-    GUIEngine& operator=(const GUIEngine&) = delete;
-    GUIEngine& operator=(GUIEngine&&)      = delete;
+    SDL_GUIEngine(const SDL_GUIEngine&)            = delete;
+    SDL_GUIEngine(SDL_GUIEngine&&)                 = delete;
+    SDL_GUIEngine& operator=(const SDL_GUIEngine&) = delete;
+    SDL_GUIEngine& operator=(SDL_GUIEngine&&)      = delete;
 
-    static GUIEngine& instance();
+    static SDL_GUIEngine& instance();
 
     /* from IRenderer */
 
@@ -44,17 +44,17 @@ public:
     std::optional<FontID>    loadFont(const std::string& filename) override;
     void                     renderRect(const IRenderer::Color& color, const BoxF& box, float angle = 0) override;
     void                     renderRectLines(const IRenderer::Color& color, const BoxF& box, float angle = 0) override;
-    void renderTexture(const TextureID& texture, const BoxF& box, float angle = 0) override;
-    void renderEllipse(const IRenderer::Color& color, const BoxF& box, float angle = 0) override;
+    void                     renderTexture(const TextureID& texture, const BoxF& box, float angle = 0) override;
+    void                     renderEllipse(const IRenderer::Color& color, const BoxF& box, float angle = 0) override;
     void renderEllipseLines(const IRenderer::Color& color, const BoxF& box, float angle = 0) override;
-    void renderLine(const Vec2F& origin, const Vec2F& end, const IRenderer::Color& color) override;
-    void renderVector(const Vec2F& origin, const Vec2F& vector, const IRenderer::Color& color) override;
-    void renderPixel(const Vec2F& pos, const IRenderer::Color& color) override;
+    void renderLine(const IRenderer::Color& color, const Vec2F& origin, const Vec2F& end) override;
+    void renderVector(const IRenderer::Color& color, const Vec2F& origin, const Vec2F& vector) override;
+    void renderPixel(const IRenderer::Color& color, const Vec2F& pos) override;
 
     void update() override;
     void clear() override;
-    void renderText(const std::string& text, const IRenderer::Color& color, const BoxF& box, const TextFormat& format,
-                               float angle = 0) override;
+    void renderText(const IRenderer::Color& color, const BoxF& box, const std::string& text, const TextFormat& format,
+                    float angle = 0) override;
 
     /* from IInputPump */
 
