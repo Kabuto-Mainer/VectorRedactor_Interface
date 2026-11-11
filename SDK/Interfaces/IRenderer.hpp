@@ -35,22 +35,22 @@ struct Color
     static const Color TRANSPARENT;
 };
 
-inline const Color Color::BLACK{0U, 0U, 0U, 255U};
-inline const Color Color::WHITE{255U, 255U, 255U, 255U};
-inline const Color Color::RED{255U, 0U, 0U, 255U};
-inline const Color Color::GREEN{0U, 255U, 0U, 255U};
-inline const Color Color::BLUE{0U, 0U, 255U, 255U};
-inline const Color Color::YELLOW{255U, 255U, 0U, 255U};
-inline const Color Color::CYAN{0U, 255U, 255U, 255U};
-inline const Color Color::MAGENTA{255U, 0U, 255U, 255U};
-inline const Color Color::ORANGE{255U, 165U, 0U, 255U};
-inline const Color Color::PURPLE{128U, 0U, 128U, 255U};
-inline const Color Color::PINK{255U, 192U, 203U, 255U};
-inline const Color Color::BROWN{165U, 42U, 42U, 255U};
-inline const Color Color::GRAY{128U, 128U, 128U, 255U};
-inline const Color Color::LIGHT_GRAY{211U, 211U, 211U, 255U};
-inline const Color Color::DARK_GRAY{64U, 64U, 64U, 255U};
-inline const Color Color::TRANSPARENT{0U, 0U, 0U, 0U};
+inline constexpr Color Color::BLACK{0U, 0U, 0U, 255U};
+inline constexpr Color Color::WHITE{255U, 255U, 255U, 255U};
+inline constexpr Color Color::RED{255U, 0U, 0U, 255U};
+inline constexpr Color Color::GREEN{0U, 255U, 0U, 255U};
+inline constexpr Color Color::BLUE{0U, 0U, 255U, 255U};
+inline constexpr Color Color::YELLOW{255U, 255U, 0U, 255U};
+inline constexpr Color Color::CYAN{0U, 255U, 255U, 255U};
+inline constexpr Color Color::MAGENTA{255U, 0U, 255U, 255U};
+inline constexpr Color Color::ORANGE{255U, 165U, 0U, 255U};
+inline constexpr Color Color::PURPLE{128U, 0U, 128U, 255U};
+inline constexpr Color Color::PINK{255U, 192U, 203U, 255U};
+inline constexpr Color Color::BROWN{165U, 42U, 42U, 255U};
+inline constexpr Color Color::GRAY{128U, 128U, 128U, 255U};
+inline constexpr Color Color::LIGHT_GRAY{211U, 211U, 211U, 255U};
+inline constexpr Color Color::DARK_GRAY{64U, 64U, 64U, 255U};
+inline constexpr Color Color::TRANSPARENT{0U, 0U, 0U, 0U};
 
 class IRenderer
 {
