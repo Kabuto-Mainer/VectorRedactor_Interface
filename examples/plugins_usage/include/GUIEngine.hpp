@@ -9,6 +9,7 @@
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
 #include <optional>
+#include <string>
 
 extern "C" InitPackageFunc INIT_PACKAGE_FUNC_NAME;
 
@@ -39,23 +40,23 @@ public:
 
     /* from IRenderer */
 
-    ResourceID loadTexture(const char* path) override;
-    FontID     loadFont(const char* filename) override;
-
-    void renderRect(const Color& color, const BoxF& box, float angle) override;
-    void renderRectLines(const Color& color, const BoxF& box, float angle) override;
-    void renderTexture(const ResourceID& texture, const BoxF& box, float angle) override;
-    void renderEllipse(const Color& color, const BoxF& box) override;
-    void renderCircle(const Color& color, const BoxF& box) override;
-    void renderEllipseLines(const Color& color, const BoxF& box) override;
+    std::optional<TextureID> loadTexture(const char* path) override;
+    std::optional<FontID>    loadFont(const char* filename) override;
+    void                     renderRect(const Color& color, const BoxF& box, float angle = 0) override;
+    void                     renderRectLines(const Color& color, const BoxF& box, float angle = 0) override;
+    void renderTexture(const TextureID& texture, const BoxF& box, float angle = 0, bool flip_by_oy = false) override;
+    void renderEllipse(const Color& color, const BoxF& box, float angle = 0) override;
+    void renderEllipseLines(const Color& color, const BoxF& box, float angle = 0) override;
     void renderLine(const Vec2F& origin, const Vec2F& end, const Color& color) override;
     void renderVector(const Vec2F& origin, const Vec2F& vector, const Color& color) override;
     void renderPixel(const Vec2F& pos, const Color& color) override;
 
     void update() override;
     void clear() override;
-    void renderText(const char* text, const Color& color, const BoxF& box, const FontID& font_id,
-                    int font_size) override;
+    void renderText(const std::string& text, const Color& color, const BoxF& box, float angle, const FontID& font_id,
+                    int font_size, bool flip_by_oy = false) override;
+    void renderTextPro(const std::string& text, const Color& color, const BoxF& box, const TextFormat& format,
+                       float angle = 0, bool flip_on_oy = false) override;
 
     /* from IInputPump */
 

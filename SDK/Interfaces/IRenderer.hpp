@@ -6,6 +6,7 @@
 #include "Utils/Vec2F.hpp"
 
 #include <cstdint>
+#include <optional>
 
 constexpr static const IID IID_RENDERER = 0;
 
@@ -14,7 +15,13 @@ class IRenderer
 public:
     using TextureID = uint64_t;
     using FontID    = uint64_t;
+    struct Color;
+    struct TextFormat;
+    enum class TextHAlign;
+    enum class TextWAlign;
+    enum class TextOverflowAction;
 
+public:
     virtual ~IRenderer() = default;
 
     virtual std::optional<TextureID> loadTexture(const char* path)  = 0;
@@ -35,83 +42,81 @@ public:
                             const FontID& font_id, int font_size, bool flip_by_oy = false) = 0;
     virtual void renderTextPro(const std::string& text, const Color& color, const BoxF& box, const TextFormat& format,
                                float angle = 0, bool flip_on_oy = false)                   = 0;
-
-
-    enum class TextHAlign
-    {
-        Left,
-        Right,
-        Center,
-    }; // enum TextHAlign
-
-    enum class TextWAlign
-    {
-        Top,
-        Bottom,
-        Center,
-    }; // enum TextWAlign
-
-    enum class TextOverflowAction
-    {
-        CutByBox,
-        TailReplace,
-        FontSizeLess,
-    }; // enum TextOverflowAction
-
-    struct TextFormat
-    {
-        IRenderer::FontID  font;
-        int                font_size;
-        TextOverflowAction overflow_action;
-        TextHAlign         h_align;
-        TextWAlign         w_align;
-        float              padding;
-        float              line_spacing;
-        bool               wrap;
-    }; // struct TextFormat
-
-    struct Color
-    {
-        uint8_t r = 0;
-        uint8_t g = 0;
-        uint8_t b = 0;
-        uint8_t a = 0;
-
-        static const Color BLACK;
-        static const Color WHITE;
-        static const Color RED;
-        static const Color GREEN;
-        static const Color BLUE;
-        static const Color YELLOW;
-        static const Color CYAN;
-        static const Color MAGENTA;
-        static const Color ORANGE;
-        static const Color PURPLE;
-        static const Color PINK;
-        static const Color BROWN;
-        static const Color GRAY;
-        static const Color LIGHT_GRAY;
-        static const Color DARK_GRAY;
-        static const Color TRANSPARENT;
-    };
-
-    inline const Color Color::BLACK{0U, 0U, 0U, 255U};
-    inline const Color Color::WHITE{255U, 255U, 255U, 255U};
-    inline const Color Color::RED{255U, 0U, 0U, 255U};
-    inline const Color Color::GREEN{0U, 255U, 0U, 255U};
-    inline const Color Color::BLUE{0U, 0U, 255U, 255U};
-    inline const Color Color::YELLOW{255U, 255U, 0U, 255U};
-    inline const Color Color::CYAN{0U, 255U, 255U, 255U};
-    inline const Color Color::MAGENTA{255U, 0U, 255U, 255U};
-    inline const Color Color::ORANGE{255U, 165U, 0U, 255U};
-    inline const Color Color::PURPLE{128U, 0U, 128U, 255U};
-    inline const Color Color::PINK{255U, 192U, 203U, 255U};
-    inline const Color Color::BROWN{165U, 42U, 42U, 255U};
-    inline const Color Color::GRAY{128U, 128U, 128U, 255U};
-    inline const Color Color::LIGHT_GRAY{211U, 211U, 211U, 255U};
-    inline const Color Color::DARK_GRAY{64U, 64U, 64U, 255U};
-    inline const Color Color::TRANSPARENT{0U, 0U, 0U, 0U};
 };
 
+enum class IRenderer::TextHAlign
+{
+    LEFT,
+    RIGHT,
+    CENTER,
+}; // enum TextHAlign
+
+enum class IRenderer::TextWAlign
+{
+    TOP,
+    BOTTOM,
+    CENTER,
+}; // enum TextWAlign
+
+enum class IRenderer::TextOverflowAction
+{
+    CUTBYBOX,
+    TAILREPLACE,
+    FONTSIZELESS,
+}; // enum TextOverflowAction
+
+struct IRenderer::TextFormat
+{
+    IRenderer::FontID  font;
+    int                font_size;
+    TextOverflowAction overflow_action;
+    TextHAlign         h_align;
+    TextWAlign         w_align;
+    float              padding;
+    float              line_spacing;
+    bool               wrap;
+}; // struct TextFormat
+
+struct IRenderer::Color
+{
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+    uint8_t a = 0;
+
+    static const Color BLACK;
+    static const Color WHITE;
+    static const Color RED;
+    static const Color GREEN;
+    static const Color BLUE;
+    static const Color YELLOW;
+    static const Color CYAN;
+    static const Color MAGENTA;
+    static const Color ORANGE;
+    static const Color PURPLE;
+    static const Color PINK;
+    static const Color BROWN;
+    static const Color GRAY;
+    static const Color LIGHT_GRAY;
+    static const Color DARK_GRAY;
+    static const Color TRANSPARENT;
+};
+
+inline constexpr IRenderer::Color IRenderer::Color::BLACK{0U, 0U, 0U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::WHITE{255U, 255U, 255U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::RED{255U, 0U, 0U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::GREEN{0U, 255U, 0U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::BLUE{0U, 0U, 255U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::YELLOW{255U, 255U, 0U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::CYAN{0U, 255U, 255U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::MAGENTA{255U, 0U, 255U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::ORANGE{255U, 165U, 0U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::PURPLE{128U, 0U, 128U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::PINK{255U, 192U, 203U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::BROWN{165U, 42U, 42U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::GRAY{128U, 128U, 128U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::LIGHT_GRAY{211U, 211U, 211U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::DARK_GRAY{64U, 64U, 64U, 255U};
+inline constexpr IRenderer::Color IRenderer::Color::TRANSPARENT{0U, 0U, 0U, 0U};
 
 #endif
