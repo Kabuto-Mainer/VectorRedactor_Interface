@@ -3,7 +3,6 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/Event.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <SDL3/SDL_render.h>

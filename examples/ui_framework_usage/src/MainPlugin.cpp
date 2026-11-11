@@ -5,7 +5,6 @@
 #include "Interfaces/Package.hpp"
 #include "Utils/AObject.hpp"
 #include "Utils/BoxF.hpp"
-#include "Utils/Event.hpp"
 
 #include <functional>
 #include <memory>
@@ -41,9 +40,9 @@ std::unique_ptr<AObject> buildWindow(UI::IFramework& framework)
     window->label = std::string("UI Framework demo");
     window->role  = UI::Role::PRIMARY;
 
-    window->on_event = [](const Event& event)
+    window->on_event = [](const IInputPump::Event& event)
     {
-        if (std::holds_alternative<EventQuit>(event))
+        if (std::holds_alternative<IInputPump::EventQuit>(event))
         {
             ApplicationCore::instance().stop();
             return true;

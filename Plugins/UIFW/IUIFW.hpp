@@ -6,7 +6,6 @@
 #include "Utils/ACommand.hpp"
 #include "Utils/AObject.hpp"
 #include "Utils/BoxF.hpp"
-#include "Utils/Event.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <functional>
@@ -54,7 +53,7 @@ struct Action
     std::vector<std::function<void(void)>> callbacks;
 }; // struct Action
 
-using EventHandler = std::function<bool(const Event&)>;
+using EventHandler = std::function<bool(const IInputPump::Event&)>;
 
 enum class Direction
 {

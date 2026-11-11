@@ -4,7 +4,6 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/Event.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_blendmode.h>
@@ -180,7 +179,7 @@ void SDL_GUIEngine::clear()
 {
 }
 
-std::optional<Event> SDL_GUIEngine::pollEvent()
+std::optional<IInputPump::Event> SDL_GUIEngine::pollEvent()
 {
     SDL_Event sdl_event = {};
     if (SDL_PollEvent(&sdl_event))
@@ -188,19 +187,20 @@ std::optional<Event> SDL_GUIEngine::pollEvent()
         switch (sdl_event.type)
         {
             case SDL_EVENT_MOUSE_MOTION:
-                return EventMouse(EventMouse::Type::MOTION, Vec2F{sdl_event.motion.x, sdl_event.motion.y});
+                return IInputPump::EventMouse(IInputPump::EventMouse::Type::MOTION,
+                                              Vec2F{sdl_event.motion.x, sdl_event.motion.y});
 
             // FIXME: all buttons are left button for now
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                return EventMouse(EventMouse::Type::LEFT_BUTTON_PRESSING,
-                                  Vec2F{sdl_event.motion.x, sdl_event.motion.y});
+                return IInputPump::EventMouse(IInputPump::EventMouse::Type::LEFT_BUTTON_PRESSING,
+                                              Vec2F{sdl_event.motion.x, sdl_event.motion.y});
 
             case SDL_EVENT_MOUSE_BUTTON_UP:
-                return EventMouse(EventMouse::Type::LEFT_BUTTON_RELEASING,
-                                  Vec2F{sdl_event.motion.x, sdl_event.motion.y});
+                return IInputPump::EventMouse(IInputPump::EventMouse::Type::LEFT_BUTTON_RELEASING,
+                                              Vec2F{sdl_event.motion.x, sdl_event.motion.y});
 
             case SDL_EVENT_QUIT:
-                return EventQuit();
+                return IInputPump::EventQuit();
 
             default:
                 break;

@@ -1,7 +1,7 @@
 #ifndef A_OBJECT_HPP
 #define A_OBJECT_HPP
 
-#include "Utils/Event.hpp"
+#include "Interfaces/IInputPump.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <cstdint>
@@ -29,8 +29,8 @@ public:
     AObject*       find(ObjectID id);
     const AObject* find(ObjectID id) const;
 
-    virtual bool processEvent(const Event& event) = 0;
-    virtual void render()                         = 0;
+    virtual bool processEvent(const IInputPump::Event& event) = 0;
+    virtual void render()                                     = 0;
 
     virtual Vec2F mapLocalToGlobal(const Vec2F& pos) const = 0;
     virtual Vec2F mapGlobalToLocal(const Vec2F& pos) const = 0;
@@ -44,7 +44,7 @@ protected:
     AObject();
 
     void renderChildren();
-    bool processEventChildren(const Event& event);
+    bool processEventChildren(const IInputPump::Event& event);
 
 private:
     static ObjectID generateID();
@@ -64,7 +64,7 @@ inline void AObject::renderChildren()
     }
 }
 
-inline bool AObject::processEventChildren(const Event& event)
+inline bool AObject::processEventChildren(const IInputPump::Event& event)
 {
     for (auto child = children_.rbegin(); child != children_.rend(); child++)
     {

@@ -24,7 +24,7 @@ void ApplicationCore::Root::render()
     renderChildren();
 }
 
-bool ApplicationCore::Root::processEvent(const Event& event)
+bool ApplicationCore::Root::processEvent(const IInputPump::Event& event)
 {
     if (children().empty())
     {

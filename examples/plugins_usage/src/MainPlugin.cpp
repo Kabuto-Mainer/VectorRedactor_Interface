@@ -32,9 +32,9 @@ void MainWindow::render()
                          BoxF{100.0F, 100.0F, 200.0F, 200.0F}, 0.0F);
 }
 
-bool MainWindow::processEvent(const Event& event)
+bool MainWindow::processEvent(const IInputPump::Event& event)
 {
-    if (std::holds_alternative<EventQuit>(event))
+    if (std::holds_alternative<IInputPump::EventQuit>(event))
     {
         ApplicationCore::instance().stop();
         return true;

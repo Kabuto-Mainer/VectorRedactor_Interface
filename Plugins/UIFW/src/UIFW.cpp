@@ -6,7 +6,6 @@
 #include "Utils/AObject.hpp"
 #include "Utils/AWidget.hpp"
 #include "Utils/BoxF.hpp"
-#include "Utils/Event.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <array>
@@ -178,9 +177,9 @@ IRenderer* queryRenderer()
     return renderer;
 }
 
-const EventMouse* asMouse(const Event& event)
+const IInputPump::EventMouse* asMouse(const IInputPump::Event& event)
 {
-    return std::get_if<EventMouse>(&event);
+    return std::get_if<IInputPump::EventMouse>(&event);
 }
 
 Role resolveRole(const std::optional<Role>& role)
@@ -270,7 +269,7 @@ enum class PressResult
 class PressTracker
 {
 public:
-    PressResult process(const BoxF& bounds, const Event& event);
+    PressResult process(const BoxF& bounds, const IInputPump::Event& event);
 
     IRenderer::Color background(const IRenderer::Color& idle, const Palette& palette) const;
 
@@ -279,9 +278,9 @@ private:
     bool pressed_ = false;
 };
 
-inline PressResult PressTracker::process(const BoxF& bounds, const Event& event)
+inline PressResult PressTracker::process(const BoxF& bounds, const IInputPump::Event& event)
 {
-    const EventMouse* mouse = asMouse(event);
+    const IInputPump::EventMouse* mouse = asMouse(event);
     if (!mouse)
     {
         return PressResult::IGNORED;
@@ -292,7 +291,7 @@ inline PressResult PressTracker::process(const BoxF& bounds, const Event& event)
 
     switch (mouse->type())
     {
-        case EventMouse::Type::LEFT_BUTTON_PRESSING:
+        case IInputPump::EventMouse::Type::LEFT_BUTTON_PRESSING:
             if (inside)
             {
                 pressed_ = true;
@@ -300,7 +299,7 @@ inline PressResult PressTracker::process(const BoxF& bounds, const Event& event)
             }
             return PressResult::IGNORED;
 
-        case EventMouse::Type::LEFT_BUTTON_RELEASING:
+        case IInputPump::EventMouse::Type::LEFT_BUTTON_RELEASING:
             if (!pressed_)
             {
                 return PressResult::IGNORED;
@@ -356,7 +355,7 @@ public:
     ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
                  std::optional<IRenderer::TextureID> icon, Role role, Action on_press);
 
-    bool processEvent(const Event& event) override;
+    bool processEvent(const IInputPump::Event& event) override;
 
     void render() override;
 
@@ -376,7 +375,7 @@ inline ButtonObject::ButtonObject(const RenderContext& context, const BoxF& boun
     setBox(bounds);
 }
 
-inline bool ButtonObject::processEvent(const Event& event)
+inline bool ButtonObject::processEvent(const IInputPump::Event& event)
 {
     switch (press_.process(globalBounds(*this), event))
     {
@@ -410,7 +409,7 @@ public:
     SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
                    std::optional<IRenderer::TextureID> icon, Role role, Action on_active, Action on_deactive);
 
-    bool processEvent(const Event& event) override;
+    bool processEvent(const IInputPump::Event& event) override;
 
     void render() override;
 
@@ -434,7 +433,7 @@ inline SwitcherObject::SwitcherObject(const RenderContext& context, const BoxF& 
     setBox(bounds);
 }
 
-inline bool SwitcherObject::processEvent(const Event& event)
+inline bool SwitcherObject::processEvent(const IInputPump::Event& event)
 {
     switch (press_.process(globalBounds(*this), event))
     {
@@ -472,12 +471,12 @@ public:
     ContextMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role,
                                  std::optional<EventHandler> on_event);
 
-    bool processEvent(const Event& event) override;
+    bool processEvent(const IInputPump::Event& event) override;
 
     void render() override;
 
 private:
-    bool isPressOutside(const Event& event) const;
+    bool isPressOutside(const IInputPump::Event& event) const;
 
     const RenderContext&        context_;
     Role                        role_;
@@ -492,7 +491,7 @@ inline ContextMenuDescriptionObject::ContextMenuDescriptionObject(const RenderCo
     setBox(bounds);
 }
 
-inline bool ContextMenuDescriptionObject::processEvent(const Event& event)
+inline bool ContextMenuDescriptionObject::processEvent(const IInputPump::Event& event)
 {
     if (!visible_)
     {
@@ -526,11 +525,11 @@ inline void ContextMenuDescriptionObject::render()
     renderChildren();
 }
 
-inline bool ContextMenuDescriptionObject::isPressOutside(const Event& event) const
+inline bool ContextMenuDescriptionObject::isPressOutside(const IInputPump::Event& event) const
 {
-    const EventMouse* mouse = asMouse(event);
+    const IInputPump::EventMouse* mouse = asMouse(event);
     return mouse &&
-           mouse->type() == EventMouse::Type::LEFT_BUTTON_PRESSING &&
+           mouse->type() == IInputPump::EventMouse::Type::LEFT_BUTTON_PRESSING &&
            !globalBounds(*this).contains(mouse->cursorPos());
 }
 
@@ -539,7 +538,7 @@ class PoolMenuDescriptionObject final : public AWidget
 public:
     PoolMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role);
 
-    bool processEvent(const Event& event) override;
+    bool processEvent(const IInputPump::Event& event) override;
 
     void render() override;
 
@@ -554,7 +553,7 @@ inline PoolMenuDescriptionObject::PoolMenuDescriptionObject(const RenderContext&
     setBox(bounds);
 }
 
-inline bool PoolMenuDescriptionObject::processEvent(const Event& event)
+inline bool PoolMenuDescriptionObject::processEvent(const IInputPump::Event& event)
 {
     return processEventChildren(event);
 }
@@ -578,7 +577,7 @@ public:
     WindowDescriptionObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label,
                             Role role, std::optional<EventHandler> on_event);
 
-    bool processEvent(const Event& event) override;
+    bool processEvent(const IInputPump::Event& event) override;
 
     void render() override;
 
@@ -597,7 +596,7 @@ inline WindowDescriptionObject::WindowDescriptionObject(const RenderContext& con
     setBox(bounds);
 }
 
-inline bool WindowDescriptionObject::processEvent(const Event& event)
+inline bool WindowDescriptionObject::processEvent(const IInputPump::Event& event)
 {
     if (on_event_ && (*on_event_)(event))
     {
