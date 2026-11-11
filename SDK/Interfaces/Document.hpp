@@ -3,6 +3,7 @@
 
 #include "Utils/ADocumentObject.hpp"
 #include "Utils/Vec2F.hpp"
+#include <optional>
 
 class IDocument
 {
@@ -13,19 +14,12 @@ public:
     virtual void addShape(ADocumentObject* shape) = 0;
     virtual void removeShape()                    = 0;
 
-    virtual ADocumentObject* findShape(ObjectID id) const = 0;
-    virtual ADocumentObject* hitTest(const Vec2F& pos)    = 0;
+    virtual std::optional<ObjectID*> hitTest(const Vec2F& pos)  = 0;
 }; // class IDocument
 
-class Document : public AObject, public IDocument
+class Document : public AObject 
 {
 public:
-    void addShape(ADocumentObject* shape) override;
-    void removeShape() override;
-
-    ADocumentObject* findShape(ObjectID id) const override;
-    ADocumentObject* hitTest(const Vec2F& pos) override;
-
     bool processEvent(const Event& event) override;
     void render() override;
 
