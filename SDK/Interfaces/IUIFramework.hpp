@@ -21,9 +21,7 @@ constexpr IID IID_IUIFramework = 0x00'06;
 namespace UI
 {
 
-`
-
-    class ADescription;
+class ADescription;
 
 class ADescriptionVisitor
 {
@@ -151,12 +149,12 @@ class IFramework
 public:
     virtual ~IFramework() = default;
 
-    virtual std::unique_ptr<AObject> create(ADescription& description) = 0;
-    virtual void registryTheme(std::string name, const IRenderer::Color& primary, const IRenderer::Color& secondary,
-                               const IRenderer::Color& neutral, const IRenderer::Color& accent,
-                               const IRenderer::Color& unical)         = 0;
-    virtual bool setTheme(std::string name)                            = 0;
-    virtual bool setFont(std::string path)                             = 0;
+    virtual std::unique_ptr<AObject> create(ADescription& description)                                             = 0;
+    virtual void                     registryTheme(const std::string& name, const IRenderer::Color& primary,
+                                                   const IRenderer::Color& secondary, const IRenderer::Color& neutral,
+                                                   const IRenderer::Color& accent, const IRenderer::Color& unical) = 0;
+    virtual bool                     setTheme(const std::string& name)                                             = 0;
+    virtual bool                     setFont(const std::string& path)                                              = 0;
 }; // class IFramework
 
 } // namespace UI

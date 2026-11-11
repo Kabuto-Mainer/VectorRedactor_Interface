@@ -15,8 +15,8 @@ class IRenderer
 public:
     using TextureID = uint64_t;
     using FontID    = uint64_t;
-    class Color;
-    class TextFormat;
+    struct Color;
+    struct TextFormat;
     enum class TextHAlign;
     enum class TextWAlign;
     enum class TextOverflowAction;

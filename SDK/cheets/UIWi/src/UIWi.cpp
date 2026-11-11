@@ -51,45 +51,45 @@ constexpr float LIGHT_SURFACE_LIFT  = 0.50F;
 
 struct Palette
 {
-    Color base;
-    Color hover;
-    Color pressed;
-    Color text;
-    Color border;
-    Color surface;
-    Color surface_text;
-    Color canvas;
+    IRenderer::Color base;
+    IRenderer::Color hover;
+    IRenderer::Color pressed;
+    IRenderer::Color text;
+    IRenderer::Color border;
+    IRenderer::Color surface;
+    IRenderer::Color surface_text;
+    IRenderer::Color canvas;
 };
 
-Color mix(const Color& from, const Color& to, float ratio)
+IRenderer::Color mix(const IRenderer::Color& from, const IRenderer::Color& to, float ratio)
 {
     const auto channel = [ratio](uint8_t from_value, uint8_t to_value)
     {
         return static_cast<uint8_t>(static_cast<float>(from_value) +
                                     (static_cast<float>(to_value) - static_cast<float>(from_value)) * ratio);
     };
-    return Color{channel(from.r, to.r), channel(from.g, to.g), channel(from.b, to.b), OPAQUE_ALPHA};
+    return IRenderer::Color{channel(from.r, to.r), channel(from.g, to.g), channel(from.b, to.b), OPAQUE_ALPHA};
 }
 
-float luminance(const Color& color)
+float luminance(const IRenderer::Color& color)
 {
     return (0.2126F * color.r + 0.7152F * color.g + 0.0722F * color.b) / CHANNEL_MAX;
 }
 
-Color contrastOf(const Color& color)
+IRenderer::Color contrastOf(const IRenderer::Color& color)
 {
     if (luminance(color) < LIGHTNESS_THRESHOLD)
     {
-        return Color{255, 255, 255, OPAQUE_ALPHA};
+        return IRenderer::Color{255, 255, 255, OPAQUE_ALPHA};
     }
-    return Color{0, 0, 0, OPAQUE_ALPHA};
+    return IRenderer::Color{0, 0, 0, OPAQUE_ALPHA};
 }
 
-Palette derive(const Color& base, const Color& surface, const Color& canvas)
+Palette derive(const IRenderer::Color& base, const IRenderer::Color& surface, const IRenderer::Color& canvas)
 {
-    const Color text   = contrastOf(base);
-    const Color panel  = mix(surface, base, SECONDARY_TINT);
-    const Color tinted = mix(canvas, base, CANVAS_TINT);
+    const IRenderer::Color text   = contrastOf(base);
+    const IRenderer::Color panel  = mix(surface, base, SECONDARY_TINT);
+    const IRenderer::Color tinted = mix(canvas, base, CANVAS_TINT);
     return Palette{base,
                    mix(base, text, HOVER_MIX),
                    mix(base, text, PRESSED_MIX),
@@ -102,10 +102,10 @@ Palette derive(const Color& base, const Color& surface, const Color& canvas)
 
 struct Theme
 {
-    Color                                                  WindowDescription;
-    Color                                                  surface;
-    Color                                                  accent;
-    std::array<Color, static_cast<std::size_t>(Role::MAX)> role_bases;
+    IRenderer::Color                                                  WindowDescription;
+    IRenderer::Color                                                  surface;
+    IRenderer::Color                                                  accent;
+    std::array<IRenderer::Color, static_cast<std::size_t>(Role::MAX)> role_bases;
 
     Palette palette(Role role) const;
 };
@@ -115,13 +115,13 @@ inline Palette Theme::palette(Role role) const
     return derive(role_bases[static_cast<std::size_t>(role)], surface, WindowDescription);
 }
 
-Theme makeTheme(const Color& primary, const Color& secondary, const Color& neutral, const Color& accent,
-                const Color& unical)
+Theme makeTheme(const IRenderer::Color& primary, const IRenderer::Color& secondary, const IRenderer::Color& neutral,
+                const IRenderer::Color& accent, const IRenderer::Color& unical)
 {
-    const bool  dark = luminance(neutral) < LIGHTNESS_THRESHOLD;
-    const Color white{255, 255, 255, OPAQUE_ALPHA};
-    const Color surface = mix(neutral, white, dark ? DARK_SURFACE_LIFT : LIGHT_SURFACE_LIFT);
-    const Color button  = mix(neutral, secondary, SECONDARY_TINT);
+    const bool             dark = luminance(neutral) < LIGHTNESS_THRESHOLD;
+    const IRenderer::Color white{255, 255, 255, OPAQUE_ALPHA};
+    const IRenderer::Color surface = mix(neutral, white, dark ? DARK_SURFACE_LIFT : LIGHT_SURFACE_LIFT);
+    const IRenderer::Color button  = mix(neutral, secondary, SECONDARY_TINT);
 
     return Theme{
         neutral, surface, accent, {button, primary, unical}
@@ -151,12 +151,13 @@ public:
 
     std::unique_ptr<AObject> create(ADescription& description) override;
 
-    void registryTheme(std::string name, const Color& primary, const Color& secondary, const Color& neutral,
-                       const Color& accent, const Color& unical) override;
+    void registryTheme(const std::string& name, const IRenderer::Color& primary, const IRenderer::Color& secondary,
+                       const IRenderer::Color& neutral, const IRenderer::Color& accent,
+                       const IRenderer::Color& unical) override;
 
-    bool setTheme(std::string name) override;
+    bool setTheme(const std::string& name) override;
 
-    bool setFont(std::string path) override;
+    bool setFont(const std::string& path) override;
 
 private:
     RenderContext                          context_;
@@ -197,24 +198,24 @@ std::optional<IRenderer::TextureID> loadIcon(const std::optional<std::string>& p
     return renderer->loadTexture(path->c_str());
 }
 
-void drawPanel(IRenderer* renderer, const Color& fill, const Color& border, const BoxF& box)
+void drawPanel(IRenderer* renderer, const IRenderer::Color& fill, const IRenderer::Color& border, const BoxF& box)
 {
     renderer->renderRect(fill, box, NO_ANGLE);
     renderer->renderRectLines(border, box, NO_ANGLE);
 }
 
-void drawText(IRenderer* renderer, const RenderContext& context, const std::string& text, const Color& color,
+void drawText(IRenderer* renderer, const RenderContext& context, const std::string& text, const IRenderer::Color& color,
               const BoxF& box)
 {
     if (!context.font)
     {
         return;
     }
-    renderer->renderText(text.c_str(), color, box, *context.font, FONT_SIZE);
+    renderer->renderText(text, color, box, NO_ANGLE, *context.font, FONT_SIZE);
 }
 
 void drawContent(IRenderer* renderer, const RenderContext& context, const std::optional<IRenderer::TextureID>& icon,
-                 const std::optional<std::string>& text, const Color& color, const BoxF& box)
+                 const std::optional<std::string>& text, const IRenderer::Color& color, const BoxF& box)
 {
     if (icon)
     {
@@ -235,7 +236,7 @@ Vec2F menuSize(Direction direction, std::size_t count)
                                               Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
 }
 
-using Placement = std::optional<BoxF>;
+typedef std::optional<BoxF> Placement;
 
 std::vector<Placement> slotsFor(const Vec2F& size, Direction direction, std::size_t count)
 {
@@ -271,7 +272,7 @@ class PressTracker
 public:
     PressResult process(const BoxF& bounds, const Event& event);
 
-    Color background(const Color& idle, const Palette& palette) const;
+    IRenderer::Color background(const IRenderer::Color& idle, const Palette& palette) const;
 
 private:
     bool hovered_ = false;
@@ -312,7 +313,7 @@ inline PressResult PressTracker::process(const BoxF& bounds, const Event& event)
     }
 }
 
-inline Color PressTracker::background(const Color& idle, const Palette& palette) const
+inline IRenderer::Color PressTracker::background(const IRenderer::Color& idle, const Palette& palette) const
 {
     if (hovered_ && pressed_)
     {
@@ -456,11 +457,11 @@ inline void SwitcherObject::render()
         return;
     }
 
-    const Palette palette = context_.theme->palette(role_);
-    const BoxF    bounds  = globalBounds(*this);
-    const Color   idle    = active_ ? palette.base : palette.surface;
-    const Color   text    = active_ ? palette.text : palette.surface_text;
-    const Color   border  = active_ ? context_.theme->accent : palette.border;
+    const Palette          palette = context_.theme->palette(role_);
+    const BoxF             bounds  = globalBounds(*this);
+    const IRenderer::Color idle    = active_ ? palette.base : palette.surface;
+    const IRenderer::Color text    = active_ ? palette.text : palette.surface_text;
+    const IRenderer::Color border  = active_ ? context_.theme->accent : palette.border;
     drawPanel(renderer, press_.background(idle, palette), border, bounds);
     drawContent(renderer, context_, icon_, text_, text, bounds);
 }
@@ -760,12 +761,12 @@ inline bool Builder::addChildren(AObject& parent, std::vector<std::unique_ptr<AD
 
 inline UIWi::UIWi()
 {
-    registryTheme(DEFAULT_THEME_NAME, Color{53, 132, 228, OPAQUE_ALPHA}, Color{222, 221, 218, OPAQUE_ALPHA},
-                  Color{246, 245, 244, OPAQUE_ALPHA}, Color{28, 113, 216, OPAQUE_ALPHA},
-                  Color{224, 27, 36, OPAQUE_ALPHA});
-    registryTheme(DARK_THEME_NAME, Color{53, 132, 228, OPAQUE_ALPHA}, Color{61, 61, 61, OPAQUE_ALPHA},
-                  Color{36, 36, 36, OPAQUE_ALPHA}, Color{98, 160, 234, OPAQUE_ALPHA},
-                  Color{255, 123, 107, OPAQUE_ALPHA});
+    registryTheme(DEFAULT_THEME_NAME, IRenderer::Color{53, 132, 228, OPAQUE_ALPHA},
+                  IRenderer::Color{222, 221, 218, OPAQUE_ALPHA}, IRenderer::Color{246, 245, 244, OPAQUE_ALPHA},
+                  IRenderer::Color{28, 113, 216, OPAQUE_ALPHA}, IRenderer::Color{224, 27, 36, OPAQUE_ALPHA});
+    registryTheme(DARK_THEME_NAME, IRenderer::Color{53, 132, 228, OPAQUE_ALPHA},
+                  IRenderer::Color{61, 61, 61, OPAQUE_ALPHA}, IRenderer::Color{36, 36, 36, OPAQUE_ALPHA},
+                  IRenderer::Color{98, 160, 234, OPAQUE_ALPHA}, IRenderer::Color{255, 123, 107, OPAQUE_ALPHA});
     setTheme(DEFAULT_THEME_NAME);
 }
 
@@ -779,13 +780,14 @@ inline std::unique_ptr<AObject> UIWi::create(ADescription& description)
     return builder.take();
 }
 
-inline void UIWi::registryTheme(std::string name, const Color& primary, const Color& secondary, const Color& neutral,
-                                const Color& accent, const Color& unical)
+inline void UIWi::registryTheme(const std::string& name, const IRenderer::Color& primary,
+                                const IRenderer::Color& secondary, const IRenderer::Color& neutral,
+                                const IRenderer::Color& accent, const IRenderer::Color& unical)
 {
     themes_.insert_or_assign(std::move(name), makeTheme(primary, secondary, neutral, accent, unical));
 }
 
-inline bool UIWi::setTheme(std::string name)
+inline bool UIWi::setTheme(const std::string& name)
 {
     const auto it = themes_.find(name);
     if (it == themes_.end())
@@ -796,7 +798,7 @@ inline bool UIWi::setTheme(std::string name)
     return true;
 }
 
-inline bool UIWi::setFont(std::string path)
+inline bool UIWi::setFont(const std::string& path)
 {
     IRenderer* renderer = queryRenderer();
     if (!renderer)

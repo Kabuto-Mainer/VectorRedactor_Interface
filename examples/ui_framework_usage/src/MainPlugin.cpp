@@ -40,7 +40,7 @@ std::unique_ptr<AObject> buildWindow(UI::IFramework& framework)
 
     window->box   = BoxF(100.0F, 100.0F, 520.0F, 420.0F);
     window->label = std::string("UI Framework demo");
-    window->role  = UI::Role::Primary;
+    window->role  = UI::Role::PRIMARY;
 
     window->on_event = [](const Event& event)
     {
@@ -69,7 +69,7 @@ std::unique_ptr<AObject> buildWindow(UI::IFramework& framework)
     auto quit      = std::make_unique<UI::ButtonDescription>();
     quit->box      = BoxF(130.0F, 240.0F, 290.0F, 280.0F);
     quit->text     = std::string("Quit");
-    quit->role     = UI::Role::Danger;
+    quit->role     = UI::Role::DANGER;
     quit->on_press = callback([] { ApplicationCore::instance().stop(); });
     window->objects.push_back(std::move(quit));
 

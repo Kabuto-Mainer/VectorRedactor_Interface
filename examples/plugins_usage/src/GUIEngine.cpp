@@ -258,10 +258,17 @@ void GUIEngine::renderTexture([[maybe_unused]] const TextureID& texture, [[maybe
     LOG_NOT_IMPLEMENTED();
 }
 
-void GUIEngine::renderText([[maybe_unused]] const char* text, [[maybe_unused]] const Color& color,
-                           [[maybe_unused]] const BoxF& box, [[maybe_unused]] const FontID& font_id,
-                           [[maybe_unused]] int font_size, [[maybe_unused]] float angle,
+void GUIEngine::renderText([[maybe_unused]] const std::string& text, [[maybe_unused]] const Color& color,
+                           [[maybe_unused]] const BoxF& box, [[maybe_unused]] float angle,
+                           [[maybe_unused]] const FontID& font_id, [[maybe_unused]] int font_size,
                            [[maybe_unused]] bool flip_by_oy)
+{
+    LOG_NOT_IMPLEMENTED();
+}
+
+void GUIEngine::renderTextPro([[maybe_unused]] const std::string& text, [[maybe_unused]] const Color& color,
+                              [[maybe_unused]] const BoxF& box, [[maybe_unused]] const TextFormat& format,
+                              [[maybe_unused]] float angle, [[maybe_unused]] bool flip_on_oy)
 {
     LOG_NOT_IMPLEMENTED();
 }
