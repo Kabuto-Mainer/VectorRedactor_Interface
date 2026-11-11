@@ -34,14 +34,14 @@ bool ApplicationCore::Root::processEvent(const Event& event)
     return children().back()->processEvent(event);
 }
 
-Vec2F ApplicationCore::Root::mapGlobalToLocal(const Vec2F &pos) const
+Vec2F ApplicationCore::Root::mapGlobalToLocal(const Vec2F& pos) const
 {
-	return pos;
+    return pos;
 }
 
-Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F &pos) const
+Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F& pos) const
 {
-	return pos;
+    return pos;
 }
 
 /* ApplicationCore */

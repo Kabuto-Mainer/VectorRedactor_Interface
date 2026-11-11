@@ -4,7 +4,7 @@
 #include "Interfaces/IRenderer.hpp"
 #include "Utils/ADocumentObjectComponent.hpp"
 
-class ColorComponent final : public ADocumentObjectComponent
+class ColorComponent : public ADocumentObjectComponent
 {
 public:
     constexpr static const CoID COID = 4;
@@ -18,7 +18,7 @@ public:
 
     CoID coid() const override;
 
-private:
+protected:
     Color color_{};
 }; // class ColorComponent
 

@@ -19,7 +19,7 @@ public:
 
     RectangleShape(Vec2F const& size);
 
-    bool processEvent(Event const&) override final;
+    bool processEvent(Event const& event) override final;
     void render() override final;
 
     bool         hitTest(Vec2F const& pos) const override final;
@@ -36,7 +36,7 @@ inline RectangleShape::RectangleShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline bool RectangleShape::processEvent(Event const&)
+inline bool RectangleShape::processEvent(Event const& event)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "RectangleShape can't process events\n");
     return false;

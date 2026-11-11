@@ -1,46 +1,65 @@
 #ifndef A_SHAPE_HPP
 #define A_SHAPE_HPP
 
+#include "Core/ApplicationCore.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Utils/ADocumentObject.hpp"
+#include "Utils/ADocumentObjectComponent.hpp"
 #include "Utils/ColorComponent.hpp"
 
 #include <cassert>
 #include <memory>
 
-class AShape : public ADocumentObject
+class AShape : public ADocumentObject, public ColorComponent
 {
 public:
     AShape();
     ~AShape() override = 0;
+    ApplicationCore::Error queryComponent(CoID coid, ADocumentObjectComponent const** component) const override;
+    ApplicationCore::Error queryComponent(CoID coid, ADocumentObjectComponent** component) override;
 
-    Color color() const;
-    void  setColor(Color color) override final;
 }; // class AShape
 
 /* ====================== Implementation ====================== */
 
-inline AShape::AShape()
-{
-    addComponent(std::make_unique<ColorComponent>());
-}
-
+inline AShape::AShape()  = default;
 inline AShape::~AShape() = default;
 
-inline Color AShape::color() const
-{
-    ColorComponent const* component = queryComponent<ColorComponent>();
-    assert(component != nullptr);
 
-    return component->color();
+ApplicationCore::Error AShape::queryComponent(CoID coid, ADocumentObjectComponent const** component) const
+{
+    assert(component);
+
+    switch (coid)
+    {
+        case ColorComponent::COID:
+        {
+            (*component) = static_cast<const ColorComponent*>(this);
+            return ApplicationCore::Error::SUCCESS;
+        }
+        default:
+            break;
+    }
+    (*component) = nullptr;
+    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
 }
 
-inline void AShape::setColor(Color const color)
+ApplicationCore::Error AShape::queryComponent(CoID coid, ADocumentObjectComponent** component)
 {
-    ColorComponent* component = queryComponent<ColorComponent>();
-    assert(component != nullptr);
+    assert(component);
 
-    component->setColor(color);
+    switch (coid)
+    {
+        case ColorComponent::COID:
+        {
+            (*component) = static_cast<ColorComponent*>(this);
+            return ApplicationCore::Error::SUCCESS;
+        }
+        default:
+            break;
+    }
+    (*component) = nullptr;
+    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
 }
 
 #endif // A_SHAPE_HPP

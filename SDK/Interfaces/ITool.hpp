@@ -7,7 +7,7 @@
 constexpr static const IID IID_TOOL = 2;
 
 using ToolID = uint64_t;
-    
+
 class ITool
 {
 public:
@@ -18,7 +18,7 @@ public:
     ITool(ITool&&)                 = delete;
     ITool& operator=(const ITool&) = delete;
     ITool& operator=(ITool&&)      = delete;
-    
+
     virtual ToolID ID() const                       = 0;
     virtual bool   processEvent(const Event& event) = 0;
 };

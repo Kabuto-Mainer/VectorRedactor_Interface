@@ -5,6 +5,7 @@
 #include "Interfaces/IRenderer.hpp"
 #include "Utils/AShape.hpp"
 #include "Utils/BoxF.hpp"
+#include "Utils/ColorComponent.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <cassert>
@@ -18,7 +19,7 @@ public:
 
     EllipseShape(Vec2F const& size);
 
-    bool processEvent(Event const&) override final;
+    bool processEvent(Event const& event) override final;
     void render() override final;
 
     bool         hitTest(Vec2F const& pos) const override final;
@@ -35,7 +36,7 @@ inline EllipseShape::EllipseShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline bool EllipseShape::processEvent(Event const&)
+inline bool EllipseShape::processEvent(Event const& event)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "EllipseShape can't process events\n");
     return false;

@@ -7,8 +7,8 @@
 class IToolManager
 {
 
-constexpr static const IID IID_TOOL_MANAGER = 3;
-    
+    constexpr static const IID IID_TOOL_MANAGER = 3;
+
 public:
     IToolManager()          = default;
     virtual ~IToolManager() = default;
@@ -17,7 +17,7 @@ public:
     IToolManager(IToolManager&&)                 = delete;
     IToolManager& operator=(const IToolManager&) = delete;
     IToolManager& operator=(IToolManager&&)      = delete;
-    
+
     enum class Error;
 
     virtual Error  addTool(ITool* tool)          = 0;
@@ -31,7 +31,7 @@ enum class IToolManager::Error
     SUCCESS,
     INVALID_ARGS,
 
-    TOOL_NOT_FOUND
+    TOOL_NOT_FOUND,
 };
 
 #endif

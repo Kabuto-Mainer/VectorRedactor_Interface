@@ -3,6 +3,7 @@
 
 #include "Interfaces/IRenderer.hpp"
 #include "Utils/ADocumentObjectComponent.hpp"
+#include "Utils/ColorComponent.hpp"
 
 #include <string>
 #include <utility>
@@ -13,14 +14,11 @@ public:
     constexpr static const CoID COID = 6;
 
     TextComponent() = default;
-    TextComponent(std::string text, Color color, IRenderer::FontID font_id, int font_size);
+    TextComponent(std::string text, IRenderer::FontID font_id, int font_size);
     ~TextComponent() override = default;
 
     std::string const& text() const;
     void               setText(std::string text);
-
-    Color color() const;
-    void  setColor(Color color);
 
     IRenderer::FontID fontID() const;
     void              setFontID(IRenderer::FontID font_id);
@@ -30,18 +28,16 @@ public:
 
     CoID coid() const override;
 
-private:
+protected:
     std::string       text_;
-    Color             color_{};
     IRenderer::FontID font_id_{};
     int               font_size_{};
 }; // class TextComponent
 
 /* ====================== Implementation ====================== */
 
-inline TextComponent::TextComponent(std::string text, Color const color, IRenderer::FontID const font_id,
-                                    int const font_size) :
-    text_(std::move(text)), color_(color), font_id_(font_id), font_size_(font_size)
+inline TextComponent::TextComponent(std::string text, IRenderer::FontID const font_id, int const font_size) :
+    text_(std::move(text)), font_id_(font_id), font_size_(font_size)
 {
 }
 
@@ -53,16 +49,6 @@ inline std::string const& TextComponent::text() const
 inline void TextComponent::setText(std::string text)
 {
     text_ = std::move(text);
-}
-
-inline Color TextComponent::color() const
-{
-    return color_;
-}
-
-inline void TextComponent::setColor(Color const color)
-{
-    color_ = color;
 }
 
 inline IRenderer::FontID TextComponent::fontID() const
