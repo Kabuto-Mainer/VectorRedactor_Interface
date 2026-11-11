@@ -7,7 +7,7 @@
 constexpr static const IID IID_TOOL = 2;
 
 using ToolID = uint64_t;
-    
+
 class ITool
 {
 public:
@@ -18,9 +18,13 @@ public:
     ITool(ITool&&)                 = delete;
     ITool& operator=(const ITool&) = delete;
     ITool& operator=(ITool&&)      = delete;
-    
-    virtual ToolID ID() const                       = 0;
+
+    virtual ToolID id() const                       = 0;
     virtual bool   processEvent(const Event& event) = 0;
+    /**
+     * Если инструменту понадобится отрисовыватся - он
+     * должен будет добавляться в дерево
+     */
 };
 
-#endif
+#endif // I_TOOL_HPP
