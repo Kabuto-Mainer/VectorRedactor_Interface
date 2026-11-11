@@ -31,4 +31,6 @@ public:
 
     void render() override;
     bool processEvent(const Event& event) override;
+    Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
+    Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
 };

@@ -3,6 +3,7 @@
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
+#include "Utils/Vec2F.hpp"
 
 #include <cassert>
 #include <memory>
@@ -39,6 +40,16 @@ bool MainWindow::processEvent(const Event& event)
     }
 
     return true;
+}
+
+Vec2F MainWindow::mapGlobalToLocal(const Vec2F &pos) const
+{
+	return pos;
+}
+
+Vec2F MainWindow::mapLocalToGlobal(const Vec2F &pos) const
+{
+	return pos;
 }
 
 IMainPlugin& IMainPlugin::instance()
