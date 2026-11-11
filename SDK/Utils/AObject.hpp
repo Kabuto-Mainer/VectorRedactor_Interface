@@ -123,7 +123,7 @@ inline void AObject::addChild(std::unique_ptr<AObject> child)
 
 inline AObject* AObject::find(ObjectID object_id)
 {
-    return const_cast<AObject*>(std::as_const(*this).find(object_id));
+	return const_cast<AObject*>(std::as_const(*this).find(object_id));
 }
 
 inline const AObject* AObject::find(ObjectID object_id) const

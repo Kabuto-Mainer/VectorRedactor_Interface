@@ -24,6 +24,9 @@ public:
 
     bool         hitTest(Vec2F const& pos) const override final;
     virtual BoxF axesAlignedBoundingBox() const override final;
+
+private:
+    Color color_{};
 };
 
 /* ====================== Implementation ====================== */
