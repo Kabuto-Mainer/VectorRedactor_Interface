@@ -1,35 +1,65 @@
 #ifndef A_SHAPE_HPP
 #define A_SHAPE_HPP
 
+#include "Core/ApplicationCore.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Utils/ADocumentObject.hpp"
+#include "Utils/ADocumentObjectComponent.hpp"
+#include "Utils/ColorComponent.hpp"
 
-class AShape : public ADocumentObject
+#include <cassert>
+#include <memory>
+
+class AShape : public ADocumentObject, public ColorComponent
 {
 public:
     AShape();
     ~AShape() override = 0;
+    ApplicationCore::Error queryComponent(CoID coid, ADocumentObjectComponent const** component) const override;
+    ApplicationCore::Error queryComponent(CoID coid, ADocumentObjectComponent** component) override;
 
-    Color color() const;
-    void  setColor(Color color) override final;
-
-private:
-    Color color_{};
-};
+}; // class AShape
 
 /* ====================== Implementation ====================== */
 
 inline AShape::AShape()  = default;
 inline AShape::~AShape() = default;
 
-inline Color AShape::color() const
+
+ApplicationCore::Error AShape::queryComponent(CoID coid, ADocumentObjectComponent const** component) const
 {
-    return color_;
+    assert(component);
+
+    switch (coid)
+    {
+        case ColorComponent::COID:
+        {
+            (*component) = static_cast<const ColorComponent*>(this);
+            return ApplicationCore::Error::SUCCESS;
+        }
+        default:
+            break;
+    }
+    (*component) = nullptr;
+    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
 }
 
-inline void AShape::setColor(Color const color)
+ApplicationCore::Error AShape::queryComponent(CoID coid, ADocumentObjectComponent** component)
 {
-    color_ = color;
+    assert(component);
+
+    switch (coid)
+    {
+        case ColorComponent::COID:
+        {
+            (*component) = static_cast<ColorComponent*>(this);
+            return ApplicationCore::Error::SUCCESS;
+        }
+        default:
+            break;
+    }
+    (*component) = nullptr;
+    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
 }
 
-#endif
+#endif // A_SHAPE_HPP
