@@ -1,7 +1,7 @@
 #include "MainPlugin.hpp"
 
 #include "Core/ApplicationCore.hpp"
-#include "IUIFramework.hpp"
+#include "Interfaces/IUIFramework.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/ACommand.hpp"
 #include "Utils/AObject.hpp"

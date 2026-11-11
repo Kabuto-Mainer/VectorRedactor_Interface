@@ -39,23 +39,22 @@ public:
 
     /* from IRenderer */
 
-    ResourceID loadTexture(const char* path) override;
-    FontID     loadFont(const char* filename) override;
+    std::optional<TextureID> loadTexture(const char* path) override;
+    std::optional<FontID>    loadFont(const char* filename) override;
 
-    void renderRect(const Color& color, const BoxF& box, float angle) override;
-    void renderRectLines(const Color& color, const BoxF& box, float angle) override;
-    void renderTexture(const ResourceID& texture, const BoxF& box, float angle) override;
-    void renderEllipse(const Color& color, const BoxF& box) override;
-    void renderCircle(const Color& color, const BoxF& box) override;
-    void renderEllipseLines(const Color& color, const BoxF& box) override;
+    void renderRect(const Color& color, const BoxF& box, float angle = 0) override;
+    void renderRectLines(const Color& color, const BoxF& box, float angle = 0) override;
+    void renderTexture(const TextureID& texture, const BoxF& box, float angle = 0, bool flip_by_oy = false) override;
+    void renderEllipse(const Color& color, const BoxF& box, float angle = 0) override;
+    void renderEllipseLines(const Color& color, const BoxF& box, float angle = 0) override;
     void renderLine(const Vec2F& origin, const Vec2F& end, const Color& color) override;
     void renderVector(const Vec2F& origin, const Vec2F& vector, const Color& color) override;
     void renderPixel(const Vec2F& pos, const Color& color) override;
 
     void update() override;
     void clear() override;
-    void renderText(const char* text, const Color& color, const BoxF& box, const FontID& font_id,
-                    int font_size) override;
+    void renderText(const char* text, const Color& color, const BoxF& box, const FontID& font_id, int font_size,
+                    float angle = 0, bool flip_by_oy = false) override;
 
     /* from IInputPump */
 

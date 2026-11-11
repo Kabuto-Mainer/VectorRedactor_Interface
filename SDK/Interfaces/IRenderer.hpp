@@ -6,6 +6,7 @@
 #include "Utils/Vec2F.hpp"
 
 #include <cstdint>
+#include <optional>
 
 constexpr static const IID IID_RENDERER = 0;
 

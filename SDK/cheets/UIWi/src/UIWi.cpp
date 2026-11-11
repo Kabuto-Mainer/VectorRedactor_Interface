@@ -1,5 +1,5 @@
 #include "Core/ApplicationCore.hpp"
-#include "IUIFramework.hpp"
+#include "Interfaces/IUIFramework.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/ACommand.hpp"
