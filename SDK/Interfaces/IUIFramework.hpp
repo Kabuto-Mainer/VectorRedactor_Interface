@@ -21,7 +21,9 @@ constexpr IID IID_IUIFramework = 0x00'06;
 namespace UI
 {
 
-class ADescription;
+`
+
+    class ADescription;
 
 class ADescriptionVisitor
 {
@@ -59,16 +61,16 @@ using EventHandler = std::function<bool(const Event&)>;
 
 enum class Direction
 {
-    Vertical,
-    Horizontal,
+    VERTICAL,
+    HORIZONTAL,
     MAX,
 };
 
 enum class Role
 {
-    Default,
-    Primary,
-    Danger,
+    DEFAULT,
+    PRIMARY,
+    DANGER,
     MAX,
 };
 
@@ -78,7 +80,7 @@ struct ButtonDescription : public ADescription
     std::optional<std::string> text;
     std::optional<std::string> icon;
     Action                     on_press;
-    Role                       role = Role::Default;
+    Role                       role = Role::DEFAULT;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
@@ -93,7 +95,7 @@ struct SwitcherDescription : public ADescription
     std::optional<std::string> icon;
     Action                     on_active;
     Action                     on_deactive;
-    Role                       role = Role::Default;
+    Role                       role = Role::DEFAULT;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
@@ -104,10 +106,10 @@ struct SwitcherDescription : public ADescription
 struct ContextMenuDescription : public ADescription
 {
     Vec2F                                      min_point;
-    Direction                                  direction = Direction::Vertical;
+    Direction                                  direction = Direction::VERTICAL;
     std::vector<std::unique_ptr<ADescription>> objects;
     std::optional<EventHandler>                on_event;
-    Role                                       role = Role::Default;
+    Role                                       role = Role::DEFAULT;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
@@ -119,9 +121,9 @@ struct PoolMenuDescription : public ADescription
 {
     Vec2F                                      min_point;
     Vec2F                                      size;
-    Direction                                  direction = Direction::Vertical;
+    Direction                                  direction = Direction::VERTICAL;
     std::vector<std::unique_ptr<ADescription>> objects;
-    Role                                       role = Role::Default;
+    Role                                       role = Role::DEFAULT;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
@@ -136,7 +138,7 @@ struct WindowDescription : public ADescription
     std::optional<Action>                      on_close;
     std::optional<std::string>                 label;
     std::vector<std::unique_ptr<ADescription>> objects;
-    Role                                       role = Role::Default;
+    Role                                       role = Role::DEFAULT;
 
     bool accept(ADescriptionVisitor& visitor) override
     {
@@ -149,11 +151,12 @@ class IFramework
 public:
     virtual ~IFramework() = default;
 
-    virtual std::unique_ptr<AObject> create(ADescription& description)   = 0;
-    virtual void registryTheme(std::string name, const Color& primary, const Color& secondary, const Color& neutral,
-                               const Color& accent, const Color& unical) = 0;
-    virtual bool setTheme(std::string name)                              = 0;
-    virtual bool setFont(std::string path)                               = 0;
+    virtual std::unique_ptr<AObject> create(ADescription& description) = 0;
+    virtual void registryTheme(std::string name, const IRenderer::Color& primary, const IRenderer::Color& secondary,
+                               const IRenderer::Color& neutral, const IRenderer::Color& accent,
+                               const IRenderer::Color& unical)         = 0;
+    virtual bool setTheme(std::string name)                            = 0;
+    virtual bool setFont(std::string path)                             = 0;
 }; // class IFramework
 
 } // namespace UI

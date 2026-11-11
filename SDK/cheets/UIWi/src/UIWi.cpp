@@ -184,7 +184,7 @@ const EventMouse* asMouse(const Event& event)
 
 Role resolveRole(const std::optional<Role>& role)
 {
-    return role.value_or(Role::Default);
+    return role.value_or(Role::DEFAULT);
 }
 
 std::optional<IRenderer::TextureID> loadIcon(const std::optional<std::string>& path)
@@ -231,7 +231,7 @@ void drawContent(IRenderer* renderer, const RenderContext& context, const std::o
 Vec2F menuSize(Direction direction, std::size_t count)
 {
     const auto items = static_cast<float>(count);
-    return direction == Direction::Vertical ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items) :
+    return direction == Direction::VERTICAL ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items) :
                                               Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
 }
 
@@ -247,8 +247,8 @@ std::vector<Placement> slotsFor(const Vec2F& size, Direction direction, std::siz
 
     const auto  divider = static_cast<float>(count);
     const Vec2F slot =
-        direction == Direction::Vertical ? Vec2F(size.x(), size.y() / divider) : Vec2F(size.x() / divider, size.y());
-    const Vec2F step = direction == Direction::Vertical ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
+        direction == Direction::VERTICAL ? Vec2F(size.x(), size.y() / divider) : Vec2F(size.x() / divider, size.y());
+    const Vec2F step = direction == Direction::VERTICAL ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
 
     Vec2F position;
     for (std::size_t i = 0; i < count; ++i)

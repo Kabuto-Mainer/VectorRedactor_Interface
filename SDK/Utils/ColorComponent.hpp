@@ -10,30 +10,30 @@ public:
     constexpr static const CoID COID = 4;
 
     ColorComponent() = default;
-    explicit ColorComponent(Color color);
+    explicit ColorComponent(IRenderer::Color color);
     ~ColorComponent() override = default;
 
-    Color color() const;
-    void  setColor(Color color);
+    IRenderer::Color color() const;
+    void             setColor(IRenderer::Color color);
 
     CoID coid() const override;
 
 protected:
-    Color color_{};
+    IRenderer::Color color_{};
 }; // class ColorComponent
 
 /* ====================== Implementation ====================== */
 
-inline ColorComponent::ColorComponent(Color const color) : color_(color)
+inline ColorComponent::ColorComponent(IRenderer::Color const color) : color_(color)
 {
 }
 
-inline Color ColorComponent::color() const
+inline IRenderer::Color ColorComponent::color() const
 {
     return color_;
 }
 
-inline void ColorComponent::setColor(Color const color)
+inline void ColorComponent::setColor(IRenderer::Color const color)
 {
     color_ = color;
 }

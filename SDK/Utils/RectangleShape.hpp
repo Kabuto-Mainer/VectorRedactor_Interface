@@ -26,7 +26,7 @@ public:
     virtual BoxF axesAlignedBoundingBox() const override final;
 
 private:
-    Color color_{};
+    IRenderer::Color color_{};
 };
 
 /* ====================== Implementation ====================== */
