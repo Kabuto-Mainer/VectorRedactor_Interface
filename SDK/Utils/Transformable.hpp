@@ -136,7 +136,7 @@ inline void Transformable::setTransform(Matrix3F const& new_transform)
 
 inline void Transformable::scale(Vec2F const& factor)
 {
-    setScaling(componentWiseProduct(scaling(), factor));
+    setScaling(scaling().cwiseProduct(factor));
 }
 
 inline void Transformable::rotate(float const angle)
@@ -198,7 +198,9 @@ inline void Transformable::updateMatrix() const
     }
     assert(!parameters_need_update_);
 
-    transform_ = Matrix3F::translation(translation_) * Matrix3F::rotation(rotation_) * Matrix3F::scaling(scaling_);
+    transform_ = Matrix3F::translation(translation_.x(), translation_.y()) *
+                 Matrix3F::rotation(rotation_) *
+                 Matrix3F::scaling(scaling_.x(), scaling_.y());
 
     matrix_need_update_ = false;
 }
