@@ -141,10 +141,10 @@ void GUIEngine::renderEllipse(const Color& color, const BoxF& box, float angle)
 {
     assert(renderer_);
 
-    if(angle != 0)
+    if (angle != 0)
     {
-	    LOG_NOT_IMPLEMENTED();
-	    return;
+        LOG_NOT_IMPLEMENTED();
+        return;
     }
 
     switchRenderColor(color);
@@ -229,7 +229,8 @@ void GUIEngine::renderRectLines([[maybe_unused]] const Color& color, [[maybe_unu
     LOG_NOT_IMPLEMENTED();
 }
 
-void GUIEngine::renderEllipseLines([[maybe_unused]] const Color& color, [[maybe_unused]] const BoxF& box, [[maybe_unused]] float angle)
+void GUIEngine::renderEllipseLines([[maybe_unused]] const Color& color, [[maybe_unused]] const BoxF& box,
+                                   [[maybe_unused]] float angle)
 {
     LOG_NOT_IMPLEMENTED();
 }
@@ -259,7 +260,8 @@ void GUIEngine::renderTexture([[maybe_unused]] const TextureID& texture, [[maybe
 
 void GUIEngine::renderText([[maybe_unused]] const char* text, [[maybe_unused]] const Color& color,
                            [[maybe_unused]] const BoxF& box, [[maybe_unused]] const FontID& font_id,
-                           [[maybe_unused]] int font_size, [[maybe_unused]] float angle, [[maybe_unused]] bool flip_by_oy)
+                           [[maybe_unused]] int font_size, [[maybe_unused]] float angle,
+                           [[maybe_unused]] bool flip_by_oy)
 {
     LOG_NOT_IMPLEMENTED();
 }
