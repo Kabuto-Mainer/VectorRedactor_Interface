@@ -1,103 +1,174 @@
-#ifndef _MY_VEC2F_HPP_
-#define _MY_VEC2F_HPP_
+#ifndef VEC_2F_HPP
+#define VEC_2F_HPP
 
 #include <cmath>
+#include <iostream>
 
-struct Vec2F
+class Vec2F
 {
-    float x = 0.0;
-    float y = 0.0;
+private:
+    constexpr static const float PERSISION = 1e-5F;
+    float                        x_        = 0.0F;
+    float                        y_        = 0.0F;
 
+public:
     Vec2F() = default;
-    Vec2F(float x_value, float y_value) : x(x_value), y(y_value)
-    {
-    }
+    Vec2F(float x_value, float y_value);
+    explicit Vec2F(float value);
 
-    explicit Vec2F(float value) : x(value), y(value)
-    {
-    }
+    float x() const;
+    float y() const;
+    void  setX(float x_val);
+    void  setY(float y_val);
 
-    float length() const;
-    float dot(const Vec2F& vec) const
-    {
-        return (x * vec.x) + (y * vec.y);
-    }
+    Vec2F ortogonal() const;
+    float len() const;
+    float len2() const;
+    float dot(const Vec2F& vec) const;
+    Vec2F cwiseProduct(const Vec2F& vec) const;
+    void  print() const;
 
-    Vec2F ortogonal() const
-    {
-        return {y, -x};
-    }
+    Vec2F  operator+() const;
+    Vec2F  operator+(const Vec2F& vec) const;
+    Vec2F& operator+=(const Vec2F& vec);
 
-    Vec2F operator+(const Vec2F& vec) const
-    {
-        return {x + vec.x, y + vec.y};
-    }
-    Vec2F operator-(const Vec2F& vec) const
-    {
-        return {x - vec.x, y - vec.y};
-    }
-    Vec2F operator-() const
-    {
-        return {-x, -y};
-    }
-    Vec2F operator*(float scalar) const
-    {
-        return {x * scalar, y * scalar};
-    }
-    Vec2F operator*(const Vec2F& vec) const
-    {
-        return cwiseProduct(vec);
-    }
-    Vec2F operator/(float scalar) const
-    {
-        return {x / scalar, y / scalar};
-    }
-    Vec2F cwiseProduct(const Vec2F& vec) const
-    {
-        return {x * vec.x, y * vec.y};
-    }
+    Vec2F  operator-() const;
+    Vec2F  operator-(const Vec2F& vec) const;
+    Vec2F& operator-=(const Vec2F& vec);
 
-    Vec2F& operator+=(const Vec2F& vec)
-    {
-        x += vec.x;
-        y += vec.y;
-        return *this;
-    }
-    Vec2F& operator-=(const Vec2F& vec)
-    {
-        x -= vec.x;
-        y -= vec.y;
-        return *this;
-    }
-    Vec2F& operator*=(float scalar)
-    {
-        x *= scalar;
-        y *= scalar;
-        return *this;
-    }
-    Vec2F& operator/=(float scalar)
-    {
-        x /= scalar;
-        y /= scalar;
-        return *this;
-    }
+    Vec2F        operator*(float scalar) const;
+    friend Vec2F operator*(float scalar, const Vec2F& vec);
+    Vec2F&       operator*=(float scalar);
 
-    bool operator==(const Vec2F& vec) const
-    {
-        return x == vec.x && y == vec.y;
-    }
-    double operator^(const Vec2F& vec) const
-    {
-        return dot(vec);
-    }
+    Vec2F  operator/(float scalar) const;
+    Vec2F& operator/=(float scalar);
 
-    void print() const;
-    bool operator!=(const Vec2F& vec) const
-    {
-        return !(*this == vec);
-    }
+    bool operator==(const Vec2F& vec) const;
+    bool operator!=(const Vec2F& vec) const;
 };
 
-Vec2F operator*(float scalar, const Vec2F& vector);
+
+/* ====================== Implementation ====================== */
+
+inline Vec2F::Vec2F(float x_value, float y_value) : x_(x_value), y_(y_value)
+{
+}
+
+inline Vec2F::Vec2F(float value) : x_(value), y_(value)
+{
+}
+
+inline float Vec2F::x() const
+{
+    return x_;
+}
+
+inline float Vec2F::y() const
+{
+    return y_;
+}
+
+inline void Vec2F::setX(float x_val)
+{
+    x_ = x_val;
+}
+
+inline void Vec2F::setY(float y_val)
+{
+    y_ = y_val;
+}
+
+inline float Vec2F::len2() const
+{
+    return (x_ * x_) + (y_ * y_);
+}
+
+inline float Vec2F::len() const
+{
+    return std::sqrtf(len2());
+}
+
+inline float Vec2F::dot(const Vec2F& vec) const
+{
+    return (x_ * vec.x_) + (y_ * vec.y_);
+}
+
+inline Vec2F Vec2F::ortogonal() const
+{
+    return {y_, -x_};
+}
+
+inline Vec2F Vec2F::operator+(const Vec2F& vec) const
+{
+    return {x_ + vec.x_, y_ + vec.y_};
+}
+
+inline Vec2F Vec2F::operator-(const Vec2F& vec) const
+{
+    return {x_ - vec.x_, y_ - vec.y_};
+}
+
+inline Vec2F Vec2F::operator-() const
+{
+    return {-x_, -y_};
+}
+
+inline Vec2F Vec2F::operator*(float scalar) const
+{
+    return {x_ * scalar, y_ * scalar};
+}
+
+inline Vec2F Vec2F::operator/(float scalar) const
+{
+    return {x_ / scalar, y_ / scalar};
+}
+
+inline Vec2F Vec2F::cwiseProduct(const Vec2F& vec) const
+{
+    return {x_ * vec.x_, y_ * vec.y_};
+}
+
+inline Vec2F& Vec2F::operator+=(const Vec2F& vec)
+{
+    x_ += vec.x_;
+    y_ += vec.y_;
+    return *this;
+}
+
+inline Vec2F& Vec2F::operator-=(const Vec2F& vec)
+{
+    x_ -= vec.x_;
+    y_ -= vec.y_;
+    return *this;
+}
+
+inline Vec2F& Vec2F::operator*=(float scalar)
+{
+    x_ *= scalar;
+    y_ *= scalar;
+    return *this;
+}
+
+inline Vec2F& Vec2F::operator/=(float scalar)
+{
+    x_ /= scalar;
+    y_ /= scalar;
+    return *this;
+}
+
+inline bool Vec2F::operator==(const Vec2F& vec) const
+{
+    return (*this - vec).len2() < PERSISION * PERSISION;
+}
+
+inline bool Vec2F::operator!=(const Vec2F& vec) const
+{
+    return !(vec == *this);
+}
+
+inline void Vec2F::print() const
+{
+    std::cerr << "{ " << x_ << ", " << y_ << " }";
+}
 
 #endif

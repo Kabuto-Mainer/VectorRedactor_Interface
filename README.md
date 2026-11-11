@@ -23,6 +23,27 @@ README.md
 - Минимально необходимые классы для работы - `SDK/Utils/`.
 - Каталог `examples/` предназначен только для примеров.
 
+## Сборка
+
+`ApplicationCore` - глобальная точка доступа - существует в виде двух файлов: `SDK/Core/ApplicationCore.hpp` и
+`SDK/Core/ApplicationCore.cpp`. Реализован этот класс как синглтон, причем он должен быть единым не просто для
+каждого файла, а **для всего приложения в целом**. Обеспечивается это хитрой сборкой, идея которой представлена
+ниже
+```bash
+# Building main (<- int main() here)
+clang++ -std=c++23 -rdynamic -g -ldl -Wall -Wextra main.cpp SDK/Core/ApplicationCore.cpp
+
+# Building some_package.so (dynamically loaded in main)
+clang++ -std=c++23 -fpic -shared -g -ldl -Wall -Wextra some_package.cpp
+```
+Флаг `-rdynamic` открывает доступ ко всем глобальным символам, в том числе к `ApplicationCore::instance()`,
+которые во время `dlopen` связываются с символами в плагине, обеспечивая единственность экземпляра ядра.
+
+Флаги `-shared -fpic` - стандартные флаги создания динамической библиотеки.
+
+Более подробно про компиляцию - см. `examples/plugins_usage/Makefile`. Да и вообще, всем обязательно ознакомиться
+с примером и высказать свои рацпредложения (если таковые возникнут).
+
 ## Форматирование кода
 
 **Весь код должен соответствовать правилам `clang-format`.**
@@ -58,4 +79,3 @@ README.md
 [Plugin]  feat: add plugin manager interface
 [General] docs: update README
 ```
-

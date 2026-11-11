@@ -1,11 +1,12 @@
 #ifndef A_COMMAND_HPP
 #define A_COMMAND_HPP
 
-class ACommand {
+class ACommand
+{
 public:
     virtual ~ACommand() = default;
-    
-    virtual void execute() = 0;
+
+    virtual void execute() const = 0;
 };
 
 #endif

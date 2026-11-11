@@ -1,7 +1,7 @@
-#ifndef VECTOR_REDACTOR_MATRIX3F_HPP
-#define VECTOR_REDACTOR_MATRIX3F_HPP
+#ifndef MATRIX_3F_HPP
+#define MATRIX_3F_HPP
 
-#include "Vec2F.hpp"
+#include "Utils/Vec2F.hpp"
 
 #include <array>
 #include <cmath>
@@ -17,13 +17,9 @@ class Matrix3F
 public:
     using Storage = std::array<std::array<float, DIMENSION>, DIMENSION>;
 
-    constexpr Matrix3F() :
-        values_{
-            {{1.0F, 0.0F, 0.0F},
-             {0.0F, 1.0F, 0.0F},
-             {0.0F, 0.0F, 1.0F}}
-
-    {}
+    constexpr Matrix3F() : values_{Storage{{{1.0F, 0.0F, 0.0F}, {0.0F, 1.0F, 0.0F}, {0.0F, 0.0F, 1.0F}}}}
+    {
+    }
 
     constexpr explicit Matrix3F(const Storage& values) : values_(values)
     {
@@ -158,9 +154,9 @@ public:
 
     Vec2F transformPoint(const Vec2F& point) const
     {
-        const float transformed_x = ((*this)[0][0] * point.x) + ((*this)[0][1] * point.y) + (*this)[0][2];
-        const float transformed_y = ((*this)[1][0] * point.x) + ((*this)[1][1] * point.y) + (*this)[1][2];
-        const float homogeneous_w = ((*this)[2][0] * point.x) + ((*this)[2][1] * point.y) + (*this)[2][2];
+        const float transformed_x = ((*this)[0][0] * point.x()) + ((*this)[0][1] * point.y()) + (*this)[0][2];
+        const float transformed_y = ((*this)[1][0] * point.x()) + ((*this)[1][1] * point.y()) + (*this)[1][2];
+        const float homogeneous_w = ((*this)[2][0] * point.x()) + ((*this)[2][1] * point.y()) + (*this)[2][2];
 
         if (std::abs(homogeneous_w) <= DEFAULT_EPSILON)
         {
@@ -183,38 +179,41 @@ public:
         return result;
     }
 
-    constexpr float determinant() const
+    constexpr float determinant() const noexcept
     {
         return ((*this)[0][0] * (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1]))) -
                ((*this)[0][1] * (((*this)[1][0] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][0]))) +
                ((*this)[0][2] * (((*this)[1][0] * (*this)[2][1]) - ((*this)[1][1] * (*this)[2][0])));
     }
 
-    bool tryInverse(Matrix3F& result, float epsilon = DEFAULT_EPSILON) const
+    constexpr Matrix3F inverted() const noexcept
     {
         const float det = determinant();
-        if (std::abs(det) <= epsilon)
+        if (std::abs(det) <= DEFAULT_EPSILON)
         {
-            return false;
+            return identity();
         }
 
         const float inv = 1.0F / det;
-        result          = Matrix3F{};
-        result[0][0]    = (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1])) * inv;
-        result[0][1]    = (((*this)[0][2] * (*this)[2][1]) - ((*this)[0][1] * (*this)[2][2])) * inv;
-        result[0][2]    = (((*this)[0][1] * (*this)[1][2]) - ((*this)[0][2] * (*this)[1][1])) * inv;
-        result[1][0]    = (((*this)[1][2] * (*this)[2][0]) - ((*this)[1][0] * (*this)[2][2])) * inv;
-        result[1][1]    = (((*this)[0][0] * (*this)[2][2]) - ((*this)[0][2] * (*this)[2][0])) * inv;
-        result[1][2]    = (((*this)[0][2] * (*this)[1][0]) - ((*this)[0][0] * (*this)[1][2])) * inv;
-        result[2][0]    = (((*this)[1][0] * (*this)[2][1]) - ((*this)[1][1] * (*this)[2][0])) * inv;
-        result[2][1]    = (((*this)[0][1] * (*this)[2][0]) - ((*this)[0][0] * (*this)[2][1])) * inv;
-        result[2][2]    = (((*this)[0][0] * (*this)[1][1]) - ((*this)[0][1] * (*this)[1][0])) * inv;
-        return true;
+        Storage     inverse_values{};
+
+        inverse_values[0][0] = (((*this)[1][1] * (*this)[2][2]) - ((*this)[1][2] * (*this)[2][1])) * inv;
+        inverse_values[0][1] = (((*this)[0][2] * (*this)[2][1]) - ((*this)[0][1] * (*this)[2][2])) * inv;
+        inverse_values[0][2] = (((*this)[0][1] * (*this)[1][2]) - ((*this)[0][2] * (*this)[1][1])) * inv;
+        inverse_values[1][0] = (((*this)[1][2] * (*this)[2][0]) - ((*this)[1][0] * (*this)[2][2])) * inv;
+        inverse_values[1][1] = (((*this)[0][0] * (*this)[2][2]) - ((*this)[0][2] * (*this)[2][0])) * inv;
+        inverse_values[1][2] = (((*this)[0][2] * (*this)[1][0]) - ((*this)[0][0] * (*this)[1][2])) * inv;
+        inverse_values[2][0] = (((*this)[1][0] * (*this)[2][1]) - ((*this)[1][1] * (*this)[2][0])) * inv;
+        inverse_values[2][1] = (((*this)[0][1] * (*this)[2][0]) - ((*this)[0][0] * (*this)[2][1])) * inv;
+        inverse_values[2][2] = (((*this)[0][0] * (*this)[1][1]) - ((*this)[0][1] * (*this)[1][0])) * inv;
+
+        return Matrix3F{inverse_values};
     }
+
 
 private:
     Storage values_;
-};
+}; // class Matrix3F
 
 constexpr Matrix3F operator*(float scalar, const Matrix3F& matrix)
 {
