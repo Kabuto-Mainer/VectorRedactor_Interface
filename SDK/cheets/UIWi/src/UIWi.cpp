@@ -195,7 +195,7 @@ std::optional<IRenderer::TextureID> loadIcon(const std::optional<std::string>& p
     {
         return std::nullopt;
     }
-    return renderer->loadTexture(path->c_str());
+    return renderer->loadTexture(*path);
 }
 
 void drawPanel(IRenderer* renderer, const IRenderer::Color& fill, const IRenderer::Color& border, const BoxF& box)
@@ -211,7 +211,7 @@ void drawText(IRenderer* renderer, const RenderContext& context, const std::stri
     {
         return;
     }
-    renderer->renderText(text, color, box, NO_ANGLE, *context.font, FONT_SIZE);
+    renderer->renderText(text, color, box, IRenderer::TextFormat { .font = *context.font, .font_size = FONT_SIZE }, NO_ANGLE);
 }
 
 void drawContent(IRenderer* renderer, const RenderContext& context, const std::optional<IRenderer::TextureID>& icon,
@@ -805,7 +805,7 @@ inline bool UIWi::setFont(const std::string& path)
     {
         return false;
     }
-    context_.font = renderer->loadFont(path.c_str());
+    context_.font = renderer->loadFont(path);
     return true;
 }
 

@@ -20,6 +20,7 @@
 #include <SDL3_gfx/SDL3_gfxPrimitives.h>
 #include <cassert>
 #include <optional>
+#include <string>
 
 #define LOG_SDL_ERR()                                                                      \
     do                                                                                     \
@@ -62,7 +63,7 @@ void GUIEngine::openWindow(const Vec2F& size)
     }
 }
 
-void GUIEngine::switchRenderColor(const Color& color)
+void GUIEngine::switchRenderColor(const IRenderer::Color& color)
 {
     assert(renderer_);
 
@@ -111,7 +112,7 @@ GUIEngine& GUIEngine::instance()
     return instance;
 }
 
-void GUIEngine::renderRect(const Color& color, const BoxF& box, float angle)
+void GUIEngine::renderRect(const IRenderer::Color& color, const BoxF& box, float angle)
 {
     if (angle != 0.0F)
     {
@@ -137,7 +138,7 @@ void GUIEngine::renderRect(const Color& color, const BoxF& box, float angle)
     }
 }
 
-void GUIEngine::renderEllipse(const Color& color, const BoxF& box, float angle)
+void GUIEngine::renderEllipse(const IRenderer::Color& color, const BoxF& box, float angle)
 {
     assert(renderer_);
 
@@ -167,7 +168,7 @@ void GUIEngine::update()
         return;
     }
 
-    switchRenderColor(Color{});
+    switchRenderColor(IRenderer::Color{});
     if (!SDL_RenderClear(renderer_))
     {
         LOG_SDL_ERR();
@@ -211,64 +212,55 @@ std::optional<Event> GUIEngine::pollEvent()
 
 /* Stubs */
 
-std::optional<IRenderer::TextureID> GUIEngine::loadTexture([[maybe_unused]] const char* path)
+std::optional<IRenderer::TextureID> GUIEngine::loadTexture([[maybe_unused]] const std::string& filename)
 {
     LOG_NOT_IMPLEMENTED();
     return static_cast<TextureID>(0);
 }
 
-std::optional<IRenderer::FontID> GUIEngine::loadFont([[maybe_unused]] const char* filename)
+std::optional<IRenderer::FontID> GUIEngine::loadFont([[maybe_unused]] const std::string& filename)
 {
     LOG_NOT_IMPLEMENTED();
     return static_cast<FontID>(0);
 }
 
-void GUIEngine::renderRectLines([[maybe_unused]] const Color& color, [[maybe_unused]] const BoxF& box,
+void GUIEngine::renderRectLines([[maybe_unused]] const IRenderer::Color& color, [[maybe_unused]] const BoxF& box,
                                 [[maybe_unused]] float angle)
 {
     LOG_NOT_IMPLEMENTED();
 }
 
-void GUIEngine::renderEllipseLines([[maybe_unused]] const Color& color, [[maybe_unused]] const BoxF& box,
+void GUIEngine::renderEllipseLines([[maybe_unused]] const IRenderer::Color& color, [[maybe_unused]] const BoxF& box,
                                    [[maybe_unused]] float angle)
 {
     LOG_NOT_IMPLEMENTED();
 }
 
 void GUIEngine::renderLine([[maybe_unused]] const Vec2F& origin, [[maybe_unused]] const Vec2F& end,
-                           [[maybe_unused]] const Color& color)
+                           [[maybe_unused]] const IRenderer::Color& color)
 {
     LOG_NOT_IMPLEMENTED();
 }
 
 void GUIEngine::renderVector([[maybe_unused]] const Vec2F& origin, [[maybe_unused]] const Vec2F& vector,
-                             [[maybe_unused]] const Color& color)
+                             [[maybe_unused]] const IRenderer::Color& color)
 {
     LOG_NOT_IMPLEMENTED();
 }
 
-void GUIEngine::renderPixel([[maybe_unused]] const Vec2F& pos, [[maybe_unused]] const Color& color)
+void GUIEngine::renderPixel([[maybe_unused]] const Vec2F& pos, [[maybe_unused]] const IRenderer::Color& color)
 {
     LOG_NOT_IMPLEMENTED();
 }
 
 void GUIEngine::renderTexture([[maybe_unused]] const TextureID& texture, [[maybe_unused]] const BoxF& box,
-                              [[maybe_unused]] float angle, [[maybe_unused]] bool flip_by_oy)
+                              [[maybe_unused]] float angle)
 {
     LOG_NOT_IMPLEMENTED();
 }
 
-void GUIEngine::renderText([[maybe_unused]] const std::string& text, [[maybe_unused]] const Color& color,
-                           [[maybe_unused]] const BoxF& box, [[maybe_unused]] float angle,
-                           [[maybe_unused]] const FontID& font_id, [[maybe_unused]] int font_size,
-                           [[maybe_unused]] bool flip_by_oy)
+void GUIEngine::renderText([[maybe_unused]] const std::string& text, [[maybe_unused]] const IRenderer::Color& color, [[maybe_unused]] const BoxF& box, [[maybe_unused]] const TextFormat& format, [[maybe_unused]] float angle)
 {
     LOG_NOT_IMPLEMENTED();
 }
 
-void GUIEngine::renderTextPro([[maybe_unused]] const std::string& text, [[maybe_unused]] const Color& color,
-                              [[maybe_unused]] const BoxF& box, [[maybe_unused]] const TextFormat& format,
-                              [[maybe_unused]] float angle, [[maybe_unused]] bool flip_on_oy)
-{
-    LOG_NOT_IMPLEMENTED();
-}

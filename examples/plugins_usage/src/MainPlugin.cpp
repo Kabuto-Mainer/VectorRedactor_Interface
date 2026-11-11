@@ -28,7 +28,7 @@ void MainWindow::render()
         return;
     }
 
-    renderer->renderRect(Color{.r = 0x00, .g = 0xFF, .b = 0x00, .a = 0xFF}, BoxF{100.0F, 100.0F, 200.0F, 200.0F}, 0.0F);
+    renderer->renderRect(IRenderer::Color{.r = 0x00, .g = 0xFF, .b = 0x00, .a = 0xFF}, BoxF{100.0F, 100.0F, 200.0F, 200.0F}, 0.0F);
 }
 
 bool MainWindow::processEvent(const Event& event)
