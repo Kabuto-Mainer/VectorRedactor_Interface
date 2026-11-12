@@ -2,6 +2,7 @@
 #define BOX_F_HPP
 
 #include "Utils/Vec2F.hpp"
+#include <algorithm>
 
 class BoxF
 {
@@ -21,10 +22,20 @@ public:
     Vec2F bottomLeft() const;
     Vec2F bottomRight() const;
 
+    Vec2F minXminY() const;
+    Vec2F minXmaxY() const;
+    Vec2F maxXminY() const;
+    Vec2F maxXmaxY() const;
+
     float left() const;
     float right() const;
     float top() const;
     float bottom() const;
+
+    float minX() const;
+    float maxX() const;
+    float minY() const;
+    float maxY() const;
 
     void setLeft(float x);
     void setRight(float x);
@@ -58,13 +69,13 @@ inline BoxF::BoxF(const Vec2F& size) : left_top_(Vec2F{0.0F, 0.0F}), right_botto
 
 inline bool BoxF::contains(const Vec2F& point) const
 {
-    return (left() <= point.x() && point.x() <= right() && top() <= point.y() && point.y() <= bottom());
+    return (minX() <= point.x() && point.x() <= maxX() && minY() <= point.y() && point.y() <= maxY());
 }
 /* ------------------- getters ------------------- */
 
 inline Vec2F BoxF::size() const
 {
-    return right_bottom_ - left_top_;
+	return maxXmaxY() - minXminY();
 }
 
 inline Vec2F BoxF::center() const
@@ -92,6 +103,26 @@ inline Vec2F BoxF::bottomRight() const
     return Vec2F{right(), bottom()};
 }
 
+inline Vec2F BoxF::minXmaxY() const
+{
+	return Vec2F { minX(), maxY() };
+}
+
+inline Vec2F BoxF::minXminY() const
+{
+	return Vec2F { minX(), minY() };
+}
+
+inline Vec2F BoxF::maxXmaxY() const
+{
+	return Vec2F { maxX(), maxY() };
+}
+
+inline Vec2F BoxF::maxXminY() const
+{
+	return Vec2F { maxX(), minY() };
+}
+
 inline float BoxF::left() const
 {
     return left_top_.x();
@@ -111,6 +142,27 @@ inline float BoxF::bottom() const
 {
     return right_bottom_.y();
 }
+
+inline float BoxF::minX() const
+{
+	return std::min(left(), right());
+}
+
+inline float BoxF::maxX() const
+{
+	return std::max(left(), right());
+}
+
+inline float BoxF::minY() const
+{
+	return std::min(bottom(), top());
+}
+
+inline float BoxF::maxY() const
+{
+	return std::max(bottom(), top());
+}
+
 /* ------------------- setters ------------------- */
 
 inline void BoxF::setLeft(float x)
@@ -159,9 +211,10 @@ inline void BoxF::setBottomRight(const Vec2F& point)
 
 inline void BoxF::setCenter(const Vec2F& point)
 {
-    Vec2F size    = this->size();
-    left_top_     = point - size / 2;
-    right_bottom_ = point + size / 2;
+    Vec2F oriented_size = right_bottom_ - left_top_;
+    left_top_     = point - oriented_size / 2;
+    right_bottom_ = point + oriented_size / 2;
 }
 
 #endif
+
