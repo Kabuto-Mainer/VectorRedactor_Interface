@@ -1,5 +1,5 @@
-#ifndef _DOCUMENT_HPP_
-#define _DOCUMENT_HPP_
+#ifndef DOCUMENT_HPP
+#define DOCUMENT_HPP
 
 #include "Utils/ADocumentObject.hpp"
 #include "Utils/Vec2F.hpp"
@@ -11,10 +11,10 @@ public:
     IDocument()          = default;
     virtual ~IDocument() = default;
 
-    virtual void addShape(ADocumentObject* shape) = 0;
-    virtual void removeShape()                    = 0;
+    virtual void addShape(ADocumentObject* shape)    = 0;
+    virtual void removeShape(ADocumentObject* shape) = 0;
 
-    virtual std::optional<ObjectID*> hitTest(const Vec2F& pos)  = 0;
+    virtual std::optional<ObjectID> hitTest(const Vec2F& pos)  = 0;
 }; // class IDocument
 
 class Document : public AObject 
@@ -27,4 +27,5 @@ public:
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
 }; // class Document
 
-#endif
+#endif // DOCUMENT_HPP
+   
