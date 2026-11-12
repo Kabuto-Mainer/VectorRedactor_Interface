@@ -3,6 +3,7 @@
 
 #include "Utils/ADocumentObject.hpp"
 #include "Utils/Vec2F.hpp"
+
 #include <optional>
 
 class IDocument
@@ -18,4 +19,3 @@ public:
 }; // class IDocument
 
 #endif // DOCUMENT_HPP
-   
