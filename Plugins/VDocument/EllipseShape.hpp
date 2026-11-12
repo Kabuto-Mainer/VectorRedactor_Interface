@@ -1,18 +1,11 @@
 #ifndef ELLIPSE_SHAPE
 #define ELLIPSE_SHAPE
 
-#include "Core/ApplicationCore.hpp"
-#include "Interfaces/IRenderer.hpp"
-#include "Utils/ADocumentObject.hpp"
-#include "Utils/AShape.hpp"
-#include "Utils/BoxF.hpp"
-#include "Utils/ColorComponent.hpp"
-#include "Utils/Vec2F.hpp"
-
+#include "Components.hpp"
 #include <cassert>
 #include <cmath>
 
-class EllipseShape final : public AShape
+class EllipseShape final : public IDocument::TShape
 {
 public:
     static constexpr DOT_ID ELLIPSE_SHAPE_ID = 0;
@@ -22,7 +15,7 @@ public:
 
     EllipseShape(Vec2F const& size);
 
-    bool processEvent(Event const& event) override final;
+    bool processEvent(IInputPump::Event const& event) override final;
     void render() override final;
 
     bool           hitTest(Vec2F const& pos) const override final;
@@ -40,7 +33,7 @@ inline EllipseShape::EllipseShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline bool EllipseShape::processEvent(Event const& event)
+inline bool EllipseShape::processEvent(IInputPump::Event const& event)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "EllipseShape can't process events\n");
     return false;

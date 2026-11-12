@@ -3,8 +3,9 @@
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IRenderer.hpp"
+#include "Utils/ACommand.hpp"
+#include "Utils/TObject.hpp"
 #include "Utils/BoxF.hpp"
-#include "Utils/Event.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <functional>
@@ -12,9 +13,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-
-class ACommand;
-class AObject;
 
 constexpr IID IID_IUIFramework = 0x00'06;
 
@@ -55,7 +53,7 @@ struct Action
     std::vector<std::function<void(void)>> callbacks;
 }; // struct Action
 
-using EventHandler = std::function<bool(const Event&)>;
+using EventHandler = std::function<bool(const IInputPump::Event&)>;
 
 enum class Direction
 {
@@ -149,7 +147,7 @@ class IFramework
 public:
     virtual ~IFramework() = default;
 
-    virtual std::unique_ptr<AObject> create(ADescription& description)                                             = 0;
+    virtual std::unique_ptr<TObject> create(ADescription& description)                                             = 0;
     virtual void                     registryTheme(const std::string& name, const IRenderer::Color& primary,
                                                    const IRenderer::Color& secondary, const IRenderer::Color& neutral,
                                                    const IRenderer::Color& accent, const IRenderer::Color& unical) = 0;

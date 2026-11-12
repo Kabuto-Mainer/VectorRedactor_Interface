@@ -1,12 +1,10 @@
 #include "MainPlugin.hpp"
 
 #include "Core/ApplicationCore.hpp"
-#include "Interfaces/IUIFramework.hpp"
+#include "IUIFW.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/ACommand.hpp"
-#include "Utils/AObject.hpp"
 #include "Utils/BoxF.hpp"
-#include "Utils/Event.hpp"
+#include "Utils/TObject.hpp"
 
 #include <functional>
 #include <memory>
@@ -34,7 +32,7 @@ UI::Action callback(std::function<void()> fn)
     return action;
 }
 
-std::unique_ptr<AObject> buildWindow(UI::IFramework& framework)
+std::unique_ptr<TObject> buildWindow(UI::IFramework& framework)
 {
     auto window = std::make_unique<UI::WindowDescription>();
 
@@ -42,9 +40,9 @@ std::unique_ptr<AObject> buildWindow(UI::IFramework& framework)
     window->label = std::string("UI Framework demo");
     window->role  = UI::Role::PRIMARY;
 
-    window->on_event = [](const Event& event)
+    window->on_event = [](const IInputPump::Event& event)
     {
-        if (std::holds_alternative<EventQuit>(event))
+        if (std::holds_alternative<IInputPump::EventQuit>(event))
         {
             ApplicationCore::instance().stop();
             return true;
@@ -89,7 +87,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
 
     ApplicationCore::instance().registerInterface(IID_MAIN_PLUGIN, reinterpret_cast<void*>(&IMainPlugin::instance()));
 
-    std::unique_ptr<AObject> window = buildWindow(*framework);
+    std::unique_ptr<TObject> window = buildWindow(*framework);
     if (!window)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to create UI window");

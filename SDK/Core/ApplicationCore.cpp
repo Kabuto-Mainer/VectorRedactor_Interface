@@ -4,7 +4,7 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/AObject.hpp"
+#include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <cassert>
@@ -24,7 +24,7 @@ void ApplicationCore::Root::render()
     renderChildren();
 }
 
-bool ApplicationCore::Root::processEvent(const Event& event)
+bool ApplicationCore::Root::processEvent(const IInputPump::Event& event)
 {
     if (children().empty())
     {
@@ -114,7 +114,7 @@ ApplicationCore& ApplicationCore::instance()
     return instance;
 }
 
-AObject* ApplicationCore::root() const
+TObject* ApplicationCore::root() const
 {
     return root_.get();
 }

@@ -2,7 +2,7 @@
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/AObject.hpp"
+#include "Utils/TObject.hpp"
 
 constexpr static const IID IID_MAIN_PLUGIN = 100;
 
@@ -23,14 +23,14 @@ public:
     static IMainPlugin& instance();
 };
 
-class MainWindow final : public AObject
+class MainWindow final : public TObject
 {
 public:
     MainWindow()  = default;
     ~MainWindow() = default;
 
     void  render() override;
-    bool  processEvent(const Event& event) override;
+    bool  processEvent(const IInputPump::Event& event) override;
     Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
 };

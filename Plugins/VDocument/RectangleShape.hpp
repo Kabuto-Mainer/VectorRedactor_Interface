@@ -1,18 +1,13 @@
 #ifndef RECTANGLE_SHAPE
 #define RECTANGLE_SHAPE
 
-#include "Core/ApplicationCore.hpp"
-#include "Interfaces/IRenderer.hpp"
-#include "Utils/ADocumentObject.hpp"
-#include "Utils/AShape.hpp"
-#include "Utils/BoxF.hpp"
-#include "Utils/Vec2F.hpp"
+#include "Components.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 
-class RectangleShape final : public AShape
+class RectangleShape final : public IDocument::TShape
 {
 public:
     static constexpr DOT_ID RECTANGLE_SHAPE_ID = 0;
@@ -22,7 +17,7 @@ public:
 
     RectangleShape(Vec2F const& size);
 
-    bool processEvent(Event const& event) override final;
+    bool processEvent(IInputPump::Event const& event) override final;
     void render() override final;
 
     bool           hitTest(Vec2F const& pos) const override final;
@@ -43,7 +38,7 @@ inline RectangleShape::RectangleShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline bool RectangleShape::processEvent(Event const& event)
+inline bool RectangleShape::processEvent(IInputPump::Event const& event)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "RectangleShape can't process events\n");
     return false;

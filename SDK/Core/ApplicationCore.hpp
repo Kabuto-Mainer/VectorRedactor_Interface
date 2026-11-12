@@ -2,7 +2,8 @@
 #define APPLICATION_CORE_HPP
 
 #include "Interfaces/IID.hpp"
-#include "Utils/AObject.hpp"
+#include "Interfaces/IInputPump.hpp"
+#include "Utils/TObject.hpp"
 
 #include <memory>
 #include <unordered_map>
@@ -32,7 +33,7 @@ public:
 
     static const char*      strError(Error error);
     static ApplicationCore& instance();
-    AObject*                root() const;
+    TObject*                root() const;
     Error                   queryInterface(IID iid, void** interface) const;
 
     Error run();
@@ -66,13 +67,13 @@ enum class ApplicationCore::LogLevel
     CRITICAL,
 };
 
-class ApplicationCore::Root final : public AObject
+class ApplicationCore::Root final : public TObject
 {
 public:
     Root()  = default;
     ~Root() = default;
 
-    bool  processEvent(const Event& event) override;
+    bool  processEvent(const IInputPump::Event& event) override;
     void  render() override;
     Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
