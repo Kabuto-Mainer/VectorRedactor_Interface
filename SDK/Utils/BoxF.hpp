@@ -38,6 +38,9 @@ public:
     float minY() const;
     float maxY() const;
 
+    void flipX();
+    void flipY();
+
     void setLeft(float x);
     void setRight(float x);
     void setTop(float y);
@@ -165,6 +168,24 @@ inline float BoxF::maxY() const
 }
 
 /* ------------------- setters ------------------- */
+
+inline void BoxF::flipX()
+{
+	Vec2F left_top = left_top_;
+	Vec2F right_bottom = right_bottom_;
+
+	left_top_.setX(right_bottom.x());
+	right_bottom_.setX(left_top.x());
+}
+
+inline void BoxF::flipY()
+{
+	Vec2F left_top = left_top_;
+	Vec2F right_bottom = right_bottom_;
+
+	left_top_.setY(right_bottom.y());
+	right_bottom_.setY(left_top.y());
+}
 
 inline void BoxF::setLeft(float x)
 {
