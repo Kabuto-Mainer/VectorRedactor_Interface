@@ -3,6 +3,7 @@
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IRenderer.hpp"
+#include "Utils/ADocumentObject.hpp"
 #include "Utils/AShape.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/ColorComponent.hpp"
@@ -14,6 +15,8 @@
 class EllipseShape final : public AShape
 {
 public:
+    static constexpr DOT_ID ELLIPSE_SHAPE_ID = 0;
+
     EllipseShape();
     ~EllipseShape() override final;
 
@@ -22,8 +25,9 @@ public:
     bool processEvent(Event const& event) override final;
     void render() override final;
 
-    bool         hitTest(Vec2F const& pos) const override final;
-    virtual BoxF axesAlignedBoundingBox() const override final;
+    bool           hitTest(Vec2F const& pos) const override final;
+    virtual BoxF   axesAlignedBoundingBox() const override final;
+    virtual DOT_ID id() const override final;
 };
 
 /* ====================== Implementation ====================== */
@@ -68,6 +72,11 @@ inline BoxF EllipseShape::axesAlignedBoundingBox() const
 
     return BoxF{translation().x() - extent.x(), translation().y() - extent.y(), translation().x() + extent.x(),
                 translation().y() + extent.y()};
+}
+
+inline DOT_ID EllipseShape::id() const
+{
+    return ELLIPSE_SHAPE_ID;
 }
 
 #endif

@@ -3,6 +3,7 @@
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IRenderer.hpp"
+#include "Utils/ADocumentObject.hpp"
 #include "Utils/AShape.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/Vec2F.hpp"
@@ -14,6 +15,8 @@
 class RectangleShape final : public AShape
 {
 public:
+    static constexpr DOT_ID RECTANGLE_SHAPE_ID = 0;
+
     RectangleShape();
     ~RectangleShape() override final;
 
@@ -22,8 +25,9 @@ public:
     bool processEvent(Event const& event) override final;
     void render() override final;
 
-    bool         hitTest(Vec2F const& pos) const override final;
-    virtual BoxF axesAlignedBoundingBox() const override final;
+    bool           hitTest(Vec2F const& pos) const override final;
+    virtual BoxF   axesAlignedBoundingBox() const override final;
+    virtual DOT_ID id() const override final;
 
 private:
     IRenderer::Color color_{};
@@ -76,6 +80,11 @@ inline BoxF RectangleShape::axesAlignedBoundingBox() const
                 std::min({vertex1.y(), vertex2.y(), vertex3.y(), vertex4.y()}),
                 std::max({vertex1.x(), vertex2.x(), vertex3.x(), vertex4.x()}),
                 std::max({vertex1.y(), vertex2.y(), vertex3.y(), vertex4.y()})};
+}
+
+inline DOT_ID RectangleShape::id() const
+{
+    return RECTANGLE_SHAPE_ID;
 }
 
 #endif
