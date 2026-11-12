@@ -84,7 +84,7 @@ constexpr Matrix3F Matrix3F::scaling(float scale_x, float scale_y)
     return Matrix3F{Storage{{{scale_x, 0.0F, 0.0F}, {0.0F, scale_y, 0.0F}, {0.0F, 0.0F, 1.0F}}}};
 }
 
-Matrix3F Matrix3F::rotation(float radians)
+inline Matrix3F Matrix3F::rotation(float radians)
 {
     const float cose = std::cos(radians);
     const float sine = std::sin(radians);
@@ -186,7 +186,7 @@ constexpr bool Matrix3F::operator!=(const Matrix3F& rhs) const
     return !(*this == rhs);
 }
 
-Vec2F Matrix3F::transformPoint(const Vec2F& point) const
+inline Vec2F Matrix3F::transformPoint(const Vec2F& point) const
 {
     const float transformed_x = ((*this)[0][0] * point.x()) + ((*this)[0][1] * point.y()) + (*this)[0][2];
     const float transformed_y = ((*this)[1][0] * point.x()) + ((*this)[1][1] * point.y()) + (*this)[1][2];
