@@ -1,0 +1,2 @@
+../../Plugins/SDL_GUIEngine/libSDL_GUIEngine.so
+./libMainPlugin.so

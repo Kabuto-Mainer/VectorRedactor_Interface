@@ -24,24 +24,22 @@ public:
 public:
     virtual ~IRenderer() = default;
 
-    virtual std::optional<TextureID> loadTexture(const char* path)  = 0;
-    virtual std::optional<FontID>    loadFont(const char* filename) = 0;
+    virtual std::optional<TextureID> loadTexture(const std::string& filename) = 0;
+    virtual std::optional<FontID>    loadFont(const std::string& filename)    = 0;
 
-    virtual void renderRect(const Color& color, const BoxF& box, float angle = 0)                                   = 0;
-    virtual void renderRectLines(const Color& color, const BoxF& box, float angle = 0)                              = 0;
-    virtual void renderTexture(const TextureID& texture, const BoxF& box, float angle = 0, bool flip_by_oy = false) = 0;
-    virtual void renderEllipse(const Color& color, const BoxF& box, float angle = 0)                                = 0;
-    virtual void renderEllipseLines(const Color& color, const BoxF& box, float angle = 0)                           = 0;
-    virtual void renderLine(const Vec2F& origin, const Vec2F& end, const Color& color)                              = 0;
-    virtual void renderVector(const Vec2F& origin, const Vec2F& vector, const Color& color)                         = 0;
-    virtual void renderPixel(const Vec2F& pos, const Color& color)                                                  = 0;
+    virtual void renderRect(const Color& color, const BoxF& box, float angle = 0)           = 0;
+    virtual void renderRectLines(const Color& color, const BoxF& box, float angle = 0)      = 0;
+    virtual void renderTexture(const TextureID& texture, const BoxF& box, float angle = 0)  = 0;
+    virtual void renderEllipse(const Color& color, const BoxF& box, float angle = 0)        = 0;
+    virtual void renderEllipseLines(const Color& color, const BoxF& box, float angle = 0)   = 0;
+    virtual void renderLine(const Color& color, const Vec2F& origin, const Vec2F& end)      = 0;
+    virtual void renderVector(const Color& color, const Vec2F& origin, const Vec2F& vector) = 0;
+    virtual void renderPixel(const Color& color, const Vec2F& pos)                          = 0;
 
-    virtual void update()                                                                  = 0;
-    virtual void clear()                                                                   = 0;
-    virtual void renderText(const std::string& text, const Color& color, const BoxF& box, float angle,
-                            const FontID& font_id, int font_size, bool flip_by_oy = false) = 0;
-    virtual void renderTextPro(const std::string& text, const Color& color, const BoxF& box, const TextFormat& format,
-                               float angle = 0, bool flip_on_oy = false)                   = 0;
+    virtual void update()                    = 0;
+    virtual void clear()                     = 0;
+    virtual void renderText(const Color& color, const BoxF& box, const std::string& text, const TextFormat& format,
+                            float angle = 0) = 0;
 };
 
 enum class IRenderer::TextHAlign

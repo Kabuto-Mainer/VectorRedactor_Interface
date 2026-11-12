@@ -2,6 +2,7 @@
 #define APPLICATION_CORE_HPP
 
 #include "Interfaces/IID.hpp"
+#include "Interfaces/IInputPump.hpp"
 #include "Utils/AObject.hpp"
 
 #include <memory>
@@ -72,7 +73,7 @@ public:
     Root()  = default;
     ~Root() = default;
 
-    bool  processEvent(const Event& event) override;
+    bool  processEvent(const IInputPump::Event& event) override;
     void  render() override;
     Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;

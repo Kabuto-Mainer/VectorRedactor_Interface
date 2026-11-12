@@ -1,0 +1,3 @@
+../../Plugins/SDL_GUIEngine/libSDL_GUIEngine.so
+../../Plugins/UIFW/libUIFW.so
+./libMainPlugin.so
