@@ -17,10 +17,5 @@ public:
     virtual std::optional<ObjectID> hitTest(const Vec2F& pos) = 0;
 }; // class IDocument
 
-class Document : public AObject 
-{
-public:
-}; // class Document
-
 #endif // DOCUMENT_HPP
    
