@@ -1,11 +1,11 @@
 #ifndef A_WIDGET_HPP
 #define A_WIDGET_HPP
 
-#include "Utils/AObject.hpp"
+#include "Utils/TObject.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/Vec2F.hpp"
 
-class AWidget : public AObject
+class AWidget : public TObject
 {
 
 public:
@@ -20,17 +20,17 @@ private:
 
 }; // class AWidget
 
-BoxF AWidget::box() const
+inline BoxF AWidget::box() const
 {
     return box_;
 }
 
-void AWidget::setBox(const BoxF& box)
+inline void AWidget::setBox(const BoxF& box)
 {
     box_ = box;
 }
 
-Vec2F AWidget::mapGlobalToLocal(const Vec2F& pos) const
+inline Vec2F AWidget::mapGlobalToLocal(const Vec2F& pos) const
 {
     if (this->parent() == nullptr)
     {
@@ -39,7 +39,7 @@ Vec2F AWidget::mapGlobalToLocal(const Vec2F& pos) const
     return parent()->mapGlobalToLocal(pos) - box().topLeft();
 }
 
-Vec2F AWidget::mapLocalToGlobal(const Vec2F& pos) const
+inline Vec2F AWidget::mapLocalToGlobal(const Vec2F& pos) const
 {
     if (this->parent() == nullptr)
     {

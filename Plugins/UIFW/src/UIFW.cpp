@@ -3,9 +3,9 @@
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/ACommand.hpp"
-#include "Utils/AObject.hpp"
-#include "Utils/AWidget.hpp"
+#include "AWidget.hpp"
 #include "Utils/BoxF.hpp"
+#include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <array>
@@ -148,7 +148,7 @@ public:
     UIWi(const UIWi&)            = delete;
     UIWi& operator=(const UIWi&) = delete;
 
-    std::unique_ptr<AObject> create(ADescription& description) override;
+    std::unique_ptr<TObject> create(ADescription& description) override;
 
     void registryTheme(const std::string& name, const IRenderer::Color& primary, const IRenderer::Color& secondary,
                        const IRenderer::Color& neutral, const IRenderer::Color& accent,
@@ -640,7 +640,7 @@ class Builder final : public ADescriptionVisitor
 public:
     Builder(const RenderContext& context, Placement placement);
 
-    std::unique_ptr<AObject> take();
+    std::unique_ptr<TObject> take();
 
     bool visitButton(ADescription& description) override;
     bool visitSwitcher(ADescription& description) override;
@@ -649,19 +649,19 @@ public:
     bool visitWindow(ADescription& description) override;
 
 private:
-    bool addChildren(AObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
+    bool addChildren(TObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
                      const std::vector<Placement>& placements);
 
     const RenderContext&     context_;
     Placement                placement_;
-    std::unique_ptr<AObject> result_;
+    std::unique_ptr<TObject> result_;
 };
 
 inline Builder::Builder(const RenderContext& context, Placement placement) : context_(context), placement_(placement)
 {
 }
 
-inline std::unique_ptr<AObject> Builder::take()
+inline std::unique_ptr<TObject> Builder::take()
 {
     return std::move(result_);
 }
@@ -741,7 +741,7 @@ inline bool Builder::visitWindow(ADescription& description)
     return true;
 }
 
-inline bool Builder::addChildren(AObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
+inline bool Builder::addChildren(TObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
                                  const std::vector<Placement>& placements)
 {
     for (std::size_t i = 0; i < objects.size(); ++i)
@@ -769,7 +769,7 @@ inline UIWi::UIWi()
     setTheme(DEFAULT_THEME_NAME);
 }
 
-inline std::unique_ptr<AObject> UIWi::create(ADescription& description)
+inline std::unique_ptr<TObject> UIWi::create(ADescription& description)
 {
     Builder builder(context_, std::nullopt);
     if (!description.accept(builder))

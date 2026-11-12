@@ -4,7 +4,7 @@
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Utils/ACommand.hpp"
-#include "Utils/AObject.hpp"
+#include "Utils/TObject.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/Vec2F.hpp"
 
@@ -147,7 +147,7 @@ class IFramework
 public:
     virtual ~IFramework() = default;
 
-    virtual std::unique_ptr<AObject> create(ADescription& description)                                             = 0;
+    virtual std::unique_ptr<TObject> create(ADescription& description)                                             = 0;
     virtual void                     registryTheme(const std::string& name, const IRenderer::Color& primary,
                                                    const IRenderer::Color& secondary, const IRenderer::Color& neutral,
                                                    const IRenderer::Color& accent, const IRenderer::Color& unical) = 0;

@@ -1,17 +1,11 @@
 #ifndef ELLIPSE_SHAPE
 #define ELLIPSE_SHAPE
 
-#include "Core/ApplicationCore.hpp"
-#include "Interfaces/IRenderer.hpp"
-#include "Utils/AShape.hpp"
-#include "Utils/BoxF.hpp"
-#include "Utils/ColorComponent.hpp"
-#include "Utils/Vec2F.hpp"
-
+#include "Components.hpp"
 #include <cassert>
 #include <cmath>
 
-class EllipseShape final : public AShape
+class EllipseShape final : public IDocument::TShape
 {
 public:
     EllipseShape();

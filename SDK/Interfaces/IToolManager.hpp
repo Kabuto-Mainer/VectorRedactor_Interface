@@ -2,14 +2,16 @@
 #define I_TOOL_MANAGER_HPP
 
 #include "Interfaces/IID.hpp"
-#include "Interfaces/ITool.hpp"
+#include "Interfaces/IInputPump.hpp"
+
+constexpr static const IID IID_TOOL_MANAGER = 3;
+
 
 class IToolManager
 {
-
-    constexpr static const IID IID_TOOL_MANAGER = 3;
-
 public:
+    class ATool;
+
     IToolManager()          = default;
     virtual ~IToolManager() = default;
 
@@ -20,11 +22,32 @@ public:
 
     enum class Error;
 
-    virtual Error addTool(ITool* tool)          = 0;
-    virtual Error removeTool(ToolID* tool_id)   = 0;
-    virtual Error setActiveTool(ToolID tool_id) = 0;
+    class ATool
+    {
+    public:
+        using ID = uint64_t;
+        ATool()          = default;
+        virtual ~ATool() = default;
 
-    virtual bool processEvent(const Event& event) = 0;
+        ATool(const ATool&)            = delete;
+        ATool(ATool&&)                 = delete;
+        ATool& operator=(const ATool&) = delete;
+        ATool& operator=(ATool&&)      = delete;
+
+        virtual ID id() const                       = 0;
+        virtual bool   processEvent(const IInputPump::Event& event) = 0;
+        /**
+         * Если инструменту понадобится отрисовыватся - он
+         * должен будет добавляться в дерево
+         */
+    };
+
+    virtual Error addTool(ATool* tool)          = 0;
+    virtual Error removeTool(ATool::ID* tool_id)   = 0;
+    virtual Error setActiveTool(ATool::ID tool_id) = 0;
+
+    virtual bool processEvent(const IInputPump::Event& event) = 0;
+
 };
 
 enum class IToolManager::Error

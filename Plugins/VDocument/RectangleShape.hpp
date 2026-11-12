@@ -1,17 +1,13 @@
 #ifndef RECTANGLE_SHAPE
 #define RECTANGLE_SHAPE
 
-#include "Core/ApplicationCore.hpp"
-#include "Interfaces/IRenderer.hpp"
-#include "Utils/AShape.hpp"
-#include "Utils/BoxF.hpp"
-#include "Utils/Vec2F.hpp"
+#include "Components.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 
-class RectangleShape final : public AShape
+class RectangleShape final : public IDocument::TShape
 {
 public:
     RectangleShape();
