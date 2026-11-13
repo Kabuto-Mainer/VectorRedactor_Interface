@@ -1,14 +1,18 @@
-#ifndef ELLIPSE_SHAPE
-#define ELLIPSE_SHAPE
+#ifndef ELLIPSE_SHAPE_HPP
+#define ELLIPSE_SHAPE_HPP
 
 #include "Components.hpp"
+#include "Interfaces/IDocument.hpp"
 #include <cassert>
 #include <cmath>
 
-class EllipseShape final : public IDocument::TShape
+namespace VDocument
+{
+
+class EllipseShape final : public IDocument::TShape, public ColorComponent
 {
 public:
-    static constexpr DOT_ID ELLIPSE_SHAPE_ID = 0;
+    static constexpr IDocument::TShape::TypeID ELLIPSE_SHAPE_ID = 1;
 
     EllipseShape();
     ~EllipseShape() override final;
@@ -18,9 +22,15 @@ public:
     bool processEvent(IInputPump::Event const& event) override final;
     void render() override final;
 
-    bool           hitTest(Vec2F const& pos) const override final;
-    virtual BoxF   axesAlignedBoundingBox() const override final;
-    virtual DOT_ID id() const override final;
+    bool                              hitTest(Vec2F const& pos) const override final;
+    virtual BoxF                      axesAlignedBoundingBox() const override final;
+    virtual IDocument::TShape::TypeID tid() const override final;
+
+    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID coid,
+                                                  IDocument::AShapeComponent**   component) override final;
+    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID coid,
+                                                  IDocument::AShapeComponent const** component) const override final;
+
 };
 
 /* ====================== Implementation ====================== */
@@ -67,9 +77,49 @@ inline BoxF EllipseShape::axesAlignedBoundingBox() const
                 translation().y() + extent.y()};
 }
 
-inline DOT_ID EllipseShape::id() const
+inline IDocument::TShape::TypeID EllipseShape::tid() const
 {
     return ELLIPSE_SHAPE_ID;
 }
 
-#endif
+inline ApplicationCore::Error EllipseShape::queryComponent(IDocument::AShapeComponent::ID coid,
+                                                           IDocument::AShapeComponent**   component)
+{
+    assert(component);
+
+    switch (coid)
+    {
+        case ColorComponent::COID:
+        {
+            (*component) = static_cast<ColorComponent*>(this);
+            return ApplicationCore::Error::SUCCESS;
+        }
+        default:
+            break;
+    }
+    (*component) = nullptr;
+    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
+}
+
+inline ApplicationCore::Error EllipseShape::queryComponent(IDocument::AShapeComponent::ID coid,
+                                                           IDocument::AShapeComponent const** component) const
+{
+    assert(component);
+
+    switch (coid)
+    {
+        case ColorComponent::COID:
+        {
+            (*component) = static_cast<ColorComponent const*>(this);
+            return ApplicationCore::Error::SUCCESS;
+        }
+        default:
+            break;
+    }
+    (*component) = nullptr;
+    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
+}
+
+}; // namespace VDocument
+
+#endif // ELLIPSE_SHAPE_HPP

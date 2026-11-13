@@ -6,6 +6,7 @@
 #include "Utils/Vec2F.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/Transformable.hpp"
+#include <SDL3/SDL_joystick.h>
 #include <cstdint>
 #include <optional>
 
@@ -16,6 +17,7 @@ class IDocument
 public:
     class TShape;
     class AShapeComponent;
+    class Visitor;
 
     IDocument()          = default;
     virtual ~IDocument() = default;
@@ -25,6 +27,8 @@ public:
 
     virtual std::optional<TObject::ID> hitTest(const Vec2F& pos) = 0;
 
+    virtual void accept(Visitor & visitor) = 0;
+    virtual void accept(Visitor & visitor) const = 0;
 }; // class IDocument
 
 class IDocument::AShapeComponent
@@ -41,12 +45,13 @@ public:
     AShapeComponent& operator=(AShapeComponent&&)      = delete;
 
     // Every component reports the CoID it is registered under.
-    virtual ID coid() const = 0;
 }; // class AShapeComponent
 
 class IDocument::TShape : public TObject, public Transformable
 {
 public:
+    using TypeID = uint64_t;
+
     TShape();
     ~TShape() override = 0;
 
@@ -58,7 +63,24 @@ public:
 
     virtual bool hitTest(Vec2F const& pos) const = 0;
     virtual BoxF axesAlignedBoundingBox() const  = 0;
-}; // class AShape
+
+    virtual TypeID tid() const = 0;
+}; // class TShape
+
+class IDocument::Visitor
+{
+public:
+    Visitor();
+    ~Visitor();
+
+    virtual bool visit(IDocument::TShape & shape) = 0;
+    virtual bool visit(const IDocument::TShape & shape) = 0;
+
+    Visitor(const Visitor&)            = delete;
+    Visitor(Visitor&&)                 = delete;
+    Visitor& operator=(const Visitor&) = delete;
+    Visitor& operator=(Visitor&&)      = delete;
+}; // class Visitor
 
 /* ====================== Implementation ====================== */
 
@@ -74,5 +96,8 @@ inline Vec2F IDocument::TShape::mapGlobalToLocal(Vec2F const& pos) const
 {
     return transform().inverted().transformPoint(parent()->mapGlobalToLocal(pos));
 }
+
+inline IDocument::Visitor::Visitor() = default;
+inline IDocument::Visitor::~Visitor() = default;
 
 #endif // DOCUMENT_HPP

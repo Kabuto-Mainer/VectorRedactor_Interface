@@ -20,8 +20,6 @@ public:
     const IRenderer::TextFormat& getFormat() const;
     void                         setFormat(const IRenderer::TextFormat& format);
 
-    ID coid() const override final;
-
 protected:
     IRenderer::TextFormat format_{};
 }; // class TextComponent
@@ -38,11 +36,6 @@ inline void TextComponent::setFormat(const IRenderer::TextFormat& format)
     format_ = format;
 }
 
-inline IDocument::AShapeComponent::ID TextComponent::coid() const
-{
-    return TextComponent::COID;
-}
-
 /* ====================== ColorComponent ====================== */
 
 class ColorComponent : public IDocument::AShapeComponent
@@ -53,20 +46,23 @@ public:
     ColorComponent() = default;
     ~ColorComponent() override = default;
 
-    virtual IRenderer::Color color() const = 0;
-    virtual void             setColor(IRenderer::Color color) = 0;
-
-    ID coid() const override final;
+    IRenderer::Color color() const;
+    void             setColor(const IRenderer::Color & color);
 
 protected:
-    IRenderer::Color color_{};
+    IRenderer::Color color_;
 }; // class ColorComponent
 
 /* ====================== Implementation ====================== */
 
-inline IDocument::AShapeComponent::ID ColorComponent::coid() const
+inline IRenderer::Color ColorComponent::color() const
 {
-    return ColorComponent::COID;
+    return color_;
+}
+
+inline void ColorComponent::setColor(const IRenderer::Color & color)
+{
+    color_ = color;
 }
 
 }; // namespace VDocument
