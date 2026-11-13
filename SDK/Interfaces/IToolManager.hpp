@@ -3,6 +3,7 @@
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IInputPump.hpp"
+#include <memory>
 
 constexpr static const IID IID_TOOL_MANAGER = 3;
 
@@ -42,8 +43,8 @@ public:
          */
     };
 
-    virtual Error addTool(ATool* tool)             = 0;
-    virtual Error removeTool(ATool::ID* tool_id)   = 0;
+    virtual Error addTool(std::unique_ptr<ATool> tool)             = 0;
+    virtual Error removeTool(ATool::ID tool_id)   = 0;
     virtual Error setActiveTool(ATool::ID tool_id) = 0;
 
     virtual bool processEvent(const IInputPump::Event& event) = 0;

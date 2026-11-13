@@ -19,13 +19,7 @@
 
 /* Root */
 
-ApplicationCore::Root::Root()
-{
-    auto desktop = std::make_unique<ApplicationCore::Desktop>();
-    auto desk_id = desktop->id();
-    addChild(std::move(desktop));
-    desktop_id_ = desk_id;
-}
+ApplicationCore::Root::Root() = default;
 
 void ApplicationCore::Root::render()
 {
@@ -65,33 +59,6 @@ bool ApplicationCore::Root::popModal()
     }
     children().pop_back();
     return true;
-}
-
-TObject::ID ApplicationCore::Root::desktop() const
-{
-    return desktop_id_;
-}
-
-/* Desktop */
-
-void ApplicationCore::Desktop::render()
-{
-    renderChildren();
-}
-
-bool ApplicationCore::Desktop::processEvent(const IInputPump::Event& event)
-{
-    return processEventChildren(event);
-}
-
-Vec2F ApplicationCore::Desktop::mapGlobalToLocal(const Vec2F& pos) const
-{
-    return pos;
-}
-
-Vec2F ApplicationCore::Desktop::mapLocalToGlobal(const Vec2F& pos) const
-{
-    return pos;
 }
 
 /* ApplicationCore */
