@@ -1,4 +1,4 @@
-#include "../include/ToolManager.hpp"
+#include "ToolManager.hpp"
 #include "Core/ApplicationCore.hpp"
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
