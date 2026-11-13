@@ -2,7 +2,7 @@
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/AObject.hpp"
+#include "Utils/TObject.hpp"
 
 constexpr static const IID IID_MAIN_PLUGIN = 100;
 
@@ -23,7 +23,7 @@ public:
     static IMainPlugin& instance();
 };
 
-class MainWindow final : public AObject
+class MainWindow final : public TObject
 {
 public:
     MainWindow()  = default;

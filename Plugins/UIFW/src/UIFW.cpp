@@ -2,10 +2,10 @@
 #include "IUIFW.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
+#include "TWidget.hpp"
 #include "Utils/ACommand.hpp"
-#include "Utils/AObject.hpp"
-#include "Utils/AWidget.hpp"
 #include "Utils/BoxF.hpp"
+#include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <array>
@@ -148,7 +148,7 @@ public:
     UIWi(const UIWi&)            = delete;
     UIWi& operator=(const UIWi&) = delete;
 
-    std::unique_ptr<AObject> create(ADescription& description) override;
+    std::unique_ptr<TObject> create(ADescription& description) override;
 
     void registryTheme(const std::string& name, const IRenderer::Color& primary, const IRenderer::Color& secondary,
                        const IRenderer::Color& neutral, const IRenderer::Color& accent,
@@ -337,19 +337,19 @@ void runAction(Action& action)
     }
 }
 
-Vec2F globalCenter(const AWidget& widget)
+Vec2F globalCenter(const TWidget& widget)
 {
     return widget.mapLocalToGlobal(widget.box().size() / 2.0F);
 }
 
-BoxF globalBounds(const AWidget& widget)
+BoxF globalBounds(const TWidget& widget)
 {
     BoxF bounds(widget.box().size());
     bounds.setCenter(globalCenter(widget));
     return bounds;
 }
 
-class ButtonObject final : public AWidget
+class ButtonObject final : public TWidget
 {
 public:
     ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
@@ -403,7 +403,7 @@ inline void ButtonObject::render()
     drawContent(renderer, context_, icon_, text_, palette.text, bounds);
 }
 
-class SwitcherObject final : public AWidget
+class SwitcherObject final : public TWidget
 {
 public:
     SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
@@ -465,7 +465,7 @@ inline void SwitcherObject::render()
     drawContent(renderer, context_, icon_, text_, text, bounds);
 }
 
-class ContextMenuDescriptionObject final : public AWidget
+class ContextMenuDescriptionObject final : public TWidget
 {
 public:
     ContextMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role,
@@ -533,7 +533,7 @@ inline bool ContextMenuDescriptionObject::isPressOutside(const IInputPump::Event
            !globalBounds(*this).contains(mouse->cursorPos());
 }
 
-class PoolMenuDescriptionObject final : public AWidget
+class PoolMenuDescriptionObject final : public TWidget
 {
 public:
     PoolMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role);
@@ -571,7 +571,7 @@ inline void PoolMenuDescriptionObject::render()
     renderChildren();
 }
 
-class WindowDescriptionObject final : public AWidget
+class WindowDescriptionObject final : public TWidget
 {
 public:
     WindowDescriptionObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label,
@@ -640,7 +640,7 @@ class Builder final : public ADescriptionVisitor
 public:
     Builder(const RenderContext& context, Placement placement);
 
-    std::unique_ptr<AObject> take();
+    std::unique_ptr<TObject> take();
 
     bool visitButton(ADescription& description) override;
     bool visitSwitcher(ADescription& description) override;
@@ -649,19 +649,19 @@ public:
     bool visitWindow(ADescription& description) override;
 
 private:
-    bool addChildren(AObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
+    bool addChildren(TObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
                      const std::vector<Placement>& placements);
 
     const RenderContext&     context_;
     Placement                placement_;
-    std::unique_ptr<AObject> result_;
+    std::unique_ptr<TObject> result_;
 };
 
 inline Builder::Builder(const RenderContext& context, Placement placement) : context_(context), placement_(placement)
 {
 }
 
-inline std::unique_ptr<AObject> Builder::take()
+inline std::unique_ptr<TObject> Builder::take()
 {
     return std::move(result_);
 }
@@ -741,7 +741,7 @@ inline bool Builder::visitWindow(ADescription& description)
     return true;
 }
 
-inline bool Builder::addChildren(AObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
+inline bool Builder::addChildren(TObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
                                  const std::vector<Placement>& placements)
 {
     for (std::size_t i = 0; i < objects.size(); ++i)
@@ -769,7 +769,7 @@ inline UIWi::UIWi()
     setTheme(DEFAULT_THEME_NAME);
 }
 
-inline std::unique_ptr<AObject> UIWi::create(ADescription& description)
+inline std::unique_ptr<TObject> UIWi::create(ADescription& description)
 {
     Builder builder(context_, std::nullopt);
     if (!description.accept(builder))

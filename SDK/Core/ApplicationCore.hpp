@@ -3,7 +3,7 @@
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IInputPump.hpp"
-#include "Utils/AObject.hpp"
+#include "Utils/TObject.hpp"
 
 #include <memory>
 #include <unordered_map>
@@ -15,6 +15,7 @@ public:
     enum class Error;
     enum class LogLevel;
     class Root;
+    class Desktop;
 
 private:
     ApplicationCore();
@@ -33,7 +34,7 @@ public:
 
     static const char*      strError(Error error);
     static ApplicationCore& instance();
-    AObject*                root() const;
+    TObject*                root() const;
     Error                   queryInterface(IID iid, void** interface) const;
 
     Error run();
@@ -67,16 +68,19 @@ enum class ApplicationCore::LogLevel
     CRITICAL,
 };
 
-class ApplicationCore::Root final : public AObject
+class ApplicationCore::Root final : public TObject
 {
 public:
-    Root()  = default;
+    Root();
     ~Root() = default;
 
     bool  processEvent(const IInputPump::Event& event) override;
     void  render() override;
     Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
-};
+
+    void pushModal(std::unique_ptr<TObject> new_modal);
+    bool popModal();
+}; // class Root
 
 #endif

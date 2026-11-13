@@ -4,7 +4,7 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
-#include "Utils/AObject.hpp"
+#include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <cassert>
@@ -18,6 +18,8 @@
 #include <vector>
 
 /* Root */
+
+ApplicationCore::Root::Root() = default;
 
 void ApplicationCore::Root::render()
 {
@@ -42,6 +44,21 @@ Vec2F ApplicationCore::Root::mapGlobalToLocal(const Vec2F& pos) const
 Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F& pos) const
 {
     return pos;
+}
+
+void ApplicationCore::Root::pushModal(std::unique_ptr<TObject> new_modal)
+{
+    addChild(std::move(new_modal));
+}
+
+bool ApplicationCore::Root::popModal()
+{
+    if (children().size() < 2)
+    {
+        return false;
+    }
+    children().pop_back();
+    return true;
 }
 
 /* ApplicationCore */
@@ -114,7 +131,7 @@ ApplicationCore& ApplicationCore::instance()
     return instance;
 }
 
-AObject* ApplicationCore::root() const
+TObject* ApplicationCore::root() const
 {
     return root_.get();
 }
