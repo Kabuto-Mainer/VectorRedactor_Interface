@@ -1,5 +1,4 @@
-#ifndef TOOL_MANAGER_HPP
-#define TOOL_MANAGER_HPP
+#pragma once
 
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
@@ -33,5 +32,3 @@ public:
 
     bool processEvent(const IInputPump::Event& event) override;
 };
-
-#endif
