@@ -16,21 +16,20 @@ public:
     static constexpr IDocument::TShape::TypeID ELLIPSE_SHAPE_ID = 1;
 
     EllipseShape();
-    ~EllipseShape() override final;
+    ~EllipseShape() override;
 
     EllipseShape(Vec2F const& size);
 
-    bool processEvent(IInputPump::Event const& event) override final;
-    void render() override final;
+    bool processEvent(IInputPump::Event const& event) override;
+    void render() override;
 
-    bool                              hitTest(Vec2F const& pos) const override final;
-    virtual BoxF                      axesAlignedBoundingBox() const override final;
-    virtual IDocument::TShape::TypeID tid() const override final;
+    bool                              hitTest(Vec2F const& pos) const override;
+    virtual BoxF                      axesAlignedBoundingBox() const override;
+    virtual IDocument::TShape::TypeID tid() const override;
 
-    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID coid,
-                                                  IDocument::AShapeComponent**   component) override final;
-    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID     coid,
-                                                  IDocument::AShapeComponent const** component) const override final;
+    virtual Error queryComponent(IDocument::AShapeComponent::ID coid, IDocument::AShapeComponent** component) override;
+    virtual Error queryComponent(IDocument::AShapeComponent::ID     coid,
+                                 IDocument::AShapeComponent const** component) const override;
 };
 
 /* ====================== Implementation ====================== */
@@ -82,42 +81,48 @@ inline IDocument::TShape::TypeID EllipseShape::tid() const
     return ELLIPSE_SHAPE_ID;
 }
 
-inline ApplicationCore::Error EllipseShape::queryComponent(IDocument::AShapeComponent::ID coid,
-                                                           IDocument::AShapeComponent**   component)
+inline IDocument::TShape::Error EllipseShape::queryComponent(IDocument::AShapeComponent::ID coid,
+                                                             IDocument::AShapeComponent**   component)
 {
-    assert(component);
+    if (component == nullptr)
+    {
+        return Error::INVALID_ARGS;
+    }
 
     switch (coid)
     {
         case ColorComponent::COID:
         {
             (*component) = static_cast<ColorComponent*>(this);
-            return ApplicationCore::Error::SUCCESS;
+            return Error::SUCCESS;
         }
         default:
             break;
     }
     (*component) = nullptr;
-    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
+    return Error::COMPONENT_NOT_FOUND;
 }
 
-inline ApplicationCore::Error EllipseShape::queryComponent(IDocument::AShapeComponent::ID     coid,
-                                                           IDocument::AShapeComponent const** component) const
+inline IDocument::TShape::Error EllipseShape::queryComponent(IDocument::AShapeComponent::ID     coid,
+                                                             IDocument::AShapeComponent const** component) const
 {
-    assert(component);
+    if (component == nullptr)
+    {
+        return Error::INVALID_ARGS;
+    }
 
     switch (coid)
     {
         case ColorComponent::COID:
         {
-            (*component) = static_cast<ColorComponent const*>(this);
-            return ApplicationCore::Error::SUCCESS;
+            (*component) = static_cast<const ColorComponent*>(this);
+            return Error::SUCCESS;
         }
         default:
             break;
     }
     (*component) = nullptr;
-    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
+    return Error::COMPONENT_NOT_FOUND;
 }
 
 }; // namespace VDocument

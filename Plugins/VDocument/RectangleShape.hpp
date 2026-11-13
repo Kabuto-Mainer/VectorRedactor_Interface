@@ -16,21 +16,21 @@ public:
     static constexpr IDocument::TShape::TypeID RECTANGLE_SHAPE_ID = 0;
 
     RectangleShape();
-    ~RectangleShape() override final;
+    ~RectangleShape();
 
     RectangleShape(Vec2F const& size);
 
-    bool processEvent(IInputPump::Event const& event) override final;
-    void render() override final;
+    bool processEvent(IInputPump::Event const& event) override;
+    void render() override;
 
-    bool                              hitTest(Vec2F const& pos) const override final;
-    virtual BoxF                      axesAlignedBoundingBox() const override final;
-    virtual IDocument::TShape::TypeID tid() const override final;
+    bool                              hitTest(Vec2F const& pos) const override;
+    virtual BoxF                      axesAlignedBoundingBox() const override;
+    virtual IDocument::TShape::TypeID tid() const override;
 
     virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID coid,
-                                                  IDocument::AShapeComponent**   component) override final;
+                                                  IDocument::AShapeComponent**   component) override;
     virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID     coid,
-                                                  IDocument::AShapeComponent const** component) const override final;
+                                                  IDocument::AShapeComponent const** component) const override;
 };
 
 /* ====================== Implementation ====================== */

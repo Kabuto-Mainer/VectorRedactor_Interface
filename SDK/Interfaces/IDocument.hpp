@@ -2,6 +2,7 @@
 #define DOCUMENT_HPP
 
 #include "Core/ApplicationCore.hpp"
+#include "Interfaces/IInputPump.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Transformable.hpp"
@@ -58,15 +59,23 @@ public:
     Vec2F mapLocalToGlobal(Vec2F const& pos) const override final;
     Vec2F mapGlobalToLocal(Vec2F const& pos) const override final;
 
-    virtual ApplicationCore::Error queryComponent(AShapeComponent::ID coid, AShapeComponent** component) = 0;
-    virtual ApplicationCore::Error queryComponent(AShapeComponent::ID     coid,
-                                                  AShapeComponent const** component) const               = 0;
+    enum class Error;
+
+    virtual Error queryComponent(AShapeComponent::ID coid, AShapeComponent** component)             = 0;
+    virtual Error queryComponent(AShapeComponent::ID coid, AShapeComponent const** component) const = 0;
 
     virtual bool hitTest(Vec2F const& pos) const = 0;
     virtual BoxF axesAlignedBoundingBox() const  = 0;
 
     virtual TypeID tid() const = 0;
 }; // class TShape
+
+enum class IDocument::TShape::Error
+{
+    SUCCESS,
+    INVALID_ARGS,
+    COMPONENT_NOT_FOUND,
+};
 
 class IDocument::Visitor
 {
