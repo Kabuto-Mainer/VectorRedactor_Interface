@@ -15,6 +15,7 @@ public:
     enum class Error;
     enum class LogLevel;
     class Root;
+    class Desktop;
 
 private:
     ApplicationCore();
@@ -70,13 +71,33 @@ enum class ApplicationCore::LogLevel
 class ApplicationCore::Root final : public TObject
 {
 public:
-    Root()  = default;
+    Root();
     ~Root() = default;
 
     bool  processEvent(const IInputPump::Event& event) override;
     void  render() override;
     Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
-};
+
+    void pushModal(std::unique_ptr<TObject> new_modal);
+    bool popModal();
+
+    TObject::ID desktop() const;
+
+private:
+    TObject::ID desktop_id_;
+}; // class Root
+
+class ApplicationCore::Desktop final : public TObject
+{
+public:
+    Desktop()  = default;
+    ~Desktop() = default;
+
+    bool  processEvent(const IInputPump::Event& event) override;
+    void  render() override;
+    Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
+    Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
+}; // class Desktop
 
 #endif

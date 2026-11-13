@@ -19,6 +19,14 @@
 
 /* Root */
 
+ApplicationCore::Root::Root()
+{
+    auto desktop = std::make_unique<ApplicationCore::Desktop>();
+    auto desk_id = desktop->id();
+    addChild(std::move(desktop));
+    desktop_id_ = desk_id;
+}
+
 void ApplicationCore::Root::render()
 {
     renderChildren();
@@ -40,6 +48,48 @@ Vec2F ApplicationCore::Root::mapGlobalToLocal(const Vec2F& pos) const
 }
 
 Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F& pos) const
+{
+    return pos;
+}
+
+void ApplicationCore::Root::pushModal(std::unique_ptr<TObject> new_modal)
+{
+    addChild(std::move(new_modal));
+}
+
+bool ApplicationCore::Root::popModal()
+{
+    if (children().size() < 2)
+    {
+        return false;
+    }
+    children().pop_back();
+    return true;
+}
+
+TObject::ID ApplicationCore::Root::desktop() const
+{
+    return desktop_id_;
+}
+
+/* Desktop */
+
+void ApplicationCore::Desktop::render()
+{
+    renderChildren();
+}
+
+bool ApplicationCore::Desktop::processEvent(const IInputPump::Event& event)
+{
+    return processEventChildren(event);
+}
+
+Vec2F ApplicationCore::Desktop::mapGlobalToLocal(const Vec2F& pos) const
+{
+    return pos;
+}
+
+Vec2F ApplicationCore::Desktop::mapLocalToGlobal(const Vec2F& pos) const
 {
     return pos;
 }
