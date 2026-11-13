@@ -1,5 +1,4 @@
-#ifndef I_UI_FRAMEWORK_HPP
-#define I_UI_FRAMEWORK_HPP
+#pragma once
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IRenderer.hpp"
@@ -163,5 +162,3 @@ struct IUIFramework::WindowMenuDescription
     std::optional<std::string>  label;
     Role                        role = Role::DEFAULT;
 }; // struct WindowMenuDescription
-
-#endif // I_UI_FRAMEWORK_HPP

@@ -1,5 +1,4 @@
-#ifndef T_WIDGET_HPP
-#define T_WIDGET_HPP
+#pragma once
 
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
@@ -47,6 +46,3 @@ inline Vec2F TWidget::mapLocalToGlobal(const Vec2F& pos) const
     }
     return parent()->mapLocalToGlobal(pos + box().topLeft());
 }
-
-
-#endif // T_WIDGET_HPP
