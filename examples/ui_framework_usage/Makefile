@@ -1,5 +1,6 @@
 all:
 	make -C ../../Plugins/SDL_GUIEngine
+	make -C ../../Plugins/MainPlugin
 	make -C ../../Plugins/UIFW
 	make -C ../../Plugins/Launcher APPLICATION_EXECUTABLE_NAME=../../examples/ui_framework_usage/app
 	@echo [Building libMainPlugin.so]

@@ -1,8 +1,8 @@
 #ifndef T_WIDGET_HPP
 #define T_WIDGET_HPP
 
-#include "Utils/TObject.hpp"
 #include "Utils/BoxF.hpp"
+#include "Utils/TObject.hpp"
 
 class TWidget : public TObject
 {

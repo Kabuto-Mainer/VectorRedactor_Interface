@@ -100,9 +100,9 @@ Palette derive(const IRenderer::Color& base, const IRenderer::Color& surface, co
 
 struct Theme
 {
-    IRenderer::Color                                                  canvas;
-    IRenderer::Color                                                  surface;
-    IRenderer::Color                                                  accent;
+    IRenderer::Color                                                                canvas;
+    IRenderer::Color                                                                surface;
+    IRenderer::Color                                                                accent;
     std::array<IRenderer::Color, static_cast<std::size_t>(IUIFramework::Role::MAX)> role_bases;
 
     Palette palette(IUIFramework::IUIFramework::Role role) const;
@@ -231,7 +231,7 @@ Vec2F menuSize(IUIFramework::Direction direction, std::size_t count)
 {
     const auto items = static_cast<float>(count);
     return direction == IUIFramework::Direction::VERTICAL ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items) :
-                                              Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
+                                                            Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
 }
 
 typedef std::optional<BoxF> Placement;
@@ -245,8 +245,8 @@ std::vector<Placement> slotsFor(const Vec2F& size, IUIFramework::Direction direc
     }
 
     const auto  divider = static_cast<float>(count);
-    const Vec2F slot =
-        direction == IUIFramework::Direction::VERTICAL ? Vec2F(size.x(), size.y() / divider) : Vec2F(size.x() / divider, size.y());
+    const Vec2F slot    = direction == IUIFramework::Direction::VERTICAL ? Vec2F(size.x(), size.y() / divider) :
+                                                                           Vec2F(size.x() / divider, size.y());
     const Vec2F step = direction == IUIFramework::Direction::VERTICAL ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
 
     Vec2F position;
@@ -372,13 +372,14 @@ private:
     const RenderContext&                context_;
     std::optional<std::string>          text_;
     std::optional<IRenderer::TextureID> icon_;
-    IUIFramework::Role                                role_;
-    IUIFramework::Action                  on_press_;
+    IUIFramework::Role                  role_;
+    IUIFramework::Action                on_press_;
     PressTracker                        press_;
 };
 
 inline ButtonObject::ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                                  std::optional<IRenderer::TextureID> icon, IUIFramework::Role role, IUIFramework::Action on_press) :
+                                  std::optional<IRenderer::TextureID> icon, IUIFramework::Role role,
+                                  IUIFramework::Action on_press) :
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_press_(std::move(on_press))
 {
     setBox(bounds);
@@ -431,9 +432,9 @@ private:
     const RenderContext&                context_;
     std::optional<std::string>          text_;
     std::optional<IRenderer::TextureID> icon_;
-    IUIFramework::Role                                role_;
-    IUIFramework::Action                  on_active_;
-    IUIFramework::Action                  on_deactive_;
+    IUIFramework::Role                  role_;
+    IUIFramework::Action                on_active_;
+    IUIFramework::Action                on_deactive_;
     PressTracker                        press_;
     bool                                active_ = false;
 };
@@ -441,8 +442,8 @@ private:
 class SwitcherPoolObject final : public IUIFramework::SwitcherPool
 {
 public:
-    SwitcherPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size, IUIFramework::Direction direction,
-                       IUIFramework::Role role);
+    SwitcherPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size,
+                       IUIFramework::Direction direction, IUIFramework::Role role);
 
     void add(std::unique_ptr<IUIFramework::Switcher> switcher) override;
 
@@ -453,15 +454,15 @@ public:
     void select(SwitcherObject& target);
 
 private:
-    const RenderContext& context_;
-    Vec2F                size_;
-    IUIFramework::Direction            direction_;
-    IUIFramework::Role                 role_;
+    const RenderContext&    context_;
+    Vec2F                   size_;
+    IUIFramework::Direction direction_;
+    IUIFramework::Role      role_;
 };
 
 inline SwitcherObject::SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                                      std::optional<IRenderer::TextureID> icon, IUIFramework::Role role, IUIFramework::Action on_active,
-                                      IUIFramework::Action on_deactive) :
+                                      std::optional<IRenderer::TextureID> icon, IUIFramework::Role role,
+                                      IUIFramework::Action on_active, IUIFramework::Action on_deactive) :
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_active_(std::move(on_active)),
     on_deactive_(std::move(on_deactive))
 {
@@ -579,8 +580,8 @@ inline void SwitcherPoolObject::select(SwitcherObject& target)
 class ButtonPoolObject final : public IUIFramework::ButtonPool
 {
 public:
-    ButtonPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size, IUIFramework::Direction direction,
-                     IUIFramework::Role role);
+    ButtonPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size,
+                     IUIFramework::Direction direction, IUIFramework::Role role);
 
     void add(std::unique_ptr<IUIFramework::Button> button) override;
 
@@ -589,10 +590,10 @@ public:
     void render() override;
 
 private:
-    const RenderContext& context_;
-    Vec2F                size_;
-    IUIFramework::Direction            direction_;
-    IUIFramework::Role                 role_;
+    const RenderContext&    context_;
+    Vec2F                   size_;
+    IUIFramework::Direction direction_;
+    IUIFramework::Role      role_;
 };
 
 inline ButtonPoolObject::ButtonPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size,
@@ -629,8 +630,8 @@ inline void ButtonPoolObject::render()
 class ContextMenuObject final : public IUIFramework::ContextMenu
 {
 public:
-    ContextMenuObject(const RenderContext& context, const Vec2F& min_point, IUIFramework::Direction direction, IUIFramework::Role role,
-                      std::optional<IUIFramework::EventHandler> on_event);
+    ContextMenuObject(const RenderContext& context, const Vec2F& min_point, IUIFramework::Direction direction,
+                      IUIFramework::Role role, std::optional<IUIFramework::EventHandler> on_event);
 
     void add(std::unique_ptr<IUIFramework::Button> button) override;
     void add(std::unique_ptr<IUIFramework::Switcher> switcher) override;
@@ -644,16 +645,17 @@ private:
 
     bool isPressOutside(const IInputPump::Event& event) const;
 
-    const RenderContext&        context_;
-    Vec2F                       min_point_;
+    const RenderContext&                      context_;
+    Vec2F                                     min_point_;
     IUIFramework::Direction                   direction_;
     IUIFramework::Role                        role_;
     std::optional<IUIFramework::EventHandler> on_event_;
-    bool                        visible_ = true;
+    bool                                      visible_ = true;
 };
 
-inline ContextMenuObject::ContextMenuObject(const RenderContext& context, const Vec2F& min_point, IUIFramework::Direction direction,
-                                            IUIFramework::Role role, std::optional<IUIFramework::EventHandler> on_event) :
+inline ContextMenuObject::ContextMenuObject(const RenderContext& context, const Vec2F& min_point,
+                                            IUIFramework::Direction direction, IUIFramework::Role role,
+                                            std::optional<IUIFramework::EventHandler> on_event) :
     context_(context), min_point_(min_point), direction_(direction), role_(role), on_event_(std::move(on_event))
 {
     relayout();
@@ -722,8 +724,9 @@ inline bool ContextMenuObject::isPressOutside(const IInputPump::Event& event) co
 class WindowMenuObject final : public IUIFramework::WindowMenu
 {
 public:
-    WindowMenuObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label, IUIFramework::Role role,
-                     std::optional<IUIFramework::EventHandler> on_event, std::optional<IUIFramework::Action> on_close);
+    WindowMenuObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label,
+                     IUIFramework::Role role, std::optional<IUIFramework::EventHandler> on_event,
+                     std::optional<IUIFramework::Action> on_close);
 
     void add(std::unique_ptr<IUIFramework::Button> button) override;
     void add(std::unique_ptr<IUIFramework::Switcher> switcher) override;
@@ -736,8 +739,8 @@ public:
     void render() override;
 
 private:
-    const RenderContext&        context_;
-    std::optional<std::string>  label_;
+    const RenderContext&                      context_;
+    std::optional<std::string>                label_;
     IUIFramework::Role                        role_;
     std::optional<IUIFramework::EventHandler> on_event_;
 };
@@ -745,7 +748,7 @@ private:
 inline WindowMenuObject::WindowMenuObject(const RenderContext& context, const BoxF& bounds,
                                           std::optional<std::string> label, IUIFramework::Role role,
                                           std::optional<IUIFramework::EventHandler> on_event,
-                                          std::optional<IUIFramework::Action> on_close) :
+                                          std::optional<IUIFramework::Action>       on_close) :
     context_(context), label_(std::move(label)), role_(role), on_event_(std::move(on_event))
 {
     setBox(bounds);
@@ -754,10 +757,10 @@ inline WindowMenuObject::WindowMenuObject(const RenderContext& context, const Bo
     {
         const Vec2F size = bounds.size();
         const Vec2F close_pos(size.x() - CLOSE_BUTTON_SIZE - PADDING, PADDING);
-        addChild(std::make_unique<ButtonObject>(context_,
-                                                makeBox(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
-                                                std::optional<std::string>("X"), std::nullopt, role_,
-                                                std::move(*on_close)));
+        addChild(
+            std::make_unique<ButtonObject>(context_, makeBox(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
+                                           std::optional<std::string>("X"), std::nullopt, role_, std::move(*on_close))
+        );
     }
 }
 
@@ -854,8 +857,8 @@ inline std::unique_ptr<IUIFramework::Switcher> UIWi::create(SwitcherDescription&
 
 inline std::unique_ptr<IUIFramework::ContextMenu> UIWi::create(ContextMenuDescription& description)
 {
-    return std::make_unique<ContextMenuObject>(context_, description.min_point, description.direction,
-                                               description.role, std::move(description.on_event));
+    return std::make_unique<ContextMenuObject>(context_, description.min_point, description.direction, description.role,
+                                               std::move(description.on_event));
 }
 
 inline std::unique_ptr<IUIFramework::ButtonPool> UIWi::create(ButtonPoolDescription& description)
@@ -872,9 +875,8 @@ inline std::unique_ptr<IUIFramework::SwitcherPool> UIWi::create(SwitcherPoolDesc
 
 inline std::unique_ptr<IUIFramework::WindowMenu> UIWi::create(WindowMenuDescription& description)
 {
-    return std::make_unique<WindowMenuObject>(context_, description.box, std::move(description.label),
-                                              description.role, std::move(description.on_event),
-                                              std::move(description.on_close));
+    return std::make_unique<WindowMenuObject>(context_, description.box, std::move(description.label), description.role,
+                                              std::move(description.on_event), std::move(description.on_close));
 }
 
 inline void UIWi::registryTheme(const std::string& name, const IRenderer::Color& primary,

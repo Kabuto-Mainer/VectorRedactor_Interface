@@ -41,19 +41,17 @@ public:
 
     virtual ~IUIFramework() = default;
 
-    virtual std::unique_ptr<Button>       create(ButtonDescription& description)       = 0;
-    virtual std::unique_ptr<Switcher>     create(SwitcherDescription& description)     = 0;
-    virtual std::unique_ptr<ContextMenu>  create(ContextMenuDescription& description)  = 0;
-    virtual std::unique_ptr<ButtonPool>   create(ButtonPoolDescription& description)   = 0;
-    virtual std::unique_ptr<SwitcherPool> create(SwitcherPoolDescription& description) = 0;
-    virtual std::unique_ptr<WindowMenu>   create(WindowMenuDescription& description)   = 0;
-    virtual void                          registryTheme(const std::string& name, const IRenderer::Color& primary,
-                                                        const IRenderer::Color& secondary,
-                                                        const IRenderer::Color& neutral,
-                                                        const IRenderer::Color& accent,
-                                                        const IRenderer::Color& unical) = 0;
-    virtual bool                          setTheme(const std::string& name)             = 0;
-    virtual bool                          setFont(const std::string& path)              = 0;
+    virtual std::unique_ptr<Button>       create(ButtonDescription& description)               = 0;
+    virtual std::unique_ptr<Switcher>     create(SwitcherDescription& description)             = 0;
+    virtual std::unique_ptr<ContextMenu>  create(ContextMenuDescription& description)          = 0;
+    virtual std::unique_ptr<ButtonPool>   create(ButtonPoolDescription& description)           = 0;
+    virtual std::unique_ptr<SwitcherPool> create(SwitcherPoolDescription& description)         = 0;
+    virtual std::unique_ptr<WindowMenu>   create(WindowMenuDescription& description)           = 0;
+    virtual void registryTheme(const std::string& name, const IRenderer::Color& primary,
+                               const IRenderer::Color& secondary, const IRenderer::Color& neutral,
+                               const IRenderer::Color& accent, const IRenderer::Color& unical) = 0;
+    virtual bool setTheme(const std::string& name)                                             = 0;
+    virtual bool setFont(const std::string& path)                                              = 0;
 }; // class IUIFramework
 
 enum class IUIFramework::Direction

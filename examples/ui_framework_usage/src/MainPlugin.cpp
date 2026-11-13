@@ -1,6 +1,7 @@
 #include "MainPlugin.hpp"
 
 #include "Core/ApplicationCore.hpp"
+#include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IUIFramework.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/BoxF.hpp"
@@ -23,6 +24,16 @@ IUIFramework* queryFramework()
         return nullptr;
     }
     return static_cast<IUIFramework*>(raw);
+}
+
+IDesktop* queryDesktop()
+{
+    void* raw = nullptr;
+    if (ApplicationCore::instance().queryInterface(IID_DESKTOP, &raw) != ApplicationCore::Error::SUCCESS)
+    {
+        return nullptr;
+    }
+    return static_cast<IDesktop*>(raw);
 }
 
 IUIFramework::Action callback(std::function<void()> fn)
@@ -87,6 +98,13 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
+    IDesktop* desktop = queryDesktop();
+    if (desktop == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Desktop is not loaded");
+        return false;
+    }
+
     ApplicationCore::instance().registerInterface(IID_MAIN_PLUGIN, reinterpret_cast<void*>(&IMainPlugin::instance()));
 
     std::unique_ptr<TObject> window = buildWindow(*framework);
@@ -96,7 +114,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    ApplicationCore::instance().root()->addChild(std::move(window));
+    desktop->addObject(std::move(window));
 
     return true;
 }
