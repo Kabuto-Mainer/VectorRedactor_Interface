@@ -171,20 +171,20 @@ inline float BoxF::maxY() const
 
 inline void BoxF::flipX()
 {
-	Vec2F left_top = left_top_;
-	Vec2F right_bottom = right_bottom_;
+    Vec2F left_top     = left_top_;
+    Vec2F right_bottom = right_bottom_;
 
-	left_top_.setX(right_bottom.x());
-	right_bottom_.setX(left_top.x());
+    left_top_.setX(right_bottom.x());
+    right_bottom_.setX(left_top.x());
 }
 
 inline void BoxF::flipY()
 {
-	Vec2F left_top = left_top_;
-	Vec2F right_bottom = right_bottom_;
+    Vec2F left_top     = left_top_;
+    Vec2F right_bottom = right_bottom_;
 
-	left_top_.setY(right_bottom.y());
-	right_bottom_.setY(left_top.y());
+    left_top_.setY(right_bottom.y());
+    right_bottom_.setY(left_top.y());
 }
 
 inline void BoxF::setLeft(float x)
