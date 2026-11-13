@@ -83,15 +83,18 @@ public:
 
     static constexpr ModifiersMask modifierToMask(Modifier modifier);
 
-    constexpr EventKeyboard(Key key);
-    constexpr EventKeyboard(Key key, ModifiersMask modifiers_mask);
+    constexpr EventKeyboard(Type type, Key key);
+    constexpr EventKeyboard(Type type, Key key, ModifiersMask modifiers_mask);
     template<typename... Tmodifier>
-    constexpr EventKeyboard(Key key, Tmodifier... modifiers);
+    constexpr EventKeyboard(Type type, Key key, Tmodifier... modifiers);
 
+    constexpr Type type() const;
+    constexpr Key key() const;
     template<typename... Tmodifier>
     constexpr bool hasModifiers(Tmodifier... modifiers);
 
 private:
+    Type type_;
     Key           key_;
     ModifiersMask modifiers_mask_ = 0;
 };
@@ -209,18 +212,19 @@ enum class IInputPump::EventKeyboard::Modifier : IInputPump::EventKeyboard::Modi
     RIGHT_META  = 1 << 7,
 };
 
-constexpr IInputPump::EventKeyboard::EventKeyboard(Key key) : key_(key)
+constexpr IInputPump::EventKeyboard::EventKeyboard(Type type, Key key)
+	: type_(type), key_(key)
 {
 }
 
-constexpr IInputPump::EventKeyboard::EventKeyboard(Key key, ModifiersMask modifiers_mask) :
-    key_(key), modifiers_mask_(modifiers_mask)
+constexpr IInputPump::EventKeyboard::EventKeyboard(Type type, Key key, ModifiersMask modifiers_mask) :
+    type_(type), key_(key), modifiers_mask_(modifiers_mask)
 {
 }
 
 template<typename... Tmodifier>
-constexpr IInputPump::EventKeyboard::EventKeyboard(Key key, Tmodifier... modifiers) :
-    key_(key), modifiers_mask_((modifierToMask(modifiers) | ...))
+constexpr IInputPump::EventKeyboard::EventKeyboard(Type type, Key key, Tmodifier... modifiers) :
+    type_(type), key_(key), modifiers_mask_((modifierToMask(modifiers) | ...))
 {
 }
 
@@ -228,6 +232,16 @@ template<typename... Tmodifier>
 constexpr bool IInputPump::EventKeyboard::hasModifiers(Tmodifier... modifiers)
 {
     return ((modifiers_mask_ & modifierToMask(modifiers)) && ...);
+}
+
+constexpr IInputPump::EventKeyboard::Key IInputPump::EventKeyboard::key() const
+{
+	return key_;
+}
+
+constexpr IInputPump::EventKeyboard::Type IInputPump::EventKeyboard::type() const
+{
+	return type_;
 }
 
 /* EventQuit */
