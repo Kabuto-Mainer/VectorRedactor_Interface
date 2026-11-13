@@ -29,7 +29,7 @@ public:
 
     virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID coid,
                                                   IDocument::AShapeComponent**   component) override final;
-    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID coid,
+    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID     coid,
                                                   IDocument::AShapeComponent const** component) const override final;
 };
 
@@ -106,7 +106,7 @@ inline ApplicationCore::Error RectangleShape::queryComponent(IDocument::AShapeCo
     return ApplicationCore::Error::INTERFACE_NOT_FOUND;
 }
 
-inline ApplicationCore::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID coid,
+inline ApplicationCore::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID     coid,
                                                              IDocument::AShapeComponent const** component) const
 {
     assert(component);

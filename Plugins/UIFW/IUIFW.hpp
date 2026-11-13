@@ -4,8 +4,8 @@
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Utils/ACommand.hpp"
-#include "Utils/TObject.hpp"
 #include "Utils/BoxF.hpp"
+#include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <functional>

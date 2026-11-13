@@ -2,8 +2,8 @@
 #include "IUIFW.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
+#include "TWidget.hpp"
 #include "Utils/ACommand.hpp"
-#include "AWidget.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
@@ -337,19 +337,19 @@ void runAction(Action& action)
     }
 }
 
-Vec2F globalCenter(const AWidget& widget)
+Vec2F globalCenter(const TWidget& widget)
 {
     return widget.mapLocalToGlobal(widget.box().size() / 2.0F);
 }
 
-BoxF globalBounds(const AWidget& widget)
+BoxF globalBounds(const TWidget& widget)
 {
     BoxF bounds(widget.box().size());
     bounds.setCenter(globalCenter(widget));
     return bounds;
 }
 
-class ButtonObject final : public AWidget
+class ButtonObject final : public TWidget
 {
 public:
     ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
@@ -403,7 +403,7 @@ inline void ButtonObject::render()
     drawContent(renderer, context_, icon_, text_, palette.text, bounds);
 }
 
-class SwitcherObject final : public AWidget
+class SwitcherObject final : public TWidget
 {
 public:
     SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
@@ -465,7 +465,7 @@ inline void SwitcherObject::render()
     drawContent(renderer, context_, icon_, text_, text, bounds);
 }
 
-class ContextMenuDescriptionObject final : public AWidget
+class ContextMenuDescriptionObject final : public TWidget
 {
 public:
     ContextMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role,
@@ -533,7 +533,7 @@ inline bool ContextMenuDescriptionObject::isPressOutside(const IInputPump::Event
            !globalBounds(*this).contains(mouse->cursorPos());
 }
 
-class PoolMenuDescriptionObject final : public AWidget
+class PoolMenuDescriptionObject final : public TWidget
 {
 public:
     PoolMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role);
@@ -571,7 +571,7 @@ inline void PoolMenuDescriptionObject::render()
     renderChildren();
 }
 
-class WindowDescriptionObject final : public AWidget
+class WindowDescriptionObject final : public TWidget
 {
 public:
     WindowDescriptionObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label,

@@ -3,6 +3,7 @@
 
 #include "Components.hpp"
 #include "Interfaces/IDocument.hpp"
+
 #include <cassert>
 #include <cmath>
 
@@ -28,9 +29,8 @@ public:
 
     virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID coid,
                                                   IDocument::AShapeComponent**   component) override final;
-    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID coid,
+    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID     coid,
                                                   IDocument::AShapeComponent const** component) const override final;
-
 };
 
 /* ====================== Implementation ====================== */
@@ -101,7 +101,7 @@ inline ApplicationCore::Error EllipseShape::queryComponent(IDocument::AShapeComp
     return ApplicationCore::Error::INTERFACE_NOT_FOUND;
 }
 
-inline ApplicationCore::Error EllipseShape::queryComponent(IDocument::AShapeComponent::ID coid,
+inline ApplicationCore::Error EllipseShape::queryComponent(IDocument::AShapeComponent::ID     coid,
                                                            IDocument::AShapeComponent const** component) const
 {
     assert(component);

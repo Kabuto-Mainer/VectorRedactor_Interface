@@ -18,7 +18,7 @@ public:
 
     virtual ~TObject() = default;
 
-    ID id() const;
+    ID       id() const;
     TObject* parent() const;
     void     setParent(TObject* new_parent);
 
@@ -49,7 +49,7 @@ protected:
 private:
     static ID generateID();
 
-    ID                            id_;
+    ID                                  id_;
     std::list<std::unique_ptr<TObject>> children_;
     TObject*                            parent_ = nullptr;
 };
@@ -79,7 +79,7 @@ inline bool TObject::processEventChildren(const IInputPump::Event& event)
 
 inline TObject::ID TObject::generateID()
 {
-    static std::mt19937_64                         generator(std::random_device{}());
+    static std::mt19937_64                   generator(std::random_device{}());
     static std::uniform_int_distribution<ID> distribution;
 
     return distribution(generator);

@@ -1,11 +1,11 @@
-#ifndef A_WIDGET_HPP
-#define A_WIDGET_HPP
+#ifndef T_WIDGET_HPP
+#define T_WIDGET_HPP
 
-#include "Utils/TObject.hpp"
 #include "Utils/BoxF.hpp"
+#include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
-class AWidget : public TObject
+class TWidget : public TObject
 {
 
 public:
@@ -18,19 +18,19 @@ public:
 private:
     BoxF box_;
 
-}; // class AWidget
+}; // class TWidget
 
-inline BoxF AWidget::box() const
+inline BoxF TWidget::box() const
 {
     return box_;
 }
 
-inline void AWidget::setBox(const BoxF& box)
+inline void TWidget::setBox(const BoxF& box)
 {
     box_ = box;
 }
 
-inline Vec2F AWidget::mapGlobalToLocal(const Vec2F& pos) const
+inline Vec2F TWidget::mapGlobalToLocal(const Vec2F& pos) const
 {
     if (this->parent() == nullptr)
     {
@@ -39,7 +39,7 @@ inline Vec2F AWidget::mapGlobalToLocal(const Vec2F& pos) const
     return parent()->mapGlobalToLocal(pos) - box().topLeft();
 }
 
-inline Vec2F AWidget::mapLocalToGlobal(const Vec2F& pos) const
+inline Vec2F TWidget::mapLocalToGlobal(const Vec2F& pos) const
 {
     if (this->parent() == nullptr)
     {
@@ -48,4 +48,4 @@ inline Vec2F AWidget::mapLocalToGlobal(const Vec2F& pos) const
     return parent()->mapLocalToGlobal(pos + box().topLeft());
 }
 
-#endif // A_WIDGET_HPP
+#endif // T_WIDGET_HPP
