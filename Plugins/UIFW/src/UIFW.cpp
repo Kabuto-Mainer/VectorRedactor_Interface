@@ -1,5 +1,5 @@
 #include "Core/ApplicationCore.hpp"
-#include "Interfaces/IUIFramework.hpp"
+#include "IUIFramework.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/ACommand.hpp"
@@ -264,7 +264,7 @@ void layoutChildren(TObject& parent, const Vec2F& size, IUIFramework::Direction 
     std::size_t                  index      = 0;
     for (auto& child : parent.children())
     {
-        static_cast<IUIFramework::TWidget&>(*child).setBox(*placements[index++]);
+        static_cast<TWidget&>(*child).setBox(*placements[index++]);
     }
 }
 
@@ -346,12 +346,12 @@ void runAction(IUIFramework::Action& action)
     }
 }
 
-Vec2F globalCenter(const IUIFramework::TWidget& widget)
+Vec2F globalCenter(const TWidget& widget)
 {
     return widget.mapLocalToGlobal(widget.box().size() / 2.0F);
 }
 
-BoxF globalBounds(const IUIFramework::TWidget& widget)
+BoxF globalBounds(const TWidget& widget)
 {
     BoxF bounds(widget.box().size());
     bounds.setCenter(globalCenter(widget));
