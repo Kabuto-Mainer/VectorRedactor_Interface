@@ -1,7 +1,8 @@
 #include "MainPlugin.hpp"
 
 #include "Core/ApplicationCore.hpp"
-#include "IUIFW.hpp"
+#include "Interfaces/IDesktop.hpp"
+#include "Interfaces/IUIFramework.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
@@ -15,32 +16,42 @@
 namespace
 {
 
-UI::IFramework* queryFramework()
+IUIFramework* queryFramework()
 {
     void* raw = nullptr;
     if (ApplicationCore::instance().queryInterface(IID_IUIFramework, &raw) != ApplicationCore::Error::SUCCESS)
     {
         return nullptr;
     }
-    return static_cast<UI::IFramework*>(raw);
+    return static_cast<IUIFramework*>(raw);
 }
 
-UI::Action callback(std::function<void()> fn)
+IDesktop* queryDesktop()
 {
-    UI::Action action;
+    void* raw = nullptr;
+    if (ApplicationCore::instance().queryInterface(IID_DESKTOP, &raw) != ApplicationCore::Error::SUCCESS)
+    {
+        return nullptr;
+    }
+    return static_cast<IDesktop*>(raw);
+}
+
+IUIFramework::Action callback(std::function<void()> fn)
+{
+    IUIFramework::Action action;
     action.callbacks.push_back(std::move(fn));
     return action;
 }
 
-std::unique_ptr<TObject> buildWindow(UI::IFramework& framework)
+std::unique_ptr<IUIFramework::WindowMenu> buildWindow(IUIFramework& framework)
 {
-    auto window = std::make_unique<UI::WindowDescription>();
+    IUIFramework::WindowMenuDescription window;
 
-    window->box   = BoxF(100.0F, 100.0F, 520.0F, 420.0F);
-    window->label = std::string("UI Framework demo");
-    window->role  = UI::Role::PRIMARY;
+    window.box   = BoxF(100.0F, 100.0F, 520.0F, 420.0F);
+    window.label = std::string("UI Framework demo");
+    window.role  = IUIFramework::Role::PRIMARY;
 
-    window->on_event = [](const IInputPump::Event& event)
+    window.on_event = [](const IInputPump::Event& event)
     {
         if (std::holds_alternative<IInputPump::EventQuit>(event))
         {
@@ -49,39 +60,48 @@ std::unique_ptr<TObject> buildWindow(UI::IFramework& framework)
         }
         return false;
     };
-    window->on_close = callback([] { ApplicationCore::instance().stop(); });
+    window.on_close = callback([] { ApplicationCore::instance().stop(); });
 
-    auto hello      = std::make_unique<UI::ButtonDescription>();
-    hello->box      = BoxF(130.0F, 160.0F, 290.0F, 200.0F);
-    hello->text     = std::string("Hello");
-    hello->on_press = callback([] { ApplicationCore::log(ApplicationCore::LogLevel::OK, "Hello pressed"); });
-    window->objects.push_back(std::move(hello));
+    auto window_menu = framework.create(window);
 
-    auto dark         = std::make_unique<UI::SwitcherDescription>();
-    dark->box         = BoxF(310.0F, 160.0F, 470.0F, 200.0F);
-    dark->text        = std::string("Dark theme");
-    dark->on_active   = callback([&framework] { framework.setTheme("dark"); });
-    dark->on_deactive = callback([&framework] { framework.setTheme("default"); });
-    window->objects.push_back(std::move(dark));
+    IUIFramework::ButtonDescription hello;
+    hello.box      = BoxF(130.0F, 160.0F, 290.0F, 200.0F);
+    hello.text     = std::string("Hello");
+    hello.on_press = callback([] { ApplicationCore::log(ApplicationCore::LogLevel::OK, "Hello pressed"); });
+    window_menu->add(framework.create(hello));
 
-    auto quit      = std::make_unique<UI::ButtonDescription>();
-    quit->box      = BoxF(130.0F, 240.0F, 290.0F, 280.0F);
-    quit->text     = std::string("Quit");
-    quit->role     = UI::Role::DANGER;
-    quit->on_press = callback([] { ApplicationCore::instance().stop(); });
-    window->objects.push_back(std::move(quit));
+    IUIFramework::SwitcherDescription dark;
+    dark.box         = BoxF(310.0F, 160.0F, 470.0F, 200.0F);
+    dark.text        = std::string("Dark theme");
+    dark.on_active   = callback([&framework] { framework.setTheme("dark"); });
+    dark.on_deactive = callback([&framework] { framework.setTheme("default"); });
+    window_menu->add(framework.create(dark));
 
-    return framework.create(*window);
+    IUIFramework::ButtonDescription quit;
+    quit.box      = BoxF(130.0F, 240.0F, 290.0F, 280.0F);
+    quit.text     = std::string("Quit");
+    quit.role     = IUIFramework::Role::DANGER;
+    quit.on_press = callback([] { ApplicationCore::instance().stop(); });
+    window_menu->add(framework.create(quit));
+
+    return window_menu;
 }
 
 } // namespace
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-    UI::IFramework* framework = queryFramework();
+    IUIFramework* framework = queryFramework();
     if (framework == nullptr)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "UI framework is not loaded");
+        return false;
+    }
+
+    IDesktop* desktop = queryDesktop();
+    if (desktop == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Desktop is not loaded");
         return false;
     }
 
@@ -94,7 +114,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    ApplicationCore::instance().root()->addChild(std::move(window));
+    desktop->addObject(std::move(window));
 
     return true;
 }

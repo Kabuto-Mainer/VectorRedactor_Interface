@@ -1,8 +1,7 @@
 #include "Core/ApplicationCore.hpp"
-#include "IUIFW.hpp"
+#include "IUIFramework.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
-#include "TWidget.hpp"
 #include "Utils/ACommand.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
@@ -101,17 +100,17 @@ Palette derive(const IRenderer::Color& base, const IRenderer::Color& surface, co
 
 struct Theme
 {
-    IRenderer::Color                                                  WindowDescription;
-    IRenderer::Color                                                  surface;
-    IRenderer::Color                                                  accent;
-    std::array<IRenderer::Color, static_cast<std::size_t>(Role::MAX)> role_bases;
+    IRenderer::Color                                                                canvas;
+    IRenderer::Color                                                                surface;
+    IRenderer::Color                                                                accent;
+    std::array<IRenderer::Color, static_cast<std::size_t>(IUIFramework::Role::MAX)> role_bases;
 
-    Palette palette(Role role) const;
+    Palette palette(IUIFramework::IUIFramework::Role role) const;
 };
 
-inline Palette Theme::palette(Role role) const
+inline Palette Theme::palette(IUIFramework::Role role) const
 {
-    return derive(role_bases[static_cast<std::size_t>(role)], surface, WindowDescription);
+    return derive(role_bases[static_cast<std::size_t>(role)], surface, canvas);
 }
 
 Theme makeTheme(const IRenderer::Color& primary, const IRenderer::Color& secondary, const IRenderer::Color& neutral,
@@ -140,7 +139,7 @@ BoxF makeBox(const Vec2F& pos, const Vec2F& size)
 
 } // namespace
 
-class UIWi final : public IFramework
+class UIWi final : public IUIFramework
 {
 public:
     UIWi();
@@ -148,7 +147,12 @@ public:
     UIWi(const UIWi&)            = delete;
     UIWi& operator=(const UIWi&) = delete;
 
-    std::unique_ptr<TObject> create(ADescription& description) override;
+    std::unique_ptr<Button>       create(ButtonDescription& description) override;
+    std::unique_ptr<Switcher>     create(SwitcherDescription& description) override;
+    std::unique_ptr<ContextMenu>  create(ContextMenuDescription& description) override;
+    std::unique_ptr<ButtonPool>   create(ButtonPoolDescription& description) override;
+    std::unique_ptr<SwitcherPool> create(SwitcherPoolDescription& description) override;
+    std::unique_ptr<WindowMenu>   create(WindowMenuDescription& description) override;
 
     void registryTheme(const std::string& name, const IRenderer::Color& primary, const IRenderer::Color& secondary,
                        const IRenderer::Color& neutral, const IRenderer::Color& accent,
@@ -180,11 +184,6 @@ IRenderer* queryRenderer()
 const IInputPump::EventMouse* asMouse(const IInputPump::Event& event)
 {
     return std::get_if<IInputPump::EventMouse>(&event);
-}
-
-Role resolveRole(const std::optional<Role>& role)
-{
-    return role.value_or(Role::DEFAULT);
 }
 
 std::optional<IRenderer::TextureID> loadIcon(const std::optional<std::string>& path)
@@ -228,16 +227,16 @@ void drawContent(IRenderer* renderer, const RenderContext& context, const std::o
     }
 }
 
-Vec2F menuSize(Direction direction, std::size_t count)
+Vec2F menuSize(IUIFramework::Direction direction, std::size_t count)
 {
     const auto items = static_cast<float>(count);
-    return direction == Direction::VERTICAL ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items) :
-                                              Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
+    return direction == IUIFramework::Direction::VERTICAL ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items) :
+                                                            Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
 }
 
 typedef std::optional<BoxF> Placement;
 
-std::vector<Placement> slotsFor(const Vec2F& size, Direction direction, std::size_t count)
+std::vector<Placement> slotsFor(const Vec2F& size, IUIFramework::Direction direction, std::size_t count)
 {
     std::vector<Placement> slots;
     if (count == 0)
@@ -246,9 +245,9 @@ std::vector<Placement> slotsFor(const Vec2F& size, Direction direction, std::siz
     }
 
     const auto  divider = static_cast<float>(count);
-    const Vec2F slot =
-        direction == Direction::VERTICAL ? Vec2F(size.x(), size.y() / divider) : Vec2F(size.x() / divider, size.y());
-    const Vec2F step = direction == Direction::VERTICAL ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
+    const Vec2F slot    = direction == IUIFramework::Direction::VERTICAL ? Vec2F(size.x(), size.y() / divider) :
+                                                                           Vec2F(size.x() / divider, size.y());
+    const Vec2F step = direction == IUIFramework::Direction::VERTICAL ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
 
     Vec2F position;
     for (std::size_t i = 0; i < count; ++i)
@@ -257,6 +256,16 @@ std::vector<Placement> slotsFor(const Vec2F& size, Direction direction, std::siz
         position = position + step;
     }
     return slots;
+}
+
+void layoutChildren(TObject& parent, const Vec2F& size, IUIFramework::Direction direction)
+{
+    const std::vector<Placement> placements = slotsFor(size, direction, parent.children().size());
+    std::size_t                  index      = 0;
+    for (auto& child : parent.children())
+    {
+        static_cast<TWidget&>(*child).setBox(*placements[index++]);
+    }
 }
 
 enum class PressResult
@@ -325,7 +334,7 @@ inline IRenderer::Color PressTracker::background(const IRenderer::Color& idle, c
     return idle;
 }
 
-void runAction(Action& action)
+void runAction(IUIFramework::Action& action)
 {
     for (auto& command : action.actions)
     {
@@ -349,11 +358,11 @@ BoxF globalBounds(const TWidget& widget)
     return bounds;
 }
 
-class ButtonObject final : public TWidget
+class ButtonObject final : public IUIFramework::Button
 {
 public:
     ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                 std::optional<IRenderer::TextureID> icon, Role role, Action on_press);
+                 std::optional<IRenderer::TextureID> icon, IUIFramework::Role role, IUIFramework::Action on_press);
 
     bool processEvent(const IInputPump::Event& event) override;
 
@@ -363,13 +372,14 @@ private:
     const RenderContext&                context_;
     std::optional<std::string>          text_;
     std::optional<IRenderer::TextureID> icon_;
-    Role                                role_;
-    Action                              on_press_;
+    IUIFramework::Role                  role_;
+    IUIFramework::Action                on_press_;
     PressTracker                        press_;
 };
 
 inline ButtonObject::ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                                  std::optional<IRenderer::TextureID> icon, Role role, Action on_press) :
+                                  std::optional<IRenderer::TextureID> icon, IUIFramework::Role role,
+                                  IUIFramework::Action on_press) :
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_press_(std::move(on_press))
 {
     setBox(bounds);
@@ -403,30 +413,56 @@ inline void ButtonObject::render()
     drawContent(renderer, context_, icon_, text_, palette.text, bounds);
 }
 
-class SwitcherObject final : public TWidget
+class SwitcherObject final : public IUIFramework::Switcher
 {
 public:
     SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                   std::optional<IRenderer::TextureID> icon, Role role, Action on_active, Action on_deactive);
+                   std::optional<IRenderer::TextureID> icon, IUIFramework::Role role, IUIFramework::Action on_active,
+                   IUIFramework::Action on_deactive);
 
     bool processEvent(const IInputPump::Event& event) override;
 
     void render() override;
 
+    bool isActive() const;
+    void activate();
+    void deactivate();
+
 private:
     const RenderContext&                context_;
     std::optional<std::string>          text_;
     std::optional<IRenderer::TextureID> icon_;
-    Role                                role_;
-    Action                              on_active_;
-    Action                              on_deactive_;
+    IUIFramework::Role                  role_;
+    IUIFramework::Action                on_active_;
+    IUIFramework::Action                on_deactive_;
     PressTracker                        press_;
     bool                                active_ = false;
 };
 
+class SwitcherPoolObject final : public IUIFramework::SwitcherPool
+{
+public:
+    SwitcherPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size,
+                       IUIFramework::Direction direction, IUIFramework::Role role);
+
+    void add(std::unique_ptr<IUIFramework::Switcher> switcher) override;
+
+    bool processEvent(const IInputPump::Event& event) override;
+
+    void render() override;
+
+    void select(SwitcherObject& target);
+
+private:
+    const RenderContext&    context_;
+    Vec2F                   size_;
+    IUIFramework::Direction direction_;
+    IUIFramework::Role      role_;
+};
+
 inline SwitcherObject::SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
-                                      std::optional<IRenderer::TextureID> icon, Role role, Action on_active,
-                                      Action on_deactive) :
+                                      std::optional<IRenderer::TextureID> icon, IUIFramework::Role role,
+                                      IUIFramework::Action on_active, IUIFramework::Action on_deactive) :
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_active_(std::move(on_active)),
     on_deactive_(std::move(on_deactive))
 {
@@ -438,8 +474,18 @@ inline bool SwitcherObject::processEvent(const IInputPump::Event& event)
     switch (press_.process(globalBounds(*this), event))
     {
         case PressResult::CLICKED:
-            active_ = !active_;
-            runAction(active_ ? on_active_ : on_deactive_);
+            if (auto* pool = dynamic_cast<SwitcherPoolObject*>(parent()))
+            {
+                pool->select(*this);
+            }
+            else if (active_)
+            {
+                deactivate();
+            }
+            else
+            {
+                activate();
+            }
             return true;
         case PressResult::CONSUMED:
             return true;
@@ -465,33 +511,175 @@ inline void SwitcherObject::render()
     drawContent(renderer, context_, icon_, text_, text, bounds);
 }
 
-class ContextMenuDescriptionObject final : public TWidget
+inline bool SwitcherObject::isActive() const
+{
+    return active_;
+}
+
+inline void SwitcherObject::activate()
+{
+    active_ = true;
+    runAction(on_active_);
+}
+
+inline void SwitcherObject::deactivate()
+{
+    active_ = false;
+    runAction(on_deactive_);
+}
+
+inline SwitcherPoolObject::SwitcherPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size,
+                                              IUIFramework::Direction direction, IUIFramework::Role role) :
+    context_(context), size_(size), direction_(direction), role_(role)
+{
+    setBox(makeBox(min_point, size));
+}
+
+inline void SwitcherPoolObject::add(std::unique_ptr<IUIFramework::Switcher> switcher)
+{
+    addChild(std::move(switcher));
+    layoutChildren(*this, size_, direction_);
+}
+
+inline bool SwitcherPoolObject::processEvent(const IInputPump::Event& event)
+{
+    return processEventChildren(event);
+}
+
+inline void SwitcherPoolObject::render()
+{
+    IRenderer* renderer = queryRenderer();
+    if (!renderer)
+    {
+        return;
+    }
+
+    const Palette palette = context_.theme->palette(role_);
+    drawPanel(renderer, palette.surface, palette.border, globalBounds(*this));
+    renderChildren();
+}
+
+inline void SwitcherPoolObject::select(SwitcherObject& target)
+{
+    if (target.isActive())
+    {
+        return;
+    }
+
+    for (auto& child : children())
+    {
+        auto& switcher = static_cast<SwitcherObject&>(*child);
+        if (switcher.isActive())
+        {
+            switcher.deactivate();
+        }
+    }
+    target.activate();
+}
+
+class ButtonPoolObject final : public IUIFramework::ButtonPool
 {
 public:
-    ContextMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role,
-                                 std::optional<EventHandler> on_event);
+    ButtonPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size,
+                     IUIFramework::Direction direction, IUIFramework::Role role);
+
+    void add(std::unique_ptr<IUIFramework::Button> button) override;
 
     bool processEvent(const IInputPump::Event& event) override;
 
     void render() override;
 
 private:
-    bool isPressOutside(const IInputPump::Event& event) const;
-
-    const RenderContext&        context_;
-    Role                        role_;
-    std::optional<EventHandler> on_event_;
-    bool                        visible_ = true;
+    const RenderContext&    context_;
+    Vec2F                   size_;
+    IUIFramework::Direction direction_;
+    IUIFramework::Role      role_;
 };
 
-inline ContextMenuDescriptionObject::ContextMenuDescriptionObject(const RenderContext& context, const BoxF& bounds,
-                                                                  Role role, std::optional<EventHandler> on_event) :
-    context_(context), role_(role), on_event_(std::move(on_event))
+inline ButtonPoolObject::ButtonPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size,
+                                          IUIFramework::Direction direction, IUIFramework::Role role) :
+    context_(context), size_(size), direction_(direction), role_(role)
 {
-    setBox(bounds);
+    setBox(makeBox(min_point, size));
 }
 
-inline bool ContextMenuDescriptionObject::processEvent(const IInputPump::Event& event)
+inline void ButtonPoolObject::add(std::unique_ptr<IUIFramework::Button> button)
+{
+    addChild(std::move(button));
+    layoutChildren(*this, size_, direction_);
+}
+
+inline bool ButtonPoolObject::processEvent(const IInputPump::Event& event)
+{
+    return processEventChildren(event);
+}
+
+inline void ButtonPoolObject::render()
+{
+    IRenderer* renderer = queryRenderer();
+    if (!renderer)
+    {
+        return;
+    }
+
+    const Palette palette = context_.theme->palette(role_);
+    drawPanel(renderer, palette.surface, palette.border, globalBounds(*this));
+    renderChildren();
+}
+
+class ContextMenuObject final : public IUIFramework::ContextMenu
+{
+public:
+    ContextMenuObject(const RenderContext& context, const Vec2F& min_point, IUIFramework::Direction direction,
+                      IUIFramework::Role role, std::optional<IUIFramework::EventHandler> on_event);
+
+    void add(std::unique_ptr<IUIFramework::Button> button) override;
+    void add(std::unique_ptr<IUIFramework::Switcher> switcher) override;
+
+    bool processEvent(const IInputPump::Event& event) override;
+
+    void render() override;
+
+private:
+    void relayout();
+
+    bool isPressOutside(const IInputPump::Event& event) const;
+
+    const RenderContext&                      context_;
+    Vec2F                                     min_point_;
+    IUIFramework::Direction                   direction_;
+    IUIFramework::Role                        role_;
+    std::optional<IUIFramework::EventHandler> on_event_;
+    bool                                      visible_ = true;
+};
+
+inline ContextMenuObject::ContextMenuObject(const RenderContext& context, const Vec2F& min_point,
+                                            IUIFramework::Direction direction, IUIFramework::Role role,
+                                            std::optional<IUIFramework::EventHandler> on_event) :
+    context_(context), min_point_(min_point), direction_(direction), role_(role), on_event_(std::move(on_event))
+{
+    relayout();
+}
+
+inline void ContextMenuObject::add(std::unique_ptr<IUIFramework::Button> button)
+{
+    addChild(std::move(button));
+    relayout();
+}
+
+inline void ContextMenuObject::add(std::unique_ptr<IUIFramework::Switcher> switcher)
+{
+    addChild(std::move(switcher));
+    relayout();
+}
+
+inline void ContextMenuObject::relayout()
+{
+    setBox(makeBox(min_point_, menuSize(direction_, children().size())));
+    layoutChildren(*this, box().size(), direction_);
+}
+
+inline bool ContextMenuObject::processEvent(const IInputPump::Event& event)
 {
     if (!visible_)
     {
@@ -512,7 +700,7 @@ inline bool ContextMenuDescriptionObject::processEvent(const IInputPump::Event& 
     return processEventChildren(event);
 }
 
-inline void ContextMenuDescriptionObject::render()
+inline void ContextMenuObject::render()
 {
     IRenderer* renderer = queryRenderer();
     if (!visible_ || !renderer)
@@ -525,7 +713,7 @@ inline void ContextMenuDescriptionObject::render()
     renderChildren();
 }
 
-inline bool ContextMenuDescriptionObject::isPressOutside(const IInputPump::Event& event) const
+inline bool ContextMenuObject::isPressOutside(const IInputPump::Event& event) const
 {
     const IInputPump::EventMouse* mouse = asMouse(event);
     return mouse &&
@@ -533,70 +721,75 @@ inline bool ContextMenuDescriptionObject::isPressOutside(const IInputPump::Event
            !globalBounds(*this).contains(mouse->cursorPos());
 }
 
-class PoolMenuDescriptionObject final : public TWidget
+class WindowMenuObject final : public IUIFramework::WindowMenu
 {
 public:
-    PoolMenuDescriptionObject(const RenderContext& context, const BoxF& bounds, Role role);
+    WindowMenuObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label,
+                     IUIFramework::Role role, std::optional<IUIFramework::EventHandler> on_event,
+                     std::optional<IUIFramework::Action> on_close);
+
+    void add(std::unique_ptr<IUIFramework::Button> button) override;
+    void add(std::unique_ptr<IUIFramework::Switcher> switcher) override;
+    void add(std::unique_ptr<IUIFramework::ContextMenu> menu) override;
+    void add(std::unique_ptr<IUIFramework::ButtonPool> pool) override;
+    void add(std::unique_ptr<IUIFramework::SwitcherPool> pool) override;
 
     bool processEvent(const IInputPump::Event& event) override;
 
     void render() override;
 
 private:
-    const RenderContext& context_;
-    Role                 role_;
+    const RenderContext&                      context_;
+    std::optional<std::string>                label_;
+    IUIFramework::Role                        role_;
+    std::optional<IUIFramework::EventHandler> on_event_;
 };
 
-inline PoolMenuDescriptionObject::PoolMenuDescriptionObject(const RenderContext& context, const BoxF& bounds,
-                                                            Role role) : context_(context), role_(role)
-{
-    setBox(bounds);
-}
-
-inline bool PoolMenuDescriptionObject::processEvent(const IInputPump::Event& event)
-{
-    return processEventChildren(event);
-}
-
-inline void PoolMenuDescriptionObject::render()
-{
-    IRenderer* renderer = queryRenderer();
-    if (!renderer)
-    {
-        return;
-    }
-
-    const Palette palette = context_.theme->palette(role_);
-    drawPanel(renderer, palette.surface, palette.border, globalBounds(*this));
-    renderChildren();
-}
-
-class WindowDescriptionObject final : public TWidget
-{
-public:
-    WindowDescriptionObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> label,
-                            Role role, std::optional<EventHandler> on_event);
-
-    bool processEvent(const IInputPump::Event& event) override;
-
-    void render() override;
-
-private:
-    const RenderContext&        context_;
-    std::optional<std::string>  label_;
-    Role                        role_;
-    std::optional<EventHandler> on_event_;
-};
-
-inline WindowDescriptionObject::WindowDescriptionObject(const RenderContext& context, const BoxF& bounds,
-                                                        std::optional<std::string> label, Role role,
-                                                        std::optional<EventHandler> on_event) :
+inline WindowMenuObject::WindowMenuObject(const RenderContext& context, const BoxF& bounds,
+                                          std::optional<std::string> label, IUIFramework::Role role,
+                                          std::optional<IUIFramework::EventHandler> on_event,
+                                          std::optional<IUIFramework::Action>       on_close) :
     context_(context), label_(std::move(label)), role_(role), on_event_(std::move(on_event))
 {
     setBox(bounds);
+
+    if (on_close)
+    {
+        const Vec2F size = bounds.size();
+        const Vec2F close_pos(size.x() - CLOSE_BUTTON_SIZE - PADDING, PADDING);
+        addChild(
+            std::make_unique<ButtonObject>(context_, makeBox(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
+                                           std::optional<std::string>("X"), std::nullopt, role_, std::move(*on_close))
+        );
+    }
 }
 
-inline bool WindowDescriptionObject::processEvent(const IInputPump::Event& event)
+inline void WindowMenuObject::add(std::unique_ptr<IUIFramework::Button> button)
+{
+    addChild(std::move(button));
+}
+
+inline void WindowMenuObject::add(std::unique_ptr<IUIFramework::Switcher> switcher)
+{
+    addChild(std::move(switcher));
+}
+
+inline void WindowMenuObject::add(std::unique_ptr<IUIFramework::ContextMenu> menu)
+{
+    addChild(std::move(menu));
+}
+
+inline void WindowMenuObject::add(std::unique_ptr<IUIFramework::ButtonPool> pool)
+{
+    addChild(std::move(pool));
+}
+
+inline void WindowMenuObject::add(std::unique_ptr<IUIFramework::SwitcherPool> pool)
+{
+    addChild(std::move(pool));
+}
+
+inline bool WindowMenuObject::processEvent(const IInputPump::Event& event)
 {
     if (on_event_ && (*on_event_)(event))
     {
@@ -605,7 +798,7 @@ inline bool WindowDescriptionObject::processEvent(const IInputPump::Event& event
     return processEventChildren(event);
 }
 
-inline void WindowDescriptionObject::render()
+inline void WindowMenuObject::render()
 {
     IRenderer* renderer = queryRenderer();
     if (!renderer)
@@ -635,127 +828,6 @@ inline void WindowDescriptionObject::render()
     renderChildren();
 }
 
-class Builder final : public ADescriptionVisitor
-{
-public:
-    Builder(const RenderContext& context, Placement placement);
-
-    std::unique_ptr<TObject> take();
-
-    bool visitButton(ADescription& description) override;
-    bool visitSwitcher(ADescription& description) override;
-    bool visitContextMenu(ADescription& description) override;
-    bool visitPoolMenu(ADescription& description) override;
-    bool visitWindow(ADescription& description) override;
-
-private:
-    bool addChildren(TObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
-                     const std::vector<Placement>& placements);
-
-    const RenderContext&     context_;
-    Placement                placement_;
-    std::unique_ptr<TObject> result_;
-};
-
-inline Builder::Builder(const RenderContext& context, Placement placement) : context_(context), placement_(placement)
-{
-}
-
-inline std::unique_ptr<TObject> Builder::take()
-{
-    return std::move(result_);
-}
-
-inline bool Builder::visitButton(ADescription& description)
-{
-    auto& button = static_cast<ButtonDescription&>(description);
-    result_ =
-        std::make_unique<ButtonObject>(context_, placement_.value_or(button.box), std::move(button.text),
-                                       loadIcon(button.icon), resolveRole(button.role), std::move(button.on_press));
-    return true;
-}
-
-inline bool Builder::visitSwitcher(ADescription& description)
-{
-    auto& switcher = static_cast<SwitcherDescription&>(description);
-    result_ = std::make_unique<SwitcherObject>(context_, placement_.value_or(switcher.box), std::move(switcher.text),
-                                               loadIcon(switcher.icon), resolveRole(switcher.role),
-                                               std::move(switcher.on_active), std::move(switcher.on_deactive));
-    return true;
-}
-
-inline bool Builder::visitContextMenu(ADescription& description)
-{
-    auto&             menu   = static_cast<ContextMenuDescription&>(description);
-    const std::size_t count  = menu.objects.size();
-    const BoxF        bounds = placement_.value_or(makeBox(menu.min_point, menuSize(menu.direction, count)));
-
-    auto object = std::make_unique<ContextMenuDescriptionObject>(context_, bounds, resolveRole(menu.role),
-                                                                 std::move(menu.on_event));
-    if (!addChildren(*object, menu.objects, slotsFor(bounds.size(), menu.direction, count)))
-    {
-        return false;
-    }
-    result_ = std::move(object);
-    return true;
-}
-
-inline bool Builder::visitPoolMenu(ADescription& description)
-{
-    auto&      pool   = static_cast<PoolMenuDescription&>(description);
-    const BoxF bounds = placement_.value_or(makeBox(pool.min_point, pool.size));
-
-    auto object = std::make_unique<PoolMenuDescriptionObject>(context_, bounds, resolveRole(pool.role));
-    if (!addChildren(*object, pool.objects, slotsFor(bounds.size(), pool.direction, pool.objects.size())))
-    {
-        return false;
-    }
-    result_ = std::move(object);
-    return true;
-}
-
-inline bool Builder::visitWindow(ADescription& description)
-{
-    auto&      window = static_cast<WindowDescription&>(description);
-    const BoxF bounds = placement_.value_or(window.box);
-    const Role role   = resolveRole(window.role);
-
-    auto object = std::make_unique<WindowDescriptionObject>(context_, bounds, std::move(window.label), role,
-                                                            std::move(window.on_event));
-
-    if (window.on_close)
-    {
-        const Vec2F size = bounds.size();
-        const Vec2F close_pos(size.x() - CLOSE_BUTTON_SIZE - PADDING, PADDING);
-        object->addChild(std::make_unique<ButtonObject>(context_,
-                                                        makeBox(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
-                                                        std::optional<std::string>("X"), std::nullopt, role,
-                                                        std::move(*window.on_close)));
-    }
-
-    if (!addChildren(*object, window.objects, std::vector<Placement>(window.objects.size())))
-    {
-        return false;
-    }
-    result_ = std::move(object);
-    return true;
-}
-
-inline bool Builder::addChildren(TObject& parent, std::vector<std::unique_ptr<ADescription>>& objects,
-                                 const std::vector<Placement>& placements)
-{
-    for (std::size_t i = 0; i < objects.size(); ++i)
-    {
-        Builder child(context_, placements[i]);
-        if (!objects[i]->accept(child))
-        {
-            return false;
-        }
-        parent.addChild(child.take());
-    }
-    return true;
-}
-
 } // namespace
 
 inline UIWi::UIWi()
@@ -769,14 +841,42 @@ inline UIWi::UIWi()
     setTheme(DEFAULT_THEME_NAME);
 }
 
-inline std::unique_ptr<TObject> UIWi::create(ADescription& description)
+inline std::unique_ptr<IUIFramework::Button> UIWi::create(ButtonDescription& description)
 {
-    Builder builder(context_, std::nullopt);
-    if (!description.accept(builder))
-    {
-        return nullptr;
-    }
-    return builder.take();
+    return std::make_unique<ButtonObject>(context_, description.box, std::move(description.text),
+                                          loadIcon(description.icon), description.role,
+                                          std::move(description.on_press));
+}
+
+inline std::unique_ptr<IUIFramework::Switcher> UIWi::create(SwitcherDescription& description)
+{
+    return std::make_unique<SwitcherObject>(context_, description.box, std::move(description.text),
+                                            loadIcon(description.icon), description.role,
+                                            std::move(description.on_active), std::move(description.on_deactive));
+}
+
+inline std::unique_ptr<IUIFramework::ContextMenu> UIWi::create(ContextMenuDescription& description)
+{
+    return std::make_unique<ContextMenuObject>(context_, description.min_point, description.direction, description.role,
+                                               std::move(description.on_event));
+}
+
+inline std::unique_ptr<IUIFramework::ButtonPool> UIWi::create(ButtonPoolDescription& description)
+{
+    return std::make_unique<ButtonPoolObject>(context_, description.min_point, description.size, description.direction,
+                                              description.role);
+}
+
+inline std::unique_ptr<IUIFramework::SwitcherPool> UIWi::create(SwitcherPoolDescription& description)
+{
+    return std::make_unique<SwitcherPoolObject>(context_, description.min_point, description.size,
+                                                description.direction, description.role);
+}
+
+inline std::unique_ptr<IUIFramework::WindowMenu> UIWi::create(WindowMenuDescription& description)
+{
+    return std::make_unique<WindowMenuObject>(context_, description.box, std::move(description.label), description.role,
+                                              std::move(description.on_event), std::move(description.on_close));
 }
 
 inline void UIWi::registryTheme(const std::string& name, const IRenderer::Color& primary,
@@ -815,6 +915,6 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     static UI::UIWi framework;
 
     return ApplicationCore::instance().registerInterface(
-               IID_IUIFramework, reinterpret_cast<void*>(static_cast<UI::IFramework*>(&framework))
+               IID_IUIFramework, reinterpret_cast<void*>(static_cast<IUIFramework*>(&framework))
            ) == ApplicationCore::Error::SUCCESS;
 }

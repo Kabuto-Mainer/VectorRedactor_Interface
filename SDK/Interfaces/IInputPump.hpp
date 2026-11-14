@@ -104,7 +104,7 @@ constexpr IInputPump::EventKeyboard::ModifiersMask IInputPump::EventKeyboard::mo
     return static_cast<ModifiersMask>(modifier);
 }
 
-enum class Key
+enum class IInputPump::EventKeyboard::Key
 {
     A,
     B,

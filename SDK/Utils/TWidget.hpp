@@ -1,9 +1,7 @@
-#ifndef T_WIDGET_HPP
-#define T_WIDGET_HPP
+#pragma once
 
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
-#include "Utils/Vec2F.hpp"
 
 class TWidget : public TObject
 {
@@ -19,6 +17,7 @@ private:
     BoxF box_;
 
 }; // class TWidget
+
 
 inline BoxF TWidget::box() const
 {
@@ -47,5 +46,3 @@ inline Vec2F TWidget::mapLocalToGlobal(const Vec2F& pos) const
     }
     return parent()->mapLocalToGlobal(pos + box().topLeft());
 }
-
-#endif // T_WIDGET_HPP
