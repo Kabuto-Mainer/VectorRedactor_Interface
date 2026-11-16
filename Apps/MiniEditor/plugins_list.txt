@@ -1,0 +1,5 @@
+../../MyPlugins/SDL3Engine.so
+../../Plugins/MainPlugin/libMainPlugin.so
+../../Plugins/UIFW/libUIFW.so
+../../Plugins/Editor/libEditor.so
+./libMiniEditor.so

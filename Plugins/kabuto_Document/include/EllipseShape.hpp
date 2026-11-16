@@ -1,5 +1,4 @@
-#ifndef ELLIPSE_SHAPE_HPP
-#define ELLIPSE_SHAPE_HPP
+#pragma once
 
 #include "Components.hpp"
 #include "Interfaces/IDocument.hpp"
@@ -126,5 +125,3 @@ inline IDocument::TShape::Error EllipseShape::queryComponent(IDocument::AShapeCo
 }
 
 }; // namespace VDocument
-
-#endif // ELLIPSE_SHAPE_HPP

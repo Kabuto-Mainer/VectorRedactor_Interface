@@ -8,4 +8,3 @@ clean:
 	rm -rf $(APPLICATION_EXECUTABLE_NAME)
 
 .PHONY: all clean
-

@@ -1,5 +1,4 @@
-#ifndef RECTANGLE_SHAPE_HPP
-#define RECTANGLE_SHAPE_HPP
+#pragma once
 
 #include "Components.hpp"
 
@@ -27,10 +26,10 @@ public:
     virtual BoxF                      axesAlignedBoundingBox() const override;
     virtual IDocument::TShape::TypeID tid() const override;
 
-    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID coid,
-                                                  IDocument::AShapeComponent**   component) override;
-    virtual ApplicationCore::Error queryComponent(IDocument::AShapeComponent::ID     coid,
-                                                  IDocument::AShapeComponent const** component) const override;
+    virtual IDocument::TShape::Error queryComponent(IDocument::AShapeComponent::ID coid,
+                                                    IDocument::AShapeComponent**   component) override;
+    virtual IDocument::TShape::Error queryComponent(IDocument::AShapeComponent::ID     coid,
+                                                    IDocument::AShapeComponent const** component) const override;
 };
 
 /* ====================== Implementation ====================== */
@@ -87,8 +86,8 @@ inline IDocument::TShape::TypeID RectangleShape::tid() const
     return RECTANGLE_SHAPE_ID;
 }
 
-inline ApplicationCore::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID coid,
-                                                             IDocument::AShapeComponent**   component)
+inline IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID coid,
+                                                               IDocument::AShapeComponent**   component)
 {
     assert(component);
 
@@ -97,17 +96,17 @@ inline ApplicationCore::Error RectangleShape::queryComponent(IDocument::AShapeCo
         case ColorComponent::COID:
         {
             (*component) = static_cast<ColorComponent*>(this);
-            return ApplicationCore::Error::SUCCESS;
+            return IDocument::TShape::Error::SUCCESS;
         }
         default:
             break;
     }
     (*component) = nullptr;
-    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
+    return IDocument::TShape::Error::COMPONENT_NOT_FOUND;
 }
 
-inline ApplicationCore::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID     coid,
-                                                             IDocument::AShapeComponent const** component) const
+inline IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID     coid,
+                                                               IDocument::AShapeComponent const** component) const
 {
     assert(component);
 
@@ -116,15 +115,13 @@ inline ApplicationCore::Error RectangleShape::queryComponent(IDocument::AShapeCo
         case ColorComponent::COID:
         {
             (*component) = static_cast<ColorComponent const*>(this);
-            return ApplicationCore::Error::SUCCESS;
+            return IDocument::TShape::Error::SUCCESS;
         }
         default:
             break;
     }
     (*component) = nullptr;
-    return ApplicationCore::Error::INTERFACE_NOT_FOUND;
+    return IDocument::TShape::Error::COMPONENT_NOT_FOUND;
 }
 
 }; // namespace VDocument
-
-#endif

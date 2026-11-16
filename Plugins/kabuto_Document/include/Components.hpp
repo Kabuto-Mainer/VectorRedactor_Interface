@@ -1,5 +1,4 @@
-#ifndef COMPONENTS_HPP
-#define COMPONENTS_HPP
+#pragma once
 
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IRenderer.hpp"
@@ -66,5 +65,3 @@ inline void ColorComponent::setColor(const IRenderer::Color& color)
 }
 
 }; // namespace VDocument
-
-#endif // COMPONENTS_HPP
