@@ -19,7 +19,7 @@ public:
     IDesktop& operator=(IDesktop&&)      = delete;
 
     enum class Error;
-    
+
     virtual Error add(std::unique_ptr<TObject> object) = 0;
     virtual Error remove(TObject::ID object_id)        = 0;
 };

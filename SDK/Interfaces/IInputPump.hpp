@@ -89,12 +89,12 @@ public:
     constexpr EventKeyboard(Type type, Key key, Tmodifier... modifiers);
 
     constexpr Type type() const;
-    constexpr Key key() const;
+    constexpr Key  key() const;
     template<typename... Tmodifier>
     constexpr bool hasModifiers(Tmodifier... modifiers);
 
 private:
-    Type type_;
+    Type          type_;
     Key           key_;
     ModifiersMask modifiers_mask_ = 0;
 };
@@ -212,8 +212,7 @@ enum class IInputPump::EventKeyboard::Modifier : IInputPump::EventKeyboard::Modi
     RIGHT_META  = 1 << 7,
 };
 
-constexpr IInputPump::EventKeyboard::EventKeyboard(Type type, Key key)
-	: type_(type), key_(key)
+constexpr IInputPump::EventKeyboard::EventKeyboard(Type type, Key key) : type_(type), key_(key)
 {
 }
 
@@ -236,12 +235,12 @@ constexpr bool IInputPump::EventKeyboard::hasModifiers(Tmodifier... modifiers)
 
 constexpr IInputPump::EventKeyboard::Key IInputPump::EventKeyboard::key() const
 {
-	return key_;
+    return key_;
 }
 
 constexpr IInputPump::EventKeyboard::Type IInputPump::EventKeyboard::type() const
 {
-	return type_;
+    return type_;
 }
 
 /* EventQuit */

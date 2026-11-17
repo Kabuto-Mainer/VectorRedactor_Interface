@@ -3,7 +3,10 @@
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IRenderer.hpp"
 
-namespace VDocument
+namespace Kabuto
+{
+
+namespace Document
 {
 
 /* ====================== TextComponent ====================== */
@@ -64,4 +67,6 @@ inline void ColorComponent::setColor(const IRenderer::Color& color)
     color_ = color;
 }
 
-}; // namespace VDocument
+}; // namespace Document
+
+}; // namespace Kabuto

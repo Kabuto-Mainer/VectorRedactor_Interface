@@ -6,8 +6,12 @@
 #include <cassert>
 #include <cmath>
 
-namespace VDocument
+namespace Kabuto
 {
+
+namespace Document
+{
+
 
 class EllipseShape final : public IDocument::TShape, public ColorComponent
 {
@@ -41,7 +45,7 @@ inline EllipseShape::EllipseShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline bool EllipseShape::processEvent(IInputPump::Event const& event)
+inline bool EllipseShape::processEvent(IInputPump::Event const& /*event*/)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "EllipseShape can't process events\n");
     return false;
@@ -124,4 +128,6 @@ inline IDocument::TShape::Error EllipseShape::queryComponent(IDocument::AShapeCo
     return Error::COMPONENT_NOT_FOUND;
 }
 
-}; // namespace VDocument
+}; // namespace Document
+
+}; // namespace Kabuto

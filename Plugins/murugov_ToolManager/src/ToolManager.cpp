@@ -1,11 +1,11 @@
 #include "ToolManager.hpp"
+
 #include "Core/ApplicationCore.hpp"
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
     auto err = ApplicationCore::instance().registerInterface(
-        IID_TOOL_MANAGER,
-        reinterpret_cast<void*>(static_cast<IToolManager*>(&ToolManager::instance()))
+        IID_TOOL_MANAGER, reinterpret_cast<void*>(static_cast<IToolManager*>(&ToolManager::instance()))
     );
 
     return err == ApplicationCore::Error::SUCCESS;

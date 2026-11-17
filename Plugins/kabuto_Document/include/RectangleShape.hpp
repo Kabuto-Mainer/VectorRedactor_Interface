@@ -6,7 +6,10 @@
 #include <cassert>
 #include <cmath>
 
-namespace VDocument
+namespace Kabuto
+{
+
+namespace Document
 {
 
 class RectangleShape final : public IDocument::TShape, public ColorComponent
@@ -42,7 +45,7 @@ inline RectangleShape::RectangleShape(Vec2F const& size)
     setScaling(size);
 }
 
-inline bool RectangleShape::processEvent(IInputPump::Event const& event)
+inline bool RectangleShape::processEvent(IInputPump::Event const& /*event*/)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "RectangleShape can't process events\n");
     return false;
@@ -124,4 +127,6 @@ inline IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShape
     return IDocument::TShape::Error::COMPONENT_NOT_FOUND;
 }
 
-}; // namespace VDocument
+}; // namespace Document
+
+}; // namespace Kabuto
