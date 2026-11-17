@@ -14,8 +14,10 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
+#include <chrono>
 
 /* Root */
 
@@ -157,7 +159,6 @@ ApplicationCore::Error ApplicationCore::queryInterface(IID iid, void** interface
 
 ApplicationCore::Error ApplicationCore::run()
 {
-    /* already running => return */
     if (is_running_)
     {
         return Error::APPLICATION_ALREADY_RUNNING;
@@ -175,22 +176,47 @@ ApplicationCore::Error ApplicationCore::run()
         return Error::NOT_LOADED_INPUT_PUMP;
     }
 
+    using Clock = std::chrono::steady_clock;
+    constexpr auto FPS = std::chrono::microseconds(16667); // ~60 FPS
+
+    auto next_time = Clock::now();
+    auto last_time = next_time - FPS;
+
     is_running_ = true;
     while (is_running_)
     {
-        auto polled = input_pump->pollEvent();
-        if (polled.has_value())
+        auto current_time = Clock::now();
+        last_time = current_time;
+
+        while (auto polled = input_pump->pollEvent())
         {
-            root_->processEvent(polled.value());
+            root_->processEvent(*polled);
+            if (!is_running_)
+            {
+                break;
+            }
+        }
+
+        if (!is_running_)
+        {
+            break;
         }
 
         root_->render();
         renderer->update();
+
+        next_time += FPS;
+        auto now = Clock::now();
+        if (next_time < now)
+        {
+            next_time = now;
+        }
+        std::this_thread::sleep_until(next_time);
     }
 
+    is_running_ = false;
     return Error::SUCCESS;
 }
-
 void ApplicationCore::stop()
 {
     is_running_ = false;

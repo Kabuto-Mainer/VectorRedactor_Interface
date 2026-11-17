@@ -1,0 +1,7 @@
+../../Plugins/kabuto/SDL3Engine/libkabuto_SDL3Engine.so
+../../Plugins/kabuto/Desktop/libkabuto_Desktop.so
+../../Plugins/kabuto/UIFW/libkabuto_UIFW.so
+../../Plugins/kabuto/Document/libkabuto_Document.so
+../../Plugins/kabuto/Palette/libkabuto_Palette.so
+../../Plugins/murugov/ToolManager/libmurugov_ToolManager.so
+../../Plugins/kabuto/Tools/libkabuto_Tools.so
