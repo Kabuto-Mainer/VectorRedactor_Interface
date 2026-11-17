@@ -30,7 +30,9 @@ namespace Engine
 namespace
 {
 
-constexpr float WINDOW_SIZE         = 1000.0F;
+constexpr int   LOGICAL_WIDTH       = 1'920;
+constexpr int   LOGICAL_HEIGHT      = 1'080;
+constexpr float DESKTOP_USAGE       = 0.9F;
 constexpr int   FONT_PROBE_SIZE     = 16;
 constexpr int   ELLIPSE_SEGMENTS    = 72;
 constexpr float VECTOR_ARROW_LENGTH = 10.0F;
@@ -87,6 +89,24 @@ std::vector<Vec2F> ellipsePoints(const BoxF& box, float angle)
 SDL_FRect toSDLRect(const BoxF& box)
 {
     return {box.left(), box.top(), box.size().x(), box.size().y()};
+}
+
+Vec2F initialWindowSize()
+{
+    SDL_Rect            usable  = {};
+    const SDL_DisplayID display = SDL_GetPrimaryDisplay();
+
+    if (display == 0 || !SDL_GetDisplayUsableBounds(display, &usable) || usable.w <= 0 || usable.h <= 0)
+    {
+        return {static_cast<float>(LOGICAL_WIDTH), static_cast<float>(LOGICAL_HEIGHT)};
+    }
+
+    const float width_scale  = static_cast<float>(usable.w) * DESKTOP_USAGE / static_cast<float>(LOGICAL_WIDTH);
+    const float height_scale = static_cast<float>(usable.h) * DESKTOP_USAGE / static_cast<float>(LOGICAL_HEIGHT);
+    const float scale        = std::min({width_scale, height_scale, 1.0F});
+
+    return {std::floor(static_cast<float>(LOGICAL_WIDTH) * scale),
+            std::floor(static_cast<float>(LOGICAL_HEIGHT) * scale)};
 }
 
 /* ------------------ text helpers ------------------ */
@@ -726,7 +746,7 @@ SDL3Engine::SDL3Engine()
 
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "Renderer initialized successfully");
 
-    openWindow(Vec2F{WINDOW_SIZE, WINDOW_SIZE});
+    openWindow(initialWindowSize());
 
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "Input pump initialized successfully");
 }
@@ -755,7 +775,8 @@ SDL3Engine::~SDL3Engine()
 
 void SDL3Engine::openWindow(const Vec2F& size)
 {
-    window_ = SDL_CreateWindow("GDInterface", static_cast<int>(size.x()), static_cast<int>(size.y()), 0);
+    window_ = SDL_CreateWindow("GDInterface", static_cast<int>(size.x()), static_cast<int>(size.y()),
+                               SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (window_ == nullptr)
     {
         logSdlError("SDL_CreateWindow failed");
@@ -767,6 +788,11 @@ void SDL3Engine::openWindow(const Vec2F& size)
     {
         logSdlError("SDL_CreateRenderer failed");
         return;
+    }
+
+    if (!SDL_SetRenderLogicalPresentation(renderer_, LOGICAL_WIDTH, LOGICAL_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX))
+    {
+        logSdlError("SDL_SetRenderLogicalPresentation failed");
     }
 
     if (!SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND))
@@ -1228,6 +1254,11 @@ std::optional<Event> SDL3Engine::pollEvent()
     SDL_Event sdl_event = {};
     while (SDL_PollEvent(&sdl_event))
     {
+        if (renderer_ != nullptr && !SDL_ConvertEventToRenderCoordinates(renderer_, &sdl_event))
+        {
+            logSdlError("SDL_ConvertEventToRenderCoordinates failed");
+        }
+
         auto event = convertEvent(sdl_event);
         if (event.has_value())
         {

@@ -1,5 +1,6 @@
 #include "AddShapeTool.hpp"
 #include "Core/ApplicationCore.hpp"
+#include "DeleteShapeTool.hpp"
 #include "EllipseShape.hpp"
 #include "IPalette.hpp"
 #include "Interfaces/IDesktop.hpp"
@@ -163,6 +164,15 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     }
     registrationGuard().remember(Kabuto::Tools::ADD_ELLIPSE_TOOL_ID);
 
+    auto delete_tool =
+        std::make_unique<Kabuto::Tools::DeleteShapeTool>(Kabuto::Tools::DELETE_TOOL_ID, *document, ui_box);
+    if (tool_manager->addTool(std::move(delete_tool)) != IToolManager::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't register the delete tool");
+        return false;
+    }
+    registrationGuard().remember(Kabuto::Tools::DELETE_TOOL_ID);
+
     if (tool_manager->setActiveTool(Kabuto::Tools::ADD_RECTANGLE_TOOL_ID) != IToolManager::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't activate the rectangle tool");
@@ -187,6 +197,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     const std::vector<Kabuto::Tools::ToolBarEntry> entries = {
         {Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, "Add rectangle"},
         {  Kabuto::Tools::ADD_ELLIPSE_TOOL_ID,   "Add ellipse"},
+        {       Kabuto::Tools::DELETE_TOOL_ID,        "Delete"},
     };
 
     std::unique_ptr<IUIFramework::WindowMenu> tool_bar =
