@@ -1,0 +1,38 @@
+[
+  {
+    "file": "src/MainPlugin.cpp",
+    "arguments": [
+      "/usr/bin/clang++",
+      "-std=c++23",
+      "-fpic",
+      "-Iinclude",
+      "-I../../SDK",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-o",
+      "MainPlugin.so",
+      "src/MainPlugin.cpp"
+    ],
+    "directory": "/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/examples/plugins_usage",
+    "output": "MainPlugin.so"
+  },
+  {
+    "file": "src/GUIEngine.cpp",
+    "arguments": [
+      "/usr/bin/clang++",
+      "-std=c++23",
+      "-fpic",
+      "-Iinclude",
+      "-I../../SDK",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-o",
+      "GUIEngine.so",
+      "src/GUIEngine.cpp"
+    ],
+    "directory": "/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/examples/plugins_usage",
+    "output": "GUIEngine.so"
+  }
+]
