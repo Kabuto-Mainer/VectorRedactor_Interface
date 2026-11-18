@@ -1,0 +1,17 @@
+/app
+/build/
+/ToolManager/*.so
+/ToolBar/*.so
+/ToolBar/src/*.o
+/ToolBar/src/*.d
+/Render/*.so
+/InputPump/*.so
+/RectangleTool/*.so
+/RectangleTool/src/*.o
+/RectangleTool/src/*.d
+/EllipseTool/*.so
+/EllipseTool/src/*.o
+/EllipseTool/src/*.d
+/SelectorTool/*.so
+/SelectorTool/src/*.o
+/SelectorTool/src/*.d
