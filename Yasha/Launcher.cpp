@@ -1,4 +1,6 @@
-#include "SDK/Core/ApplicationCore.hpp"
+#include "Desktop.hpp"
+#include "Document.hpp"
+#include "Core/ApplicationCore.hpp"
 
 #include <fstream> 
 
@@ -12,7 +14,20 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    ApplicationCore::Error error = ApplicationCore::Error::SUCCESS;
+    ApplicationCore::Error error = initializeDesktop();
+    if (error != ApplicationCore::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Desktop initialization failed: %s",
+                             ApplicationCore::strError(error));
+        return EXIT_FAILURE;
+    }
+    error = initializeDocument();
+    if (error != ApplicationCore::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Document initialization failed: %s",
+                             ApplicationCore::strError(error));
+        return EXIT_FAILURE;
+    }
     std::string            plugin_file;
 
     // TODO: подумать можно ли вынести в отдельный метод
@@ -40,4 +55,5 @@ int main() {
 
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "application successfully exited");
     return EXIT_SUCCESS;
+    
 }
