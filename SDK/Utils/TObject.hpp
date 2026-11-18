@@ -9,6 +9,7 @@
 #include <random>
 #include <utility>
 
+class ApplicationCore;
 
 class TObject
 {
@@ -21,12 +22,7 @@ public:
     TObject* parent() const;
     void     setParent(TObject* new_parent);
 
-    const std::list<std::unique_ptr<TObject>>& children() const;
-    std::list<std::unique_ptr<TObject>>&       children();
-    void                                       addChild(std::unique_ptr<TObject> child);
-
-    TObject*       find(ID object_id);
-    const TObject* find(ID object_id) const;
+    void addChild(std::unique_ptr<TObject> child);
 
     virtual bool processEvent(const IInputPump::Event& event) = 0;
     virtual void render()                                     = 0;
@@ -42,8 +38,12 @@ public:
 protected:
     TObject();
 
-    void renderChildren();
-    bool processEventChildren(const IInputPump::Event& event);
+    friend class ::ApplicationCore;
+
+    const std::list<std::unique_ptr<TObject>>& children() const;
+    std::list<std::unique_ptr<TObject>>&       children();
+    void                                       renderChildren();
+    bool                                       processEventChildren(const IInputPump::Event& event);
 
 private:
     static ID generateID();
@@ -118,27 +118,4 @@ inline void TObject::addChild(std::unique_ptr<TObject> child)
 {
     child->setParent(this);
     children_.push_back(std::move(child));
-}
-
-inline TObject* TObject::find(ID object_id)
-{
-    return const_cast<TObject*>(std::as_const(*this).find(object_id));
-}
-
-inline const TObject* TObject::find(ID object_id) const
-{
-    if (id() == object_id)
-    {
-        return this;
-    }
-
-    for (const auto& child : children_)
-    {
-        if (const TObject* result = child->find(object_id))
-        {
-            return result;
-        }
-    }
-
-    return nullptr;
 }
