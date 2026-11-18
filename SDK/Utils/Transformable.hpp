@@ -164,7 +164,11 @@ inline void Transformable::updateParameters() const
     assert(std::abs(transform_[2][0]) <= 0 && std::abs(transform_[2][1]) <= 0 && std::abs(transform_[2][2] - 1) <= 0);
     translation_ = Vec2F{transform_[0][2], transform_[1][2]};
 
-    static constexpr float EPSILON{1e-7F};
+    /* NOTE: For a 32-bit float, the threshold of 1e-7F is smaller than the machine epsilon when shapes are on the scale of hundreds of pixels;
+             consequently, for any matrix operation involving a shape larger than ~300 pixels,
+             the assertion is triggered solely due to floating-point rounding errors.
+    */
+    static constexpr float EPSILON{1e-4F};
     static_assert(EPSILON >= 0.0F);
     assert(std::abs((transform_[0][0] * transform_[0][1]) + (transform_[1][0] * transform_[1][1])) <= EPSILON);
 

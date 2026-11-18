@@ -68,15 +68,21 @@ inline void RectangleShape::render()
 
 inline bool RectangleShape::hitTest(Vec2F const& pos) const
 {
-    return BoxF{-1, -1, 1, 1}.contains(mapGlobalToLocal(pos));
+    /* NOTE: In render(), the rectangle is drawn with width and height equal to scaling(),
+             so in local space its boundaries span [-0.5, 0.5] x [-0.5, 0.5] rather than [-1, 1].
+    */
+    return BoxF{-0.5F, -0.5F, 0.5F, 0.5F}.contains(mapGlobalToLocal(pos));
 }
 
 inline BoxF RectangleShape::axesAlignedBoundingBox() const
 {
-    Vec2F const vertex1{transform().transformPoint(Vec2F{-1, -1})};
-    Vec2F const vertex2{transform().transformPoint(Vec2F{-1, +1})};
-    Vec2F const vertex3{transform().transformPoint(Vec2F{+1, -1})};
-    Vec2F const vertex4{transform().transformPoint(Vec2F{+1, +1})};
+    /* NOTE: Since the visual rectangle occupies [-0.5, 0.5] x [-0.5, 0.5] in local space,
+             transforming its four corners gives the exact world-space bounds for the AABB.
+    */
+    Vec2F const vertex1{transform().transformPoint(Vec2F{-0.5F, -0.5F})};
+    Vec2F const vertex2{transform().transformPoint(Vec2F{-0.5F, +0.5F})};
+    Vec2F const vertex3{transform().transformPoint(Vec2F{+0.5F, -0.5F})};
+    Vec2F const vertex4{transform().transformPoint(Vec2F{+0.5F, +0.5F})};
 
     return BoxF{std::min({vertex1.x(), vertex2.x(), vertex3.x(), vertex4.x()}),
                 std::min({vertex1.y(), vertex2.y(), vertex3.y(), vertex4.y()}),
