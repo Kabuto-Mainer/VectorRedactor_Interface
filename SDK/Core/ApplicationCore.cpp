@@ -72,6 +72,40 @@ TObject* ApplicationCore::findObject(TObject* object, TObject::ID object_id)
     return nullptr;
 }
 
+void ApplicationCore::deleteObject(TObject::ID object_id)
+{
+    if (object_id == root_->id())
+    {
+        return;
+    }
+
+    auto* found = findObject(object_id);
+    if (found == nullptr)
+    {
+        return;
+    }
+
+    auto* parent = found->parent();
+    if (parent == nullptr)
+    {
+        log(LogLevel::ERROR, "Non-root object %llu has no parent",
+            static_cast<unsigned long long>(object_id));
+        return;
+    }
+
+    auto removed = parent->children().remove_if(
+        [object_id](const std::unique_ptr<TObject>& obj)
+        {
+            return obj->id() == object_id;
+        });
+
+    if (removed == 0)
+    {
+        log(LogLevel::WARNING, "Object %llu is not among its parent's children",
+            static_cast<unsigned long long>(object_id));
+    }
+}
+
 void ApplicationCore::pushModal(std::unique_ptr<TObject> object)
 {
     root_->addChild(std::move(object));
@@ -220,8 +254,8 @@ ApplicationCore::Error ApplicationCore::run()
 
             while (!commands_.empty())
             {
-                commands_.back()->execute();
-                commands_.pop();
+                commands_.front()->execute();
+                commands_.pop_front();
             }
         }
 

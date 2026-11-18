@@ -28,7 +28,7 @@ private:
     std::unordered_map<IID, void*>        registry_;
     std::unique_ptr<Root>                 root_;
     std::vector<void*>                    package_handles_;
-    std::queue<std::unique_ptr<ACommand>> commands_;
+    std::deque<std::unique_ptr<ACommand>> commands_;
     bool                                  is_running_ = false;
 
     /* default fps ~= 60 */
@@ -49,6 +49,7 @@ public:
     void                    pushCommand(std::unique_ptr<ACommand> command);
 
     TObject* findObject(TObject::ID object_id) const;
+    void     deleteObject(TObject::ID object_id);
     void     pushModal(std::unique_ptr<TObject> object);
     void     popModal();
 
