@@ -43,9 +43,13 @@ public:
 
     static const char*      strError(Error error);
     static ApplicationCore& instance();
-    TObject*                root() const;
     Error                   queryInterface(IID iid, void** interface) const;
     void                    pushCommand(std::unique_ptr<ACommand> command);
+
+    TObject* findObject(TObject::ID object_id) const;
+    void     deleteObject(TObject::ID object_id);
+    void     pushModal(std::unique_ptr<TObject> object);
+    void     popModal();
 
     void  setFPS(FPS fps);
     Error run();
@@ -90,6 +94,9 @@ public:
     Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
 
-    void pushModal(std::unique_ptr<TObject> new_modal);
-    bool popModal();
+    void pushModal(std::unique_ptr<TObject> object);
+    void popModal();
+
+    using TObject::findChild;
+    using TObject::removeChild;
 }; // class Root

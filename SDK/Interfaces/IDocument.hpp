@@ -22,13 +22,12 @@ public:
     IDocument()          = default;
     virtual ~IDocument() = default;
 
-    virtual void addShape(TShape* shape)    = 0;
-    virtual void removeShape(TShape* shape) = 0;
+    virtual void addShape(std::unique_ptr<TShape> shape) = 0;
+    virtual void removeShape(TObject::ID shape_id)       = 0;
 
-    virtual std::optional<TObject::ID> hitTest(const Vec2F& pos) = 0;
+    virtual std::optional<TObject::ID> hitTest(const Vec2F& pos)      = 0;
+    virtual void                       accept(Visitor& visitor) const = 0;
 
-    virtual void accept(Visitor& visitor)       = 0;
-    virtual void accept(Visitor& visitor) const = 0;
 }; // class IDocument
 
 class IDocument::AShapeComponent
