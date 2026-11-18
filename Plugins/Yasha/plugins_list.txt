@@ -1,0 +1,7 @@
+./Render/libRender.so
+./InputPump/libInputPump.so
+./ToolManager/ToolManager.so
+./ToolBar/libToolBar.so
+./RectangleTool/libRectangleTool.so
+./EllipseTool/libEllipseTool.so
+./SelectorTool/libSelectorTool.so
