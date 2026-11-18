@@ -1,11 +1,15 @@
-#ifndef APPLICATION_CORE_HPP
-#define APPLICATION_CORE_HPP
+#pragma once
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IInputPump.hpp"
+#include "Utils/ACommand.hpp"
 #include "Utils/TObject.hpp"
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <queue>
 #include <unordered_map>
 #include <vector>
 
@@ -15,16 +19,21 @@ public:
     enum class Error;
     enum class LogLevel;
     class Root;
-    class Desktop;
+    using FPS = uint32_t;
 
 private:
     ApplicationCore();
     ~ApplicationCore();
 
-    std::unordered_map<IID, void*> registry_;
-    std::unique_ptr<Root>          root_;
-    std::vector<void*>             package_handles_;
-    bool                           is_running_ = false;
+    std::unordered_map<IID, void*>        registry_;
+    std::unique_ptr<Root>                 root_;
+    std::vector<void*>                    package_handles_;
+    std::queue<std::unique_ptr<ACommand>> commands_;
+    bool                                  is_running_ = false;
+
+    /* default fps ~= 60 */
+    static constexpr std::chrono::microseconds MICROSECONDS_PER_FRAME_DEFAULT = std::chrono::microseconds(16'667);
+    std::chrono::microseconds                  microseconds_per_frame_        = MICROSECONDS_PER_FRAME_DEFAULT;
 
 public:
     ApplicationCore(const ApplicationCore&)            = delete;
@@ -36,7 +45,9 @@ public:
     static ApplicationCore& instance();
     TObject*                root() const;
     Error                   queryInterface(IID iid, void** interface) const;
+    void                    pushCommand(std::unique_ptr<ACommand> command);
 
+    void  setFPS(FPS fps);
     Error run();
     void  stop();
 
@@ -82,5 +93,3 @@ public:
     void pushModal(std::unique_ptr<TObject> new_modal);
     bool popModal();
 }; // class Root
-
-#endif

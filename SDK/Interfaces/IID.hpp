@@ -1,8 +1,5 @@
-#ifndef IID_HPP
-#define IID_HPP
+#pragma once
 
 #include <cstdint>
 
 using IID = uint64_t;
-
-#endif

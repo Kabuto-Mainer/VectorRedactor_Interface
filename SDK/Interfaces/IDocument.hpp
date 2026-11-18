@@ -1,5 +1,4 @@
-#ifndef DOCUMENT_HPP
-#define DOCUMENT_HPP
+#pragma once
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IInputPump.hpp"
@@ -109,5 +108,3 @@ inline Vec2F IDocument::TShape::mapGlobalToLocal(Vec2F const& pos) const
 
 inline IDocument::Visitor::Visitor()  = default;
 inline IDocument::Visitor::~Visitor() = default;
-
-#endif // DOCUMENT_HPP

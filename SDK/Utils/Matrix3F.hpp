@@ -1,5 +1,4 @@
-#ifndef MATRIX_3F_HPP
-#define MATRIX_3F_HPP
+#pragma once
 
 #include "Utils/Vec2F.hpp"
 
@@ -248,5 +247,3 @@ constexpr Matrix3F operator*(float scalar, const Matrix3F& matrix)
 {
     return matrix * scalar;
 }
-
-#endif

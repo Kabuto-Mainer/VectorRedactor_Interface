@@ -1,5 +1,4 @@
-#ifndef I_TOOL_MANAGER_HPP
-#define I_TOOL_MANAGER_HPP
+#pragma once
 
 #include "Interfaces/IID.hpp"
 #include "Interfaces/IInputPump.hpp"
@@ -58,5 +57,3 @@ enum class IToolManager::Error
 
     TOOL_NOT_FOUND,
 };
-
-#endif // I_TOOL_MANAGER_HPP

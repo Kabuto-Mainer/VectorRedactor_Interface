@@ -1,5 +1,4 @@
-#ifndef IINPUT_PUMP_HPP
-#define IINPUT_PUMP_HPP
+#pragma once
 
 #include "Interfaces/IID.hpp"
 #include "Utils/Vec2F.hpp"
@@ -250,5 +249,3 @@ class IInputPump::EventQuit
 public:
     constexpr EventQuit() = default;
 };
-
-#endif

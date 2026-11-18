@@ -1,5 +1,4 @@
-#ifndef A_OBJECT_HPP
-#define A_OBJECT_HPP
+#pragma once
 
 #include "Interfaces/IInputPump.hpp"
 #include "Utils/Vec2F.hpp"
@@ -143,5 +142,3 @@ inline const TObject* TObject::find(ID object_id) const
 
     return nullptr;
 }
-
-#endif

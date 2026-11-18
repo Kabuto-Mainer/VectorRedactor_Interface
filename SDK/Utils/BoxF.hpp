@@ -1,5 +1,4 @@
-#ifndef BOX_F_HPP
-#define BOX_F_HPP
+#pragma once
 
 #include "Utils/Vec2F.hpp"
 
@@ -237,5 +236,3 @@ inline void BoxF::setCenter(const Vec2F& point)
     left_top_           = point - oriented_size / 2;
     right_bottom_       = point + oriented_size / 2;
 }
-
-#endif

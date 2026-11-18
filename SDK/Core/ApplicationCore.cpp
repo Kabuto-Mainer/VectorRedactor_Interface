@@ -8,7 +8,9 @@
 #include "Utils/Vec2F.hpp"
 
 #include <cassert>
+#include <chrono>
 #include <cstdarg>
+#include <cstddef>
 #include <cstdio>
 #include <dlfcn.h>
 #include <memory>
@@ -157,6 +159,16 @@ ApplicationCore::Error ApplicationCore::queryInterface(IID iid, void** interface
     return Error::INTERFACE_NOT_FOUND;
 }
 
+void ApplicationCore::pushCommand(std::unique_ptr<ACommand> command)
+{
+    commands_.push(std::move(command));
+}
+
+void ApplicationCore::setFPS(FPS fps)
+{
+    microseconds_per_frame_ = std::chrono::microseconds(static_cast<size_t>(1e6 / fps));
+}
+
 ApplicationCore::Error ApplicationCore::run()
 {
     if (is_running_)
@@ -176,37 +188,28 @@ ApplicationCore::Error ApplicationCore::run()
         return Error::NOT_LOADED_INPUT_PUMP;
     }
 
-    using Clock = std::chrono::steady_clock;
-    constexpr auto FPS = std::chrono::microseconds(16667); // ~60 FPS
 
-    auto next_time = Clock::now();
-    auto last_time = next_time - FPS;
+    auto next_time = std::chrono::steady_clock::now();
 
     is_running_ = true;
     while (is_running_)
     {
-        auto current_time = Clock::now();
-        last_time = current_time;
-
         while (auto polled = input_pump->pollEvent())
         {
             root_->processEvent(*polled);
-            if (!is_running_)
-            {
-                break;
-            }
-        }
 
-        if (!is_running_)
-        {
-            break;
+            while (!commands_.empty())
+            {
+                commands_.back()->execute();
+                commands_.pop();
+            }
         }
 
         root_->render();
         renderer->update();
 
-        next_time += FPS;
-        auto now = Clock::now();
+        next_time += microseconds_per_frame_;
+        auto now = std::chrono::steady_clock::now();
         if (next_time < now)
         {
             next_time = now;

@@ -1,5 +1,4 @@
-#ifndef VEC_2F_HPP
-#define VEC_2F_HPP
+#pragma once
 
 #include <cmath>
 #include <iostream>
@@ -170,5 +169,3 @@ inline void Vec2F::print() const
 {
     std::cerr << "{ " << x_ << ", " << y_ << " }";
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef I_TOOL_BAR
-#define I_TOOL_BAR
+#pragma once
 
 #include "IRenderer.hpp"
 #include "IToolManager.hpp"
@@ -18,5 +17,3 @@ public:
     virtual void addTool(IToolManager::ATool::ID tool_id, IRenderer::TextureID texture_id) = 0;
     virtual void removeTool(IToolManager::ATool::ID tool_id)                               = 0;
 }; // IToolBar
-
-#endif // I_TOOL_BAR
