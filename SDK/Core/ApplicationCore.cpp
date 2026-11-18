@@ -28,12 +28,7 @@ void ApplicationCore::Root::render()
 
 bool ApplicationCore::Root::processEvent(const IInputPump::Event& event)
 {
-    if (children().empty())
-    {
-        return false;
-    }
-
-    return children().back()->processEvent(event);
+    return processEventChildren(event);
 }
 
 Vec2F ApplicationCore::Root::mapGlobalToLocal(const Vec2F& pos) const
