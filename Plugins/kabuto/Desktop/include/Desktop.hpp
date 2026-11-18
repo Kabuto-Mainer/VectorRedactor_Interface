@@ -29,19 +29,28 @@ public:
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
 };
 
-class MainPlugin final : public IDesktop
+class CDesktop final : public IDesktop
 {
 public:
-    explicit MainPlugin(TObject::ID container_id);
-    ~MainPlugin() override = default;
+    CDesktop(const CDesktop&)            = delete;
+    CDesktop(CDesktop&&)                 = delete;
+    CDesktop& operator=(const CDesktop&) = delete;
+    CDesktop& operator=(CDesktop&&)      = delete;
+
+    static CDesktop& instance();
+
+    bool initialize();
 
     Error add(std::unique_ptr<TObject> object) override;
     Error remove(TObject::ID object_id) override;
 
 private:
+    CDesktop()           = default;
+    ~CDesktop() override = default;
+
     TObject* container() const;
 
-    TObject::ID container_id_;
+    TObject::ID container_id_ = 0;
 };
 
 }; // namespace Desktop

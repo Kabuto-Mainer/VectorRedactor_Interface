@@ -147,10 +147,10 @@ BoxF makeBox(const Vec2F& pos, const Vec2F& size)
 class UIWi final : public IUIFramework
 {
 public:
-    UIWi();
-
     UIWi(const UIWi&)            = delete;
     UIWi& operator=(const UIWi&) = delete;
+
+    static UIWi& instance();
 
     std::unique_ptr<Button>       create(ButtonDescription& description) override;
     std::unique_ptr<Switcher>     create(SwitcherDescription& description) override;
@@ -168,6 +168,9 @@ public:
     bool setFont(const std::string& path) override;
 
 private:
+    UIWi();
+    ~UIWi() override = default;
+
     void loadFonts();
 
     RenderContext                          context_;
@@ -909,6 +912,12 @@ inline void WindowMenuObject::render()
 
 } // namespace
 
+inline UIWi& UIWi::instance()
+{
+    static UIWi framework;
+    return framework;
+}
+
 inline UIWi::UIWi()
 {
     registryTheme(DEFAULT_THEME_NAME, IRenderer::Color{53, 132, 228, OPAQUE_ALPHA},
@@ -1024,9 +1033,26 @@ inline bool UIWi::setFont(const std::string& path)
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-    static UI::UIWi framework;
+    IRenderer* renderer = nullptr;
+    if (ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer)) !=
+            ApplicationCore::Error::SUCCESS ||
+        renderer == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "UI framework can't find the renderer");
+        return false;
+    }
 
-    return ApplicationCore::instance().registerInterface(
-               IID_IUIFramework, reinterpret_cast<void*>(static_cast<IUIFramework*>(&framework))
-           ) == ApplicationCore::Error::SUCCESS;
+    UI::UIWi& framework = UI::UIWi::instance();
+
+    const ApplicationCore::Error error =
+        ApplicationCore::instance().registerInterface(IID_IUIFramework,
+                                                      reinterpret_cast<void*>(static_cast<IUIFramework*>(&framework)));
+    if (error != ApplicationCore::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to register IUIFramework: %s",
+                             ApplicationCore::strError(error));
+        return false;
+    }
+
+    return true;
 }

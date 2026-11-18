@@ -2,12 +2,17 @@
 #include "Core/ApplicationCore.hpp"
 #include "DeleteShapeTool.hpp"
 #include "EllipseShape.hpp"
+#include "FillShapeTool.hpp"
+#include "IDocumentView.hpp"
 #include "IPalette.hpp"
 #include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
 #include "RectangleShape.hpp"
+#include "SelectShapeTool.hpp"
+#include "SelectionOverlay.hpp"
+#include "SelectionState.hpp"
 #include "ToolBar.hpp"
 #include "ToolDispatcher.hpp"
 #include "ToolIds.hpp"
@@ -105,19 +110,20 @@ ToolRegistrationGuard& registrationGuard()
     return guard;
 }
 
-std::unique_ptr<Kabuto::Tools::AddShapeTool> makeRectangleTool(IDocument& document, IPalette& palette,
-                                                               const BoxF& ui_box)
+std::unique_ptr<Kabuto::Tools::AddShapeTool> makeRectangleTool(IDocument& document, TObject& document_view,
+                                                               IPalette& palette, const BoxF& ui_box)
 {
     return std::make_unique<Kabuto::Tools::AddShapeTool>(
-        Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, document, palette, ui_box, [](const Vec2F& size)
+        Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, document, document_view, palette, ui_box, [](const Vec2F& size)
         { return std::unique_ptr<IDocument::TShape>(std::make_unique<Kabuto::Document::RectangleShape>(size)); }
     );
 }
 
-std::unique_ptr<Kabuto::Tools::AddShapeTool> makeEllipseTool(IDocument& document, IPalette& palette, const BoxF& ui_box)
+std::unique_ptr<Kabuto::Tools::AddShapeTool> makeEllipseTool(IDocument& document, TObject& document_view,
+                                                             IPalette& palette, const BoxF& ui_box)
 {
     return std::make_unique<Kabuto::Tools::AddShapeTool>(
-        Kabuto::Tools::ADD_ELLIPSE_TOOL_ID, document, palette, ui_box, [](const Vec2F& size)
+        Kabuto::Tools::ADD_ELLIPSE_TOOL_ID, document, document_view, palette, ui_box, [](const Vec2F& size)
         { return std::unique_ptr<IDocument::TShape>(std::make_unique<Kabuto::Document::EllipseShape>(size)); }
     );
 }
@@ -126,15 +132,17 @@ std::unique_ptr<Kabuto::Tools::AddShapeTool> makeEllipseTool(IDocument& document
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-    IDocument*    document     = queryInterface<IDocument>(IID_IDOCUMENT);
-    IToolManager* tool_manager = queryInterface<IToolManager>(IID_TOOL_MANAGER);
-    IPalette*     palette      = queryInterface<IPalette>(IID_PALETTE);
-    IUIFramework* framework    = queryInterface<IUIFramework>(IID_IUIFramework);
-    IDesktop*     desktop      = queryInterface<IDesktop>(IID_DESKTOP);
+    IDocument*     document          = queryInterface<IDocument>(IID_IDOCUMENT);
+    IDocumentView* document_view_api = queryInterface<IDocumentView>(IID_DOCUMENT_VIEW);
+    IToolManager*  tool_manager      = queryInterface<IToolManager>(IID_TOOL_MANAGER);
+    IPalette*      palette           = queryInterface<IPalette>(IID_PALETTE);
+    IUIFramework*  framework         = queryInterface<IUIFramework>(IID_IUIFramework);
+    IDesktop*      desktop           = queryInterface<IDesktop>(IID_DESKTOP);
 
-    if (document == nullptr || tool_manager == nullptr)
+    if (document == nullptr || document_view_api == nullptr || tool_manager == nullptr)
     {
-        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't find the document or the tool manager");
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL,
+                             "Tools can't find the document, the document view or the tool manager");
         return false;
     }
 
@@ -147,8 +155,20 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
 
     const BoxF ui_box = Kabuto::Tools::toolBarBox();
 
-    std::unique_ptr<Kabuto::Tools::AddShapeTool> rectangle = makeRectangleTool(*document, *palette, ui_box);
-    std::unique_ptr<Kabuto::Tools::AddShapeTool> ellipse   = makeEllipseTool(*document, *palette, ui_box);
+    // Tools and selection overlay are document-layer objects: they need the
+    // scene node owned by the document.
+    TObject* document_node = document_view_api->view();
+    if (document_node == nullptr || document_node->parent() == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL,
+                             "Tools can't find the document view in the scene tree");
+        return false;
+    }
+    TObject* document_parent = document_node->parent();
+
+    std::unique_ptr<Kabuto::Tools::AddShapeTool> rectangle =
+        makeRectangleTool(*document, *document_node, *palette, ui_box);
+    std::unique_ptr<Kabuto::Tools::AddShapeTool> ellipse = makeEllipseTool(*document, *document_node, *palette, ui_box);
 
     if (tool_manager->addTool(std::move(rectangle)) != IToolManager::Error::SUCCESS)
     {
@@ -173,6 +193,25 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     }
     registrationGuard().remember(Kabuto::Tools::DELETE_TOOL_ID);
 
+    auto fill_tool =
+        std::make_unique<Kabuto::Tools::FillShapeTool>(Kabuto::Tools::FILL_TOOL_ID, *document, *palette, ui_box);
+    if (tool_manager->addTool(std::move(fill_tool)) != IToolManager::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't register the fill tool");
+        return false;
+    }
+    registrationGuard().remember(Kabuto::Tools::FILL_TOOL_ID);
+
+    auto selection_state = std::make_shared<Kabuto::Tools::SelectionState>();
+    auto select_tool     = std::make_unique<Kabuto::Tools::SelectShapeTool>(Kabuto::Tools::SELECT_TOOL_ID, *document,
+                                                                            *document_node, ui_box, selection_state);
+    if (tool_manager->addTool(std::move(select_tool)) != IToolManager::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't register the select tool");
+        return false;
+    }
+    registrationGuard().remember(Kabuto::Tools::SELECT_TOOL_ID);
+
     if (tool_manager->setActiveTool(Kabuto::Tools::ADD_RECTANGLE_TOOL_ID) != IToolManager::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't activate the rectangle tool");
@@ -182,22 +221,32 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     auto  dispatcher     = std::make_unique<Kabuto::Tools::ToolDispatcher>(*tool_manager);
     auto* dispatcher_raw = dispatcher.get();
 
+    auto selection_overlay =
+        std::make_unique<Kabuto::Tools::SelectionOverlay>(*document, *document_node, selection_state);
+    auto* selection_overlay_raw = selection_overlay.get();
+
+    if (desktop->add(std::move(selection_overlay)) != IDesktop::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't add the selection overlay");
+        return false;
+    }
+
+    moveAfter(*document_parent, document_node, selection_overlay_raw);
+
     if (desktop->add(std::move(dispatcher)) != IDesktop::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't add the dispatcher to the desktop");
         return false;
     }
 
-    if (auto* document_node = dynamic_cast<TObject*>(document);
-        document_node != nullptr && document_node->parent() != nullptr)
-    {
-        moveAfter(*document_node->parent(), document_node, dispatcher_raw);
-    }
+    moveAfter(*document_parent, selection_overlay_raw, dispatcher_raw);
 
     const std::vector<Kabuto::Tools::ToolBarEntry> entries = {
         {Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, "Add rectangle"},
         {  Kabuto::Tools::ADD_ELLIPSE_TOOL_ID,   "Add ellipse"},
         {       Kabuto::Tools::DELETE_TOOL_ID,        "Delete"},
+        {         Kabuto::Tools::FILL_TOOL_ID,          "Fill"},
+        {       Kabuto::Tools::SELECT_TOOL_ID,        "Select"},
     };
 
     std::unique_ptr<IUIFramework::WindowMenu> tool_bar =

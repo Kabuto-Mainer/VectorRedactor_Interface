@@ -33,7 +33,8 @@ class AddShapeTool final : public IToolManager::ATool
 public:
     using ShapeFactory = std::function<std::unique_ptr<IDocument::TShape>(const Vec2F& size)>;
 
-    AddShapeTool(ID id, IDocument& document, IPalette& palette, const BoxF& ui_box, ShapeFactory factory);
+    AddShapeTool(ID id, IDocument& document, TObject& document_view, IPalette& palette, const BoxF& ui_box,
+                 ShapeFactory factory);
     ~AddShapeTool() override = default;
 
     AddShapeTool(const AddShapeTool&)            = delete;
@@ -60,6 +61,7 @@ private:
 private:
     ID           id_;
     IDocument&   document_;
+    TObject&     document_view_;
     IPalette&    palette_;
     BoxF         ui_box_;
     ShapeFactory factory_;
@@ -72,9 +74,10 @@ private:
 
 /* ====================== Implementation ====================== */
 
-inline AddShapeTool::AddShapeTool(ID id, IDocument& document, IPalette& palette, const BoxF& ui_box,
-                                  ShapeFactory factory) :
-    id_(id), document_(document), palette_(palette), ui_box_(ui_box), factory_(std::move(factory))
+inline AddShapeTool::AddShapeTool(ID id, IDocument& document, TObject& document_view, IPalette& palette,
+                                  const BoxF& ui_box, ShapeFactory factory) :
+    id_(id), document_(document), document_view_(document_view), palette_(palette), ui_box_(ui_box),
+    factory_(std::move(factory))
 {
 }
 
@@ -85,12 +88,7 @@ inline IToolManager::ATool::ID AddShapeTool::id() const
 
 inline Vec2F AddShapeTool::toLocal(const Vec2F& global_pos) const
 {
-    if (const auto* node = dynamic_cast<const TObject*>(&document_))
-    {
-        return node->mapGlobalToLocal(global_pos);
-    }
-
-    return global_pos;
+    return document_view_.mapGlobalToLocal(global_pos);
 }
 
 inline bool AddShapeTool::processEvent(const IInputPump::Event& event)

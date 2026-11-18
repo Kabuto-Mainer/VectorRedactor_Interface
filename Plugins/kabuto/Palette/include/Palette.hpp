@@ -24,18 +24,20 @@ namespace Palette
 class CPalette final : public IPalette
 {
 public:
-    CPalette();
-    ~CPalette() override = default;
-
     CPalette(const CPalette&)            = delete;
     CPalette(CPalette&&)                 = delete;
     CPalette& operator=(const CPalette&) = delete;
     CPalette& operator=(CPalette&&)      = delete;
 
+    static CPalette& instance();
+
     Color color() const override;
     void  setColor(const Color& new_color) override;
 
 private:
+    CPalette();
+    ~CPalette() override = default;
+
     Color color_;
 }; // class CPalette
 

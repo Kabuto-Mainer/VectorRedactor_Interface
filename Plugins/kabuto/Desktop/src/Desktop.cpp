@@ -18,9 +18,11 @@ namespace Desktop
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-    auto container = std::make_unique<DesktopNode>();
-
-    static MainPlugin desktop(container->id());
+    CDesktop& desktop = CDesktop::instance();
+    if (!desktop.initialize())
+    {
+        return false;
+    }
 
     const ApplicationCore::Error error =
         ApplicationCore::instance().registerInterface(IID_DESKTOP,
@@ -31,11 +33,6 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
                              ApplicationCore::strError(error));
         return false;
     }
-
-    // Desktop is the bottom-most child of root: every other object is rendered above it
-    TObject* root = ApplicationCore::instance().root();
-    container->setParent(root);
-    root->children().push_front(std::move(container));
 
     return true;
 }
@@ -66,11 +63,38 @@ Vec2F DesktopNode::mapGlobalToLocal(const Vec2F& pos) const
     return parent() ? parent()->mapGlobalToLocal(pos) : pos;
 }
 
-MainPlugin::MainPlugin(TObject::ID container_id) : container_id_(container_id)
+CDesktop& CDesktop::instance()
 {
+    static CDesktop desktop;
+    return desktop;
 }
 
-IDesktop::Error MainPlugin::add(std::unique_ptr<TObject> object)
+bool CDesktop::initialize()
+{
+    if (container_id_ != 0)
+    {
+        return true;
+    }
+
+    TObject* root = ApplicationCore::instance().root();
+    if (root == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Desktop can't find the root object");
+        return false;
+    }
+
+    auto  container     = std::make_unique<DesktopNode>();
+    auto* container_raw = container.get();
+    container_id_       = container_raw->id();
+
+    // Desktop is the bottom-most child of root: every other object is rendered above it
+    container_raw->setParent(root);
+    root->children().push_front(std::move(container));
+
+    return true;
+}
+
+IDesktop::Error CDesktop::add(std::unique_ptr<TObject> object)
 {
     if (object == nullptr)
     {
@@ -87,7 +111,7 @@ IDesktop::Error MainPlugin::add(std::unique_ptr<TObject> object)
     return Error::SUCCESS;
 }
 
-IDesktop::Error MainPlugin::remove(TObject::ID object_id)
+IDesktop::Error CDesktop::remove(TObject::ID object_id)
 {
     TObject* desktop_node = container();
     if (desktop_node == nullptr)
@@ -106,7 +130,7 @@ IDesktop::Error MainPlugin::remove(TObject::ID object_id)
     return Error::SUCCESS;
 }
 
-TObject* MainPlugin::container() const
+TObject* CDesktop::container() const
 {
     TObject* root = ApplicationCore::instance().root();
     if (root == nullptr)

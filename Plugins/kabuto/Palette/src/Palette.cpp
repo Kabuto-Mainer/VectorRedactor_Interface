@@ -61,6 +61,12 @@ std::string colorLabel(const IRenderer::Color& color)
 
 } // namespace
 
+CPalette& CPalette::instance()
+{
+    static CPalette palette;
+    return palette;
+}
+
 CPalette::CPalette() : color_(DEFAULT_COLOR)
 {
 }
@@ -135,7 +141,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    static Kabuto::Palette::CPalette palette;
+    Kabuto::Palette::CPalette& palette = Kabuto::Palette::CPalette::instance();
 
     std::unique_ptr<IUIFramework::SwitcherPool> view = Kabuto::Palette::createPaletteView(*framework, palette);
     if (!view)
