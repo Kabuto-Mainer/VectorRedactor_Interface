@@ -20,10 +20,6 @@ void Document::removeShape(TShape* shape)
     {
         if (it->get() == shape)
         {
-            if (selected_shape_id_ == shape->id())
-            {
-                selected_shape_id_.reset();
-            }
             children().erase(it);
             return;
         }
@@ -41,33 +37,6 @@ std::optional<TObject::ID> Document::hitTest(const Vec2F& pos)
         }
     }
     return std::nullopt;
-}
-
-IDocument::TShape* Document::findShape(TObject::ID id)
-{
-    for (auto& child : children())
-    {
-        if (child->id() == id)
-        {
-            return dynamic_cast<TShape*>(child.get());
-        }
-    }
-    return nullptr;
-}
-
-bool Document::selectShape(std::optional<TObject::ID> id)
-{
-    if (id && findShape(*id) == nullptr)
-    {
-        return false;
-    }
-    selected_shape_id_ = id;
-    return true;
-}
-
-std::optional<TObject::ID> Document::selectedShapeId() const
-{
-    return selected_shape_id_;
 }
 
 void Document::accept(Visitor& visitor)
@@ -104,7 +73,7 @@ void Document::render()
 
 ApplicationCore::Error initializeDocument()
 {
-    auto& core = ApplicationCore::instance();
+    auto&     core    = ApplicationCore::instance();
     IDesktop* desktop = nullptr;
     if (core.queryInterface(IID_DESKTOP, reinterpret_cast<void**>(&desktop)) != ApplicationCore::Error::SUCCESS ||
         desktop == nullptr)
@@ -112,9 +81,9 @@ ApplicationCore::Error initializeDocument()
         return ApplicationCore::Error::INTERFACE_NOT_FOUND;
     }
 
-    auto document = std::make_unique<Document>();
-    const TObject::ID id = document->id();
-    auto* interface = static_cast<IDocument*>(document.get());
+    auto              document  = std::make_unique<Document>();
+    const TObject::ID id        = document->id();
+    auto*             interface = static_cast<IDocument*>(document.get());
     if (desktop->add(std::move(document)) != IDesktop::Error::SUCCESS)
     {
         return ApplicationCore::Error::INVALID_ARGS;

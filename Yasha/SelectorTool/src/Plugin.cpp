@@ -1,5 +1,3 @@
-#include "SelectorTool.hpp"
-
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IDocument.hpp"
@@ -7,9 +5,9 @@
 #include "Interfaces/IToolBar.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
-#include "Document.hpp"
-#include "ToolManager.hpp"
+#include "SelectorTool.hpp"
 #include "ToolBarIID.hpp"
+#include "ToolManager.hpp"
 
 #include <memory>
 
@@ -38,7 +36,10 @@ public:
         }
     }
 
-    void setManager(IToolManager* manager) { manager_ = manager; }
+    void setManager(IToolManager* manager)
+    {
+        manager_ = manager;
+    }
 
 private:
     IToolManager* manager_ = nullptr;
@@ -60,9 +61,12 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     auto* toolbar  = queryInterface<IToolBar>(IID_TOOL_BAR);
     auto* renderer = queryInterface<IRenderer>(IID_RENDERER);
 
-    auto* yasha_document = dynamic_cast<Document*>(document);
     auto* yasha_manager = static_cast<ToolManager*>(manager);
-    if (yasha_document == nullptr || desktop == nullptr || yasha_manager == nullptr || toolbar == nullptr || renderer == nullptr)
+    if (document == nullptr ||
+        desktop == nullptr ||
+        yasha_manager == nullptr ||
+        toolbar == nullptr ||
+        renderer == nullptr)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL,
                              "Selector tool requires Desktop, Document, ToolManager, ToolBar and Render");
@@ -77,16 +81,17 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    auto overlay = std::make_unique<Yasha::Tools::SelectionOverlay>(*yasha_document, *yasha_manager,
-                                                                    Yasha::Tools::SELECTOR_TOOL_ID);
-    const auto overlay_id = overlay->id();
-    auto* overlay_ptr = overlay.get();
+    auto       state       = std::make_shared<Yasha::Tools::SelectionState>();
+    auto       overlay     = std::make_unique<Yasha::Tools::SelectionOverlay>(*document, *yasha_manager,
+                                                                              Yasha::Tools::SELECTOR_TOOL_ID, state);
+    const auto overlay_id  = overlay->id();
+    auto*      overlay_ptr = overlay.get();
     if (desktop->add(std::move(overlay)) != IDesktop::Error::SUCCESS)
     {
         return false;
     }
 
-    auto tool = std::make_unique<Yasha::Tools::SelectorTool>(*yasha_document, *yasha_manager, *overlay_ptr);
+    auto tool = std::make_unique<Yasha::Tools::SelectorTool>(*document, *yasha_manager, *overlay_ptr, state);
     if (manager->addTool(std::move(tool)) != IToolManager::Error::SUCCESS)
     {
         desktop->remove(overlay_id);

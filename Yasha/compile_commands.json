@@ -589,7 +589,6 @@
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/ToolBar/include",
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/ToolManager/include",
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Desktop/include",
-      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Document/include",
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Render/include",
       "-Iinclude",
       "-I../../SDK",
@@ -621,7 +620,6 @@
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/ToolBar/include",
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/ToolManager/include",
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Desktop/include",
-      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Document/include",
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Render/include",
       "-Iinclude",
       "-I../../SDK",
@@ -653,7 +651,6 @@
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/ToolBar/include",
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/ToolManager/include",
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Desktop/include",
-      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Document/include",
       "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Render/include",
       "-Iinclude",
       "-I../../SDK",
@@ -716,5 +713,36 @@
       "src/ToolBar.o"
     ],
     "output": "src/ToolBar.o"
+  },
+  {
+    "directory": "/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/SelectorTool",
+    "file": "src/ShapeLookup.cpp",
+    "arguments": [
+      "clang++",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/EllipseTool/include",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/SelectorTool/include",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/InputPump/include",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/SDK",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/UIFramework",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/ToolBar/include",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/ToolManager/include",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Desktop/include",
+      "-I/home/vosye/Documents/DEDProjects/DedPlusPlus/Photoshops/Photoshop3/VectorRedactor_Interface/Yasha/Render/include",
+      "-Iinclude",
+      "-I../../SDK",
+      "-std=c++23",
+      "-fPIC",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-MMD",
+      "-MP",
+      "-c",
+      "src/ShapeLookup.cpp",
+      "-o",
+      "src/ShapeLookup.o"
+    ],
+    "output": "src/ShapeLookup.o"
   }
 ]

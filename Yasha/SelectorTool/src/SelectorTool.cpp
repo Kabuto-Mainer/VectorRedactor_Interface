@@ -1,22 +1,27 @@
 #include "SelectorTool.hpp"
 
+#include "ShapeLookup.hpp"
+
 #include <cmath>
 #include <numbers>
+#include <utility>
 #include <variant>
 
 namespace Yasha::Tools
 {
 
-SelectorTool::SelectorTool(Document& document, ToolManager& manager, SelectionOverlay& overlay) :
-    document_(document), manager_(manager), overlay_(overlay), last_activation_revision_(manager.activationRevision())
+SelectorTool::SelectorTool(IDocument& document, ToolManager& manager, SelectionOverlay& overlay,
+                           std::shared_ptr<SelectionState> state) :
+    document_(document), manager_(manager), overlay_(overlay), state_(std::move(state)),
+    last_activation_revision_(manager.activationRevision())
 {
 }
 
-Vec2F SelectorTool::toDocumentLocal(const Vec2F& global_pos) const
+Vec2F SelectorTool::toShapeParentLocal(const IDocument::TShape& shape, const Vec2F& global_pos) const
 {
-    if (const auto* object = dynamic_cast<const TObject*>(&document_))
+    if (const auto* parent = shape.parent())
     {
-        return object->mapGlobalToLocal(global_pos);
+        return parent->mapGlobalToLocal(global_pos);
     }
     return global_pos;
 }
@@ -39,7 +44,7 @@ bool SelectorTool::processEvent(const IInputPump::Event& event)
             {
                 return cancel();
             }
-            document_.selectShape(std::nullopt);
+            state_->selected_shape_id.reset();
             return true;
         }
         return false;
@@ -72,28 +77,28 @@ bool SelectorTool::press(const Vec2F& global_pos)
 
     if (overlay_.hitTestRotationHandle(global_pos))
     {
-        dragged_id_ = document_.selectedShapeId();
+        dragged_id_ = state_->selected_shape_id;
         if (dragged_id_)
         {
-            if (auto* shape = document_.findShape(*dragged_id_))
+            if (auto* shape = findShape(document_, *dragged_id_))
             {
-                gesture_ = Gesture::ROTATE;
-                start_rotation_ = shape->rotation();
-                const Vec2F delta = global_pos - shape->mapLocalToGlobal(Vec2F{});
+                gesture_               = Gesture::ROTATE;
+                start_rotation_        = shape->rotation();
+                const Vec2F delta      = global_pos - shape->mapLocalToGlobal(Vec2F{});
                 previous_cursor_angle_ = std::atan2(delta.y(), delta.x());
                 return true;
             }
         }
     }
 
-    dragged_id_ = document_.hitTest(global_pos);
-    document_.selectShape(dragged_id_);
+    dragged_id_               = document_.hitTest(global_pos);
+    state_->selected_shape_id = dragged_id_;
     if (dragged_id_)
     {
-        if (auto* shape = document_.findShape(*dragged_id_))
+        if (auto* shape = findShape(document_, *dragged_id_))
         {
-            gesture_ = Gesture::MOVE;
-            start_cursor_ = toDocumentLocal(global_pos);
+            gesture_           = Gesture::MOVE;
+            start_cursor_      = toShapeParentLocal(*shape, global_pos);
             start_translation_ = shape->translation();
         }
     }
@@ -106,7 +111,7 @@ bool SelectorTool::move(const Vec2F& global_pos)
     {
         return false;
     }
-    auto* shape = document_.findShape(*dragged_id_);
+    auto* shape = findShape(document_, *dragged_id_);
     if (shape == nullptr)
     {
         gesture_ = Gesture::NONE;
@@ -115,7 +120,7 @@ bool SelectorTool::move(const Vec2F& global_pos)
     }
     if (gesture_ == Gesture::MOVE)
     {
-        shape->setTranslation(start_translation_ + toDocumentLocal(global_pos) - start_cursor_);
+        shape->setTranslation(start_translation_ + toShapeParentLocal(*shape, global_pos) - start_cursor_);
     }
     else
     {
@@ -150,7 +155,7 @@ bool SelectorTool::cancel()
     }
     if (dragged_id_)
     {
-        if (auto* shape = document_.findShape(*dragged_id_))
+        if (auto* shape = findShape(document_, *dragged_id_))
         {
             if (gesture_ == Gesture::MOVE)
             {

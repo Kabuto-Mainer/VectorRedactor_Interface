@@ -29,7 +29,7 @@ RectangleTool/libRectangleTool.so: RectangleTool/Makefile RectangleTool/src/Plug
 EllipseTool/libEllipseTool.so: EllipseTool/Makefile EllipseTool/src/Plugin.cpp EllipseTool/src/EllipseTool.cpp EllipseTool/src/EllipseShape.cpp EllipseTool/include/EllipseTool.hpp EllipseTool/include/EllipseShape.hpp ../SDK/Interfaces/IDocument.hpp ../SDK/Interfaces/IToolBar.hpp ../SDK/Interfaces/IToolManager.hpp
 	$(MAKE) -C EllipseTool
 
-SelectorTool/libSelectorTool.so: SelectorTool/Makefile SelectorTool/src/Plugin.cpp SelectorTool/src/SelectorTool.cpp SelectorTool/src/SelectionOverlay.cpp SelectorTool/include/SelectorTool.hpp SelectorTool/include/SelectionOverlay.hpp Document/include/Document.hpp ToolManager/include/ToolManager.hpp ../SDK/Interfaces/IDocument.hpp ../SDK/Interfaces/IToolManager.hpp
+SelectorTool/libSelectorTool.so: SelectorTool/Makefile SelectorTool/src/Plugin.cpp SelectorTool/src/SelectorTool.cpp SelectorTool/src/SelectionOverlay.cpp SelectorTool/src/ShapeLookup.cpp SelectorTool/include/SelectorTool.hpp SelectorTool/include/SelectionOverlay.hpp SelectorTool/include/ShapeLookup.hpp ToolManager/include/ToolManager.hpp ../SDK/Interfaces/IDocument.hpp ../SDK/Interfaces/IToolManager.hpp
 	$(MAKE) -C SelectorTool
 
 app: $(OBJECTS)
