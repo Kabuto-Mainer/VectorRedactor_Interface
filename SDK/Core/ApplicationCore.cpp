@@ -50,22 +50,77 @@ Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F& pos) const
     return pos;
 }
 
-void ApplicationCore::Root::pushModal(std::unique_ptr<TObject> new_modal)
-{
-    addChild(std::move(new_modal));
-}
-
-bool ApplicationCore::Root::popModal()
-{
-    if (children().size() < 2)
-    {
-        return false;
-    }
-    children().pop_back();
-    return true;
-}
-
 /* ApplicationCore */
+
+TObject* ApplicationCore::findObject(TObject* object, TObject::ID object_id)
+{
+    assert(object);
+
+    if (object->id() == object_id)
+    {
+        return object;
+    }
+
+    for (auto child = object->children().begin(); child != object->children().end(); child++)
+    {
+        auto* found = findObject(child->get(), object_id);
+        if (found != nullptr)
+        {
+            return found;
+        }
+    }
+
+    return nullptr;
+}
+
+void ApplicationCore::deleteObject(TObject::ID object_id)
+{
+    if (object_id == root_->id())
+    {
+        return;
+    }
+
+    auto* found = findObject(object_id);
+    if (found == nullptr)
+    {
+        return;
+    }
+
+    auto* parent = found->parent();
+    if (parent == nullptr)
+    {
+        log(LogLevel::ERROR, "Non-root object %llu has no parent",
+            static_cast<unsigned long long>(object_id));
+        return;
+    }
+
+    auto removed = parent->children().remove_if(
+        [object_id](const std::unique_ptr<TObject>& obj)
+        {
+            return obj->id() == object_id;
+        });
+
+    if (removed == 0)
+    {
+        log(LogLevel::WARNING, "Object %llu is not among its parent's children",
+            static_cast<unsigned long long>(object_id));
+    }
+}
+
+void ApplicationCore::pushModal(std::unique_ptr<TObject> object)
+{
+    root_->addChild(std::move(object));
+}
+
+void ApplicationCore::popModal()
+{
+    if (root_->children().empty())
+    {
+        return;
+    }
+
+    root_->children().pop_back();
+}
 
 ApplicationCore::ApplicationCore() : root_(std::make_unique<Root>())
 {
@@ -135,11 +190,6 @@ ApplicationCore& ApplicationCore::instance()
     return instance;
 }
 
-TObject* ApplicationCore::root() const
-{
-    return root_.get();
-}
-
 ApplicationCore::Error ApplicationCore::queryInterface(IID iid, void** interface) const
 {
     if (interface == nullptr)
@@ -162,6 +212,11 @@ ApplicationCore::Error ApplicationCore::queryInterface(IID iid, void** interface
 void ApplicationCore::pushCommand(std::unique_ptr<ACommand> command)
 {
     commands_.push(std::move(command));
+}
+
+TObject* ApplicationCore::findObject(TObject::ID object_id) const
+{
+    return findObject(root_.get(), object_id);
 }
 
 void ApplicationCore::setFPS(FPS fps)
@@ -200,8 +255,8 @@ ApplicationCore::Error ApplicationCore::run()
 
             while (!commands_.empty())
             {
-                commands_.back()->execute();
-                commands_.pop();
+                commands_.front()->execute();
+                commands_.pop_front();
             }
         }
 

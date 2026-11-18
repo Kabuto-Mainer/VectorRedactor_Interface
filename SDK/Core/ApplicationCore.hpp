@@ -28,12 +28,14 @@ private:
     std::unordered_map<IID, void*>        registry_;
     std::unique_ptr<Root>                 root_;
     std::vector<void*>                    package_handles_;
-    std::queue<std::unique_ptr<ACommand>> commands_;
+    std::deque<std::unique_ptr<ACommand>> commands_;
     bool                                  is_running_ = false;
 
     /* default fps ~= 60 */
     static constexpr std::chrono::microseconds MICROSECONDS_PER_FRAME_DEFAULT = std::chrono::microseconds(16'667);
     std::chrono::microseconds                  microseconds_per_frame_        = MICROSECONDS_PER_FRAME_DEFAULT;
+
+    static TObject* findObject(TObject* object, TObject::ID object_id);
 
 public:
     ApplicationCore(const ApplicationCore&)            = delete;
@@ -43,9 +45,13 @@ public:
 
     static const char*      strError(Error error);
     static ApplicationCore& instance();
-    TObject*                root() const;
     Error                   queryInterface(IID iid, void** interface) const;
     void                    pushCommand(std::unique_ptr<ACommand> command);
+
+    TObject* findObject(TObject::ID object_id) const;
+    void     deleteObject(TObject::ID object_id);
+    void     pushModal(std::unique_ptr<TObject> object);
+    void     popModal();
 
     void  setFPS(FPS fps);
     Error run();
@@ -89,7 +95,4 @@ public:
     void  render() override;
     Vec2F mapLocalToGlobal(const Vec2F& pos) const override;
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
-
-    void pushModal(std::unique_ptr<TObject> new_modal);
-    bool popModal();
 }; // class Root
