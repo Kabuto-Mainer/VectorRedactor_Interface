@@ -77,7 +77,7 @@ inline bool TObject::processEventChildren(const IInputPump::Event& event)
     return false;
 }
 
-TObject* TObject::findChild(ID child_id) const
+inline TObject* TObject::findChild(ID child_id) const
 {
     for (auto child = children_.begin(); child != children_.end(); child++)
     {
@@ -96,7 +96,7 @@ TObject* TObject::findChild(ID child_id) const
     return nullptr;
 }
 
-void TObject::removeChild(ID child_id)
+inline void TObject::removeChild(ID child_id)
 {
     auto* child_to_remove = findChild(child_id);
     if (child_to_remove->parent_ == nullptr)
