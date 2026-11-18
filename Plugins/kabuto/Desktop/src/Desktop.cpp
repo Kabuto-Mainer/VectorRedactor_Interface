@@ -76,20 +76,12 @@ bool CDesktop::initialize()
         return true;
     }
 
-    TObject* root = ApplicationCore::instance().root();
-    if (root == nullptr)
-    {
-        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Desktop can't find the root object");
-        return false;
-    }
-
     auto  container     = std::make_unique<DesktopNode>();
     auto* container_raw = container.get();
     container_id_       = container_raw->id();
 
-    // Desktop is the bottom-most child of root: every other object is rendered above it
-    container_raw->setParent(root);
-    root->children().push_front(std::move(container));
+
+    ApplicationCore::instance().pushModal(std::move(container));
 
     return true;
 }
@@ -113,32 +105,13 @@ IDesktop::Error CDesktop::add(std::unique_ptr<TObject> object)
 
 IDesktop::Error CDesktop::remove(TObject::ID object_id)
 {
-    TObject* desktop_node = container();
-    if (desktop_node == nullptr)
-    {
-        return Error::OBJECT_NOT_FOUND;
-    }
-
-    TObject* object = desktop_node->find(object_id);
-    if (object == nullptr || object == desktop_node || object->parent() == nullptr)
-    {
-        return Error::OBJECT_NOT_FOUND;
-    }
-
-    object->parent()->children().remove_if([object](const std::unique_ptr<TObject>& child)
-                                           { return child.get() == object; });
+    ApplicationCore::instance().deleteObject(object_id);
     return Error::SUCCESS;
 }
 
 TObject* CDesktop::container() const
 {
-    TObject* root = ApplicationCore::instance().root();
-    if (root == nullptr)
-    {
-        return nullptr;
-    }
-
-    return root->find(container_id_);
+    return ApplicationCore::instance().findObject(container_id_);
 }
 
 }; // namespace Desktop

@@ -340,11 +340,11 @@ std::vector<Placement> slotsFor(const Vec2F& size, IUIFramework::Direction direc
     return slots;
 }
 
-void layoutChildren(TObject& parent, const Vec2F& size, IUIFramework::Direction direction)
+void layoutChildren(std::list<std::unique_ptr<TObject>>& children, const Vec2F& size, IUIFramework::Direction direction)
 {
-    const std::vector<Placement> placements = slotsFor(size, direction, parent.children().size());
+    const std::vector<Placement> placements = slotsFor(size, direction, children.size());
     std::size_t                  index      = 0;
-    for (auto& child : parent.children())
+    for (auto& child : children)
     {
         static_cast<TWidget&>(*child).setBox(*placements[index++]);
     }
@@ -620,7 +620,7 @@ inline SwitcherPoolObject::SwitcherPoolObject(const RenderContext& context, cons
 inline void SwitcherPoolObject::add(std::unique_ptr<IUIFramework::Switcher> switcher)
 {
     addChild(std::move(switcher));
-    layoutChildren(*this, size_, direction_);
+    layoutChildren(children(), size_, direction_);
 }
 
 inline bool SwitcherPoolObject::processEvent(const IInputPump::Event& event)
@@ -688,7 +688,7 @@ inline ButtonPoolObject::ButtonPoolObject(const RenderContext& context, const Ve
 inline void ButtonPoolObject::add(std::unique_ptr<IUIFramework::Button> button)
 {
     addChild(std::move(button));
-    layoutChildren(*this, size_, direction_);
+    layoutChildren(children(), size_, direction_);
 }
 
 inline bool ButtonPoolObject::processEvent(const IInputPump::Event& event)
@@ -758,7 +758,7 @@ inline void ContextMenuObject::add(std::unique_ptr<IUIFramework::Switcher> switc
 inline void ContextMenuObject::relayout()
 {
     setBox(makeBox(min_point_, menuSize(direction_, children().size())));
-    layoutChildren(*this, box().size(), direction_);
+    layoutChildren(children(), box().size(), direction_);
 }
 
 inline bool ContextMenuObject::processEvent(const IInputPump::Event& event)

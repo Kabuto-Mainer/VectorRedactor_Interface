@@ -2,6 +2,7 @@
 #include "IUIFramework.hpp"
 
 #include <cstdlib>
+#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -49,6 +50,7 @@ int main(int argc, char** argv)
         const ApplicationCore::Error error = ApplicationCore::instance().loadPackage(plugin_path.string());
         if (error != ApplicationCore::Error::SUCCESS)
         {
+            ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "%s", dlerror());
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Error while '%s' plugin loading: %s",
                                  plugin_path.string().c_str(), ApplicationCore::strError(error));
             return EXIT_FAILURE;
@@ -56,10 +58,6 @@ int main(int argc, char** argv)
 
         ApplicationCore::log(ApplicationCore::LogLevel::OK, "'%s' loaded", plugin_path.string().c_str());
     }
-
-    ApplicationCore::log(ApplicationCore::LogLevel::OK,
-                         "Prototype is ready: drag with LMB on the canvas to create a shape, pick a color in the "
-                         "palette, switch tools in the 'Tools' panel, close the window to exit");
 
     const ApplicationCore::Error error = ApplicationCore::instance().run();
     if (error != ApplicationCore::Error::SUCCESS)

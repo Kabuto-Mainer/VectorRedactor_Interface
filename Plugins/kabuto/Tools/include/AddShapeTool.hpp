@@ -21,20 +21,12 @@ namespace Kabuto
 namespace Tools
 {
 
-/**
- * Creates a shape by dragging a rectangle on the canvas.
- *
- * Pressing the left mouse button remembers the anchor, motion resizes a live
- * preview shape, releasing the button commits it. A drag smaller than
- * MIN_DRAG_SIZE is treated as a click and the shape is removed again.
- */
 class AddShapeTool final : public IToolManager::ATool
 {
 public:
     using ShapeFactory = std::function<std::unique_ptr<IDocument::TShape>(const Vec2F& size)>;
 
-    AddShapeTool(ID id, IDocument& document, TObject& document_view, IPalette& palette, const BoxF& ui_box,
-                 ShapeFactory factory);
+    AddShapeTool(ID id, IDocument& document, IPalette& palette, const BoxF& ui_box, ShapeFactory factory);
     ~AddShapeTool() override = default;
 
     AddShapeTool(const AddShapeTool&)            = delete;
@@ -48,8 +40,6 @@ public:
 private:
     static constexpr float MIN_DRAG_SIZE = 2.0F;
 
-    Vec2F toLocal(const Vec2F& global_pos) const;
-
     bool beginDrag(const Vec2F& global_pos);
     bool updateDrag(const Vec2F& global_pos);
     bool endDrag(const Vec2F& global_pos);
@@ -61,7 +51,6 @@ private:
 private:
     ID           id_;
     IDocument&   document_;
-    TObject&     document_view_;
     IPalette&    palette_;
     BoxF         ui_box_;
     ShapeFactory factory_;
@@ -74,21 +63,15 @@ private:
 
 /* ====================== Implementation ====================== */
 
-inline AddShapeTool::AddShapeTool(ID id, IDocument& document, TObject& document_view, IPalette& palette,
-                                  const BoxF& ui_box, ShapeFactory factory) :
-    id_(id), document_(document), document_view_(document_view), palette_(palette), ui_box_(ui_box),
-    factory_(std::move(factory))
+inline AddShapeTool::AddShapeTool(ID id, IDocument& document, IPalette& palette, const BoxF& ui_box,
+                                  ShapeFactory factory) :
+    id_(id), document_(document), palette_(palette), ui_box_(ui_box), factory_(std::move(factory))
 {
 }
 
 inline IToolManager::ATool::ID AddShapeTool::id() const
 {
     return id_;
-}
-
-inline Vec2F AddShapeTool::toLocal(const Vec2F& global_pos) const
-{
-    return document_view_.mapGlobalToLocal(global_pos);
 }
 
 inline bool AddShapeTool::processEvent(const IInputPump::Event& event)
@@ -137,7 +120,7 @@ inline bool AddShapeTool::beginDrag(const Vec2F& global_pos)
         return false;
     }
 
-    anchor_   = toLocal(global_pos);
+    anchor_   = global_pos;
     shape_    = nullptr;
     shape_id_ = 0;
     dragging_ = true;
@@ -152,7 +135,7 @@ inline bool AddShapeTool::updateDrag(const Vec2F& global_pos)
         return false;
     }
 
-    const Vec2F current = toLocal(global_pos);
+    const Vec2F current = global_pos;
     const Vec2F min{std::min(anchor_.x(), current.x()), std::min(anchor_.y(), current.y())};
     const Vec2F max{std::max(anchor_.x(), current.x()), std::max(anchor_.y(), current.y())};
     const Vec2F size = max - min;

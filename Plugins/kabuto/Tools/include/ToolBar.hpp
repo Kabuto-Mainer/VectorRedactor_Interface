@@ -27,12 +27,6 @@ inline BoxF toolBarBox()
     return BoxF(312.0F, 24.0F, 492.0F, 228.0F);
 }
 
-/**
- * Builds a compact tool switcher panel on top of the UI framework.
- *
- * The panel itself is a regular TWidget: it is added to the desktop by the
- * caller, while this function only creates its contents.
- */
 inline std::unique_ptr<IUIFramework::WindowMenu> buildToolBar(IUIFramework& framework, IToolManager& tool_manager,
                                                               const std::vector<ToolBarEntry>& entries)
 {

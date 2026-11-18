@@ -4,6 +4,7 @@
 #include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
+#include "Interfaces/IToolManager.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -17,9 +18,9 @@ namespace Kabuto
 namespace Document
 {
 
-/* DocumentNode */
+/* TDocument */
 
-void DocumentNode::addShape(std::unique_ptr<IDocument::TShape> shape)
+void TDocument::addShape(std::unique_ptr<IDocument::TShape> shape)
 {
     if (!shape)
     {
@@ -30,13 +31,13 @@ void DocumentNode::addShape(std::unique_ptr<IDocument::TShape> shape)
     addChild(std::move(shape));
 }
 
-void DocumentNode::removeShape(TObject::ID shape_id)
+void TDocument::removeShape(TObject::ID shape_id)
 {
     children().remove_if([shape_id](const std::unique_ptr<TObject>& child)
                          { return child != nullptr && child->id() == shape_id; });
 }
 
-std::optional<TObject::ID> DocumentNode::hitTest(const Vec2F& pos)
+std::optional<TObject::ID> TDocument::hitTest(const Vec2F& pos)
 {
     for (auto child = children().rbegin(); child != children().rend(); ++child)
     {
@@ -50,19 +51,7 @@ std::optional<TObject::ID> DocumentNode::hitTest(const Vec2F& pos)
     return std::nullopt;
 }
 
-void DocumentNode::accept(IDocument::Visitor& visitor)
-{
-    for (const auto& child : children())
-    {
-        auto* shape = dynamic_cast<IDocument::TShape*>(child.get());
-        if (shape != nullptr && !visitor.visit(*shape))
-        {
-            return;
-        }
-    }
-}
-
-void DocumentNode::accept(IDocument::Visitor& visitor) const
+void TDocument::accept(IDocument::Visitor& visitor) const
 {
     for (const auto& child : children())
     {
@@ -74,17 +63,26 @@ void DocumentNode::accept(IDocument::Visitor& visitor) const
     }
 }
 
-bool DocumentNode::processEvent(const IInputPump::Event& /*event*/)
+bool TDocument::processEvent(const IInputPump::Event& event)
 {
-    return false;
+    IToolManager* tool_manager = nullptr;
+
+    auto result = ApplicationCore::instance().queryInterface(IID_TOOL_MANAGER, reinterpret_cast<void**>(&tool_manager));
+    if (result != ApplicationCore::Error::SUCCESS || tool_manager == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "IToolManager not founded");
+        return false;
+    }
+
+    return tool_manager->processEvent(event);
 }
 
-void DocumentNode::render()
+void TDocument::render()
 {
     renderChildren();
 }
 
-Vec2F DocumentNode::mapLocalToGlobal(const Vec2F& pos) const
+Vec2F TDocument::mapLocalToGlobal(const Vec2F& pos) const
 {
     if (parent() == nullptr)
     {
@@ -94,7 +92,7 @@ Vec2F DocumentNode::mapLocalToGlobal(const Vec2F& pos) const
     return parent()->mapLocalToGlobal(pos);
 }
 
-Vec2F DocumentNode::mapGlobalToLocal(const Vec2F& pos) const
+Vec2F TDocument::mapGlobalToLocal(const Vec2F& pos) const
 {
     if (parent() == nullptr)
     {
@@ -112,71 +110,61 @@ CDocument& CDocument::instance()
     return document;
 }
 
-void CDocument::bindNode(DocumentNode& node)
+TDocument * CDocument::node() const
 {
-    node_ = &node;
+    auto node = ApplicationCore::instance().findObject(document_id_);
+
+    if (node == nullptr || node != document_node_)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Disconnect between raw documentNode and documentID");
+        return nullptr;
+    }
+    return static_cast<TDocument*>(node);
+}
+
+void CDocument::bindNode(TDocument& document)
+{
+    document_node_ = &document;
+    document_id_ = document.id();
 }
 
 void CDocument::unbindNode()
 {
-    node_ = nullptr;
-}
-
-DocumentNode* CDocument::node() const
-{
-    if (node_ == nullptr)
-    {
-        ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Document is used before its view node is bound");
-    }
-
-    return node_;
+    document_node_ = nullptr;
 }
 
 void CDocument::addShape(std::unique_ptr<TShape> shape)
 {
-    if (DocumentNode* document_node = node())
+    if (node() != nullptr)
     {
-        document_node->addShape(std::move(shape));
+        document_node_->addShape(std::move(shape));
     }
 }
 
 void CDocument::removeShape(TObject::ID shape_id)
 {
-    if (DocumentNode* document_node = node())
+    if (node() != nullptr)
     {
-        document_node->removeShape(shape_id);
+        document_node_->removeShape(shape_id);
     }
 }
 
 std::optional<TObject::ID> CDocument::hitTest(const Vec2F& pos)
 {
-    if (DocumentNode* document_node = node())
+    if (node() != nullptr)
     {
-        return document_node->hitTest(pos);
+        return document_node_->hitTest(pos);
     }
 
     return std::nullopt;
 }
 
-void CDocument::accept(Visitor& visitor)
-{
-    if (DocumentNode* document_node = node())
-    {
-        document_node->accept(visitor);
-    }
-}
-
 void CDocument::accept(Visitor& visitor) const
 {
-    if (const DocumentNode* document_node = node())
+    if (node() != nullptr)
     {
-        document_node->accept(visitor);
+        document_node_->accept(visitor);
     }
-}
-
-DocumentNode* CDocument::view() const
-{
-    return node_;
 }
 
 }; // namespace Document
@@ -185,23 +173,6 @@ DocumentNode* CDocument::view() const
 
 namespace
 {
-
-void moveToBackground(TObject& parent, TObject* child)
-{
-    auto& siblings = parent.children();
-    if (siblings.size() < 2)
-    {
-        return;
-    }
-
-    const auto position =
-        std::find_if(siblings.begin(), siblings.end(),
-                     [child](const std::unique_ptr<TObject>& sibling) { return sibling.get() == child; });
-    if (position != siblings.end() && position != siblings.begin())
-    {
-        siblings.splice(siblings.begin(), siblings, position);
-    }
-}
 
 } // namespace
 
@@ -225,7 +196,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    auto  document_node = std::make_unique<Kabuto::Document::DocumentNode>();
+    auto  document_node = std::make_unique<Kabuto::Document::TDocument>();
     auto* node_ptr      = document_node.get();
 
     Kabuto::Document::CDocument& document = Kabuto::Document::CDocument::instance();
@@ -238,13 +209,6 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    // The document is a canvas: render it below the desktop windows.
-    TObject* parent = node_ptr->parent();
-    if (parent != nullptr)
-    {
-        moveToBackground(*parent, node_ptr);
-    }
-
     const ApplicationCore::Error error =
         core.registerInterface(IID_IDOCUMENT, static_cast<void*>(static_cast<IDocument*>(&document)));
     if (error != ApplicationCore::Error::SUCCESS)
@@ -252,23 +216,9 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to register IDocument: %s",
                              ApplicationCore::strError(error));
 
-        if (parent != nullptr)
-        {
-            parent->children().remove_if([node_ptr](const std::unique_ptr<TObject>& child)
-                                         { return child.get() == node_ptr; });
-        }
+        desktop->remove(document_node->id());
         document.unbindNode();
         return false;
     }
-
-    const ApplicationCore::Error view_error =
-        core.registerInterface(IID_DOCUMENT_VIEW, static_cast<void*>(static_cast<IDocumentView*>(&document)));
-    if (view_error != ApplicationCore::Error::SUCCESS)
-    {
-        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to register IDocumentView: %s",
-                             ApplicationCore::strError(view_error));
-        return false;
-    }
-
     return true;
 }
