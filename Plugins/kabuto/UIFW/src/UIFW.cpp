@@ -268,14 +268,24 @@ const IInputPump::EventMouse* asMouse(const IInputPump::Event& event)
     return std::get_if<IInputPump::EventMouse>(&event);
 }
 
-std::optional<IRenderer::TextureID> loadIcon(const std::optional<std::string>& path)
+std::optional<IRenderer::TextureID> loadIcon(const std::optional<IUIFramework::Icon>& icon)
 {
-    IRenderer* renderer = queryRenderer();
-    if (!path || !renderer)
+    if (!icon)
     {
         return std::nullopt;
     }
-    return renderer->loadTexture(*path);
+
+    if (const auto* texture = std::get_if<IRenderer::TextureID>(&*icon))
+    {
+        return *texture;
+    }
+
+    IRenderer* renderer = queryRenderer();
+    if (!renderer)
+    {
+        return std::nullopt;
+    }
+    return renderer->loadTexture(std::get<std::string>(*icon));
 }
 
 void drawPanel(IRenderer* renderer, const IRenderer::Color& fill, const IRenderer::Color& border, const BoxF& box)

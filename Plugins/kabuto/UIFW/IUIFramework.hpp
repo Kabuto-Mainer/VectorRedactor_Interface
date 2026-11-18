@@ -11,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 constexpr IID IID_IUIFramework = 0x00'06;
@@ -37,6 +38,7 @@ public:
     enum class Direction;
     enum class Role;
     using EventHandler = std::function<bool(const IInputPump::Event&)>;
+    using Icon = std::variant<std::string, IRenderer::TextureID>;
 
     virtual ~IUIFramework() = default;
 
@@ -115,7 +117,7 @@ struct IUIFramework::ButtonDescription
 {
     BoxF                       box;
     std::optional<std::string> text;
-    std::optional<std::string> icon;
+    std::optional<Icon>        icon;
     Action                     on_press;
     Role                       role = Role::DEFAULT;
 }; // struct ButtonDescription
@@ -124,7 +126,7 @@ struct IUIFramework::SwitcherDescription
 {
     BoxF                       box;
     std::optional<std::string> text;
-    std::optional<std::string> icon;
+    std::optional<Icon>        icon;
     Action                     on_active;
     Action                     on_deactive;
     Role                       role = Role::DEFAULT;

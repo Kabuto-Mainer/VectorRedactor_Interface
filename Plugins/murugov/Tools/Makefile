@@ -1,6 +1,6 @@
 CXX       := clang++
 CXXFLAGS  := -std=c++23 -fPIC -g -Wall -Wextra
-INCLUDES  := -Iinclude -I../../../SDK -I../../kabuto/UIFW -I../../kabuto/Document -I.
+INCLUDES  := -Iinclude -I../../../SDK -I.
 SRCS      := src/Tools.cpp
 BASE_NAME := libmurugov_Tools
 
@@ -16,7 +16,7 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): $(SRCS)
+$(TARGET): $(SRCS) include/SelectTool.hpp
 	@echo "[Building $(TARGET) on $(UNAME_S)]"
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $(SRCS) $(LDFLAGS) -o $(TARGET)
 

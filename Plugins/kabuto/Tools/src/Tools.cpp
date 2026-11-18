@@ -3,23 +3,45 @@
 #include "DeleteShapeTool.hpp"
 #include "EllipseShape.hpp"
 #include "IPalette.hpp"
-#include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IDocument.hpp"
+#include "Interfaces/IRenderer.hpp"
+#include "Interfaces/IToolBar.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
 #include "RectangleShape.hpp"
-#include "ToolBar.hpp"
 #include "ToolIds.hpp"
-#include "Utils/TObject.hpp"
+#include "Utils/BoxF.hpp"
 #include "Utils/Vec2F.hpp"
 
-#include <functional>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
 namespace
 {
+
+constexpr float TOOL_BAR_LEFT   = 312.0F;
+constexpr float TOOL_BAR_TOP    = 24.0F;
+constexpr float TOOL_BAR_RIGHT  = 492.0F;
+constexpr float TOOL_BAR_BOTTOM = 228.0F;
+
+struct ToolBarItem
+{
+    IToolManager::ATool::ID tool_id;
+    const char*             icon;
+}; // struct ToolBarItem
+
+constexpr ToolBarItem TOOL_BAR_ITEMS[] = {
+    {Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, "assets/rectangle.png"},
+    {  Kabuto::Tools::ADD_ELLIPSE_TOOL_ID,   "assets/ellipse.png"},
+    {       Kabuto::Tools::DELETE_TOOL_ID,       "assets/pen.png"},
+};
+
+BoxF toolBarBox()
+{
+    return BoxF(TOOL_BAR_LEFT, TOOL_BAR_TOP, TOOL_BAR_RIGHT, TOOL_BAR_BOTTOM);
+}
 
 template<typename T>
 T* queryInterface(const IID& iid)
@@ -44,15 +66,15 @@ public:
             return;
         }
 
-        for (const IToolManager::ATool::ID id : ids_)
+        for (const IToolManager::ATool::ID tool_id : ids_)
         {
-            manager->removeTool(id);
+            manager->removeTool(tool_id);
         }
     }
 
-    void remember(IToolManager::ATool::ID id)
+    void remember(IToolManager::ATool::ID tool_id)
     {
-        ids_.push_back(id);
+        ids_.push_back(tool_id);
     }
 
 private:
@@ -82,6 +104,17 @@ std::unique_ptr<Kabuto::Tools::AddShapeTool> makeEllipseTool(IDocument& document
     );
 }
 
+std::optional<IRenderer::TextureID> loadIcon(IRenderer& renderer, const char* path)
+{
+    std::optional<IRenderer::TextureID> texture = renderer.loadTexture(path);
+    if (!texture)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Tools can't load the icon '%s'", path);
+    }
+
+    return texture;
+}
+
 } // namespace
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
@@ -89,8 +122,8 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     IDocument*    document     = queryInterface<IDocument>(IID_IDOCUMENT);
     IToolManager* tool_manager = queryInterface<IToolManager>(IID_TOOL_MANAGER);
     IPalette*     palette      = queryInterface<IPalette>(IID_PALETTE);
-    IUIFramework* framework    = queryInterface<IUIFramework>(IID_IUIFramework);
-    IDesktop*     desktop      = queryInterface<IDesktop>(IID_DESKTOP);
+    IToolBar*     tool_bar     = queryInterface<IToolBar>(IID_TOOL_BAR);
+    IRenderer*    renderer     = queryInterface<IRenderer>(IID_RENDERER);
 
     if (document == nullptr || tool_manager == nullptr)
     {
@@ -98,14 +131,14 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    if (palette == nullptr || framework == nullptr || desktop == nullptr)
+    if (palette == nullptr || tool_bar == nullptr || renderer == nullptr)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL,
-                             "Tools can't find the palette, the UI framework or the desktop");
+                             "Tools can't find the palette, the tool bar or the renderer");
         return false;
     }
 
-    const BoxF ui_box = Kabuto::Tools::toolBarBox();
+    const BoxF ui_box = toolBarBox();
 
     std::unique_ptr<Kabuto::Tools::AddShapeTool> rectangle = makeRectangleTool(*document, *palette, ui_box);
     std::unique_ptr<Kabuto::Tools::AddShapeTool> ellipse   = makeEllipseTool(*document, *palette, ui_box);
@@ -133,31 +166,20 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     }
     registrationGuard().remember(Kabuto::Tools::DELETE_TOOL_ID);
 
+    for (const ToolBarItem& item : TOOL_BAR_ITEMS)
+    {
+        const std::optional<IRenderer::TextureID> icon = loadIcon(*renderer, item.icon);
+        if (!icon)
+        {
+            continue;
+        }
+
+        tool_bar->addTool(item.tool_id, *icon);
+    }
+
     if (tool_manager->setActiveTool(Kabuto::Tools::ADD_RECTANGLE_TOOL_ID) != IToolManager::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't activate the rectangle tool");
-        return false;
-    }
-
-    const std::vector<Kabuto::Tools::ToolBarEntry> entries = {
-        {Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, "Add rectangle"},
-        {  Kabuto::Tools::ADD_ELLIPSE_TOOL_ID,   "Add ellipse"},
-        {       Kabuto::Tools::DELETE_TOOL_ID,        "Delete"},
-        {         Kabuto::Tools::FILL_TOOL_ID,          "Fill"},
-        {       Kabuto::Tools::SELECT_TOOL_ID,        "Select"},
-    };
-
-    std::unique_ptr<IUIFramework::WindowMenu> tool_bar =
-        Kabuto::Tools::buildToolBar(*framework, *tool_manager, entries);
-    if (!tool_bar)
-    {
-        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't build the tool bar");
-        return false;
-    }
-
-    if (desktop->add(std::move(tool_bar)) != IDesktop::Error::SUCCESS)
-    {
-        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't add the tool bar to the desktop");
         return false;
     }
 

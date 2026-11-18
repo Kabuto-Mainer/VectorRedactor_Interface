@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
@@ -29,7 +30,7 @@ constexpr IToolManager::ATool::ID SELECT_TOOL_ID = 5;
 class SelectTool final : public IToolManager::ATool
 {
 public:
-    SelectTool(ID id, IDocument& document, IRenderer& renderer, const BoxF& ui_box);
+    SelectTool(ID tool_id, IDocument& document, IRenderer& renderer);
     ~SelectTool() override = default;
 
     SelectTool(const SelectTool&)            = delete;
@@ -51,6 +52,8 @@ private:
         BOX_SELECT,
     };
 
+    class ShapeCollector;
+
     struct InitialShapeState
     {
         Vec2F translation;
@@ -61,6 +64,7 @@ private:
     static constexpr float HANDLE_HALF_SIZE   = 4.5F;
     static constexpr float ROTATE_HANDLE_DIST = 26.0F;
     static constexpr float MIN_SHAPE_SIZE     = 4.0F;
+    static constexpr float MIN_MARQUEE_SIZE   = 2.0F;
 
     Vec2F toLocal(const Vec2F& global_pos) const;
     Vec2F toGlobal(const Vec2F& local_pos) const;
@@ -86,10 +90,9 @@ private:
     ID         id_;
     IDocument& document_;
     IRenderer& renderer_;
-    BoxF       ui_box_;
 
     std::unordered_set<TObject::ID> selected_ids_;
-    Mode                            mode_       = Mode::NONE;
+    Mode                            mode_ = Mode::NONE;
 
     // For the selection marquee
     Vec2F box_select_start_;
@@ -105,10 +108,34 @@ private:
     std::unordered_map<TObject::ID, InitialShapeState> initial_states_;
 }; // class SelectTool
 
+class SelectTool::ShapeCollector final : public IDocument::Visitor
+{
+public:
+    bool visit(IDocument::TShape& shape) override
+    {
+        static_cast<void>(shape);
+        return true;
+    }
+
+    bool visit(const IDocument::TShape& shape) override
+    {
+        shapes_.push_back(&shape);
+        return true;
+    }
+
+    const std::vector<const IDocument::TShape*>& shapes() const
+    {
+        return shapes_;
+    }
+
+private:
+    std::vector<const IDocument::TShape*> shapes_;
+}; // class SelectTool::ShapeCollector
+
 /* ====================== Implementation ====================== */
 
-inline SelectTool::SelectTool(ID id, IDocument& document, IRenderer& renderer, const BoxF& ui_box) :
-    id_(id), document_(document), renderer_(renderer), ui_box_(ui_box)
+inline SelectTool::SelectTool(ID tool_id, IDocument& document, IRenderer& renderer) :
+    id_(tool_id), document_(document), renderer_(renderer)
 {
 }
 
@@ -138,23 +165,14 @@ inline Vec2F SelectTool::toGlobal(const Vec2F& local_pos) const
 inline std::vector<IDocument::TShape*> SelectTool::selectedShapes() const
 {
     std::vector<IDocument::TShape*> result;
-    if (selected_ids_.empty())
-    {
-        return result;
-    }
+    result.reserve(selected_ids_.size());
 
-    if (const auto* node = dynamic_cast<const TObject*>(&document_))
+    for (const TObject::ID shape_id : selected_ids_)
     {
-        result.reserve(selected_ids_.size());
-        for (const auto& child : node->children())
+        auto* shape = dynamic_cast<IDocument::TShape*>(ApplicationCore::instance().findObject(shape_id));
+        if (shape != nullptr)
         {
-            if (child && selected_ids_.contains(child->id()))
-            {
-                if (auto* shape = dynamic_cast<IDocument::TShape*>(child.get()))
-                {
-                    result.push_back(shape);
-                }
-            }
+            result.push_back(shape);
         }
     }
 
@@ -221,13 +239,13 @@ inline std::array<Vec2F, 8> SelectTool::selectionHandles(const std::vector<IDocu
         const Matrix3F& m = shapes.front()->transform();
         return {
             m.transformPoint({-0.5F, -0.5F}), // 0: Top-Left
-            m.transformPoint({ 0.0F, -0.5F}), // 1: Top-Middle
+            m.transformPoint({0.0F, -0.5F}),  // 1: Top-Middle
             m.transformPoint({+0.5F, -0.5F}), // 2: Top-Right
-            m.transformPoint({+0.5F,  0.0F}), // 3: Middle-Right
+            m.transformPoint({+0.5F, 0.0F}),  // 3: Middle-Right
             m.transformPoint({+0.5F, +0.5F}), // 4: Bottom-Right
-            m.transformPoint({ 0.0F, +0.5F}), // 5: Bottom-Middle
+            m.transformPoint({0.0F, +0.5F}),  // 5: Bottom-Middle
             m.transformPoint({-0.5F, +0.5F}), // 6: Bottom-Left
-            m.transformPoint({-0.5F,  0.0F}), // 7: Middle-Left
+            m.transformPoint({-0.5F, 0.0F}),  // 7: Middle-Left
         };
     }
 
@@ -239,14 +257,10 @@ inline std::array<Vec2F, 8> SelectTool::selectionHandles(const std::vector<IDocu
     const auto  rot    = Matrix3F::rotation(angle);
 
     return {
-        center + rot.transformPoint({-half.x(), -half.y()}),
-        center + rot.transformPoint({     0.0F, -half.y()}),
-        center + rot.transformPoint({+half.x(), -half.y()}),
-        center + rot.transformPoint({+half.x(),      0.0F}),
-        center + rot.transformPoint({+half.x(), +half.y()}),
-        center + rot.transformPoint({     0.0F, +half.y()}),
-        center + rot.transformPoint({-half.x(), +half.y()}),
-        center + rot.transformPoint({-half.x(),      0.0F}),
+        center + rot.transformPoint({-half.x(), -half.y()}), center + rot.transformPoint({0.0F, -half.y()}),
+        center + rot.transformPoint({+half.x(), -half.y()}), center + rot.transformPoint({+half.x(), 0.0F}),
+        center + rot.transformPoint({+half.x(), +half.y()}), center + rot.transformPoint({0.0F, +half.y()}),
+        center + rot.transformPoint({-half.x(), +half.y()}), center + rot.transformPoint({-half.x(), 0.0F}),
     };
 }
 
@@ -327,7 +341,7 @@ inline bool SelectTool::processEvent(const IInputPump::Event& event)
 inline bool SelectTool::onKeyDown(const IInputPump::EventKeyboard& key)
 {
     using Key = IInputPump::EventKeyboard::Key;
-    
+
     if (key.key() == Key::ESC)
     {
         if (!selected_ids_.empty())
@@ -335,10 +349,10 @@ inline bool SelectTool::onKeyDown(const IInputPump::EventKeyboard& key)
             clearSelection();
             return true;
         }
-    
+
         return false;
     }
-    
+
     if (key.key() == Key::DEL || key.key() == Key::BACKSPACE)
     {
         if (!selected_ids_.empty())
@@ -347,22 +361,17 @@ inline bool SelectTool::onKeyDown(const IInputPump::EventKeyboard& key)
             {
                 document_.removeShape(id);
             }
-            
+
             clearSelection();
             return true;
         }
     }
-    
+
     return false;
 }
 
 inline bool SelectTool::onMouseDown(const Vec2F& global_pos)
 {
-    if (ui_box_.contains(global_pos))
-    {
-        return false;
-    }
-
     const Vec2F local_pos = toLocal(global_pos);
     const auto  shapes    = selectedShapes();
     if (!shapes.empty())
@@ -417,8 +426,7 @@ inline bool SelectTool::onMouseDown(const Vec2F& global_pos)
             const float min_y = std::min(bounds->top(), bounds->bottom());
             const float max_y = std::max(bounds->top(), bounds->bottom());
 
-            if (local_pos.x() >= min_x && local_pos.x() <= max_x &&
-                local_pos.y() >= min_y && local_pos.y() <= max_y)
+            if (local_pos.x() >= min_x && local_pos.x() <= max_x && local_pos.y() >= min_y && local_pos.y() <= max_y)
             {
                 prev_mouse_local_ = local_pos;
                 mode_             = Mode::MOVE;
@@ -490,9 +498,8 @@ inline bool SelectTool::onMouseMove(const Vec2F& global_pos)
 
         if (start_vec.len() > 1e-3F && curr_vec.len() > 1e-3F)
         {
-            const float delta_angle =
-                std::atan2(curr_vec.y(), curr_vec.x()) - std::atan2(start_vec.y(), start_vec.x());
-            group_visual_angle_ = delta_angle;
+            const float delta_angle = std::atan2(curr_vec.y(), curr_vec.x()) - std::atan2(start_vec.y(), start_vec.x());
+            group_visual_angle_     = delta_angle;
 
             const auto rot = Matrix3F::rotation(delta_angle);
             for (auto* shape : shapes)
@@ -522,9 +529,11 @@ inline bool SelectTool::onMouseMove(const Vec2F& global_pos)
 
         // Determine the expected direction from `fixed_anchor_` to the active marker:
         // Right markers (2, 3, 4) -> +1; Left markers (0, 6, 7) -> -1
-        const float dir_x = (active_handle_idx_ == 2 || active_handle_idx_ == 3 || active_handle_idx_ == 4) ? 1.0F : -1.0F;
+        const float dir_x =
+            (active_handle_idx_ == 2 || active_handle_idx_ == 3 || active_handle_idx_ == 4) ? 1.0F : -1.0F;
         // Lower markers (4, 5, 6) -> +1; Upper markers (0, 1, 2) -> -1
-        const float dir_y = (active_handle_idx_ == 4 || active_handle_idx_ == 5 || active_handle_idx_ == 6) ? 1.0F : -1.0F;
+        const float dir_y =
+            (active_handle_idx_ == 4 || active_handle_idx_ == 5 || active_handle_idx_ == 6) ? 1.0F : -1.0F;
 
         // Single-item resize
         if (shapes.size() == 1)
@@ -620,29 +629,23 @@ inline bool SelectTool::onMouseUp()
         const float max_x = std::max(box_select_start_.x(), box_select_current_.x());
         const float max_y = std::max(box_select_start_.y(), box_select_current_.y());
 
-        if ((max_x - min_x) > 2.0F || (max_y - min_y) > 2.0F)
+        if ((max_x - min_x) > MIN_MARQUEE_SIZE || (max_y - min_y) > MIN_MARQUEE_SIZE)
         {
-            if (const auto* doc_node = dynamic_cast<const TObject*>(&document_))
+            ShapeCollector collector;
+            document_.accept(collector);
+
+            for (const IDocument::TShape* shape : collector.shapes())
             {
-                for (const auto& child : doc_node->children())
+                const BoxF  bounds = shape->axesAlignedBoundingBox();
+                const float left   = std::min(bounds.left(), bounds.right());
+                const float right  = std::max(bounds.left(), bounds.right());
+                const float top    = std::min(bounds.top(), bounds.bottom());
+                const float bottom = std::max(bounds.top(), bounds.bottom());
+
+                const bool overlaps = (left <= max_x) && (right >= min_x) && (top <= max_y) && (bottom >= min_y);
+                if (overlaps)
                 {
-                    const auto* shape = dynamic_cast<const IDocument::TShape*>(child.get());
-                    if (shape == nullptr)
-                    {
-                        continue;
-                    }
-
-                    const BoxF  b  = shape->axesAlignedBoundingBox();
-                    const float bl = std::min(b.left(), b.right());
-                    const float br = std::max(b.left(), b.right());
-                    const float bt = std::min(b.top(), b.bottom());
-                    const float bb = std::max(b.top(), b.bottom());
-
-                    const bool overlaps = (bl <= max_x) && (br >= min_x) && (bt <= max_y) && (bb >= min_y);
-                    if (overlaps)
-                    {
-                        selected_ids_.insert(shape->id());
-                    }
+                    selected_ids_.insert(shape->id());
                 }
             }
         }
@@ -658,8 +661,8 @@ inline bool SelectTool::onMouseUp()
 
 inline void SelectTool::render()
 {
-    const IRenderer::Color accent = IRenderer::Color::Blue;
-    const IRenderer::Color fill   = IRenderer::Color::White;
+    const IRenderer::Color accent = IRenderer::Color::BLUE;
+    const IRenderer::Color fill   = IRenderer::Color::WHITE;
 
     // 1. Resizable selection frame
     if (mode_ == Mode::BOX_SELECT)
@@ -698,16 +701,16 @@ inline void SelectTool::render()
 
     renderer_.renderLine(accent, top_mid, rot_pt);
 
-    const BoxF rot_box(rot_pt.x() - HANDLE_HALF_SIZE, rot_pt.y() - HANDLE_HALF_SIZE,
-                       rot_pt.x() + HANDLE_HALF_SIZE, rot_pt.y() + HANDLE_HALF_SIZE);
+    const BoxF rot_box(rot_pt.x() - HANDLE_HALF_SIZE, rot_pt.y() - HANDLE_HALF_SIZE, rot_pt.x() + HANDLE_HALF_SIZE,
+                       rot_pt.y() + HANDLE_HALF_SIZE);
     renderer_.renderEllipse(fill, rot_box);
     renderer_.renderEllipseLines(accent, rot_box);
 
     for (const Vec2F& h : handles)
     {
         const Vec2F g = toGlobal(h);
-        const BoxF  h_box(g.x() - HANDLE_HALF_SIZE, g.y() - HANDLE_HALF_SIZE,
-                          g.x() + HANDLE_HALF_SIZE, g.y() + HANDLE_HALF_SIZE);
+        const BoxF  h_box(g.x() - HANDLE_HALF_SIZE, g.y() - HANDLE_HALF_SIZE, g.x() + HANDLE_HALF_SIZE,
+                          g.y() + HANDLE_HALF_SIZE);
         renderer_.renderRect(fill, h_box);
         renderer_.renderRectLines(accent, h_box);
     }
