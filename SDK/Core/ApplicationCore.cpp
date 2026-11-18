@@ -160,7 +160,7 @@ TObject* ApplicationCore::findObject(TObject::ID object_id) const
 
 void ApplicationCore::removeObject(TObject::ID object_id)
 {
-	root_->removeChild(object_id);
+    root_->removeChild(object_id);
 }
 
 void ApplicationCore::pushModal(std::unique_ptr<TObject> object)

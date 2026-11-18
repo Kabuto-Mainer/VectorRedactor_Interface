@@ -7,5 +7,4 @@
 using InitPackageFunc = bool();
 
 #define INIT_PACKAGE_FUNC_NAME     initPackage
-///#define EXPAND_STRING(string)      #string
 #define INIT_PACKAGE_FUNC_NAME_STR ("initPackage")
