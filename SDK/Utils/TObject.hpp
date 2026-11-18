@@ -38,12 +38,13 @@ public:
 protected:
     TObject();
 
-    friend class ::ApplicationCore;
-
     const std::list<std::unique_ptr<TObject>>& children() const;
     std::list<std::unique_ptr<TObject>>&       children();
     void                                       renderChildren();
     bool                                       processEventChildren(const IInputPump::Event& event);
+
+    TObject* findChild(ID child_id) const;
+    void     removeChild(ID child_id);
 
 private:
     static ID generateID();
@@ -74,6 +75,37 @@ inline bool TObject::processEventChildren(const IInputPump::Event& event)
     }
 
     return false;
+}
+
+TObject* TObject::findChild(ID child_id) const
+{
+    for (auto child = children_.begin(); child != children_.end(); child++)
+    {
+        if ((*child)->id_ == child_id)
+        {
+            return child->get();
+        }
+
+        auto* found = findChild(child_id);
+        if (found != nullptr)
+        {
+            return found;
+        }
+    }
+
+    return nullptr;
+}
+
+void TObject::removeChild(ID child_id)
+{
+    auto* child_to_remove = findChild(child_id);
+    if (child_to_remove->parent_ == nullptr)
+    {
+        return;
+    }
+
+    child_to_remove->parent_->children_.remove_if([child_id](const std::unique_ptr<TObject>& object)
+                                                  { return object->id_ == child_id; });
 }
 
 inline TObject::ID TObject::generateID()
