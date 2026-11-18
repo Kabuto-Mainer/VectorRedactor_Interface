@@ -49,22 +49,27 @@ Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F& pos) const
     return pos;
 }
 
-void ApplicationCore::Root::pushModal(std::unique_ptr<TObject> new_modal)
+void ApplicationCore::Root::pushModal(std::unique_ptr<TObject> object)
 {
-    addChild(std::move(new_modal));
+    children().push_back(std::move(object));
 }
 
-bool ApplicationCore::Root::popModal()
+void ApplicationCore::Root::popModal()
 {
-    if (children().size() < 2)
-    {
-        return false;
-    }
     children().pop_back();
-    return true;
 }
 
 /* ApplicationCore */
+
+void ApplicationCore::pushModal(std::unique_ptr<TObject> object)
+{
+    root_->pushModal(std::move(object));
+}
+
+void ApplicationCore::popModal()
+{
+    root_->popModal();
+}
 
 ApplicationCore::ApplicationCore() : root_(std::make_unique<Root>())
 {
@@ -134,11 +139,6 @@ ApplicationCore& ApplicationCore::instance()
     return instance;
 }
 
-TObject* ApplicationCore::root() const
-{
-    return root_.get();
-}
-
 ApplicationCore::Error ApplicationCore::queryInterface(IID iid, void** interface) const
 {
     if (interface == nullptr)
@@ -161,6 +161,11 @@ ApplicationCore::Error ApplicationCore::queryInterface(IID iid, void** interface
 void ApplicationCore::pushCommand(std::unique_ptr<ACommand> command)
 {
     commands_.push(std::move(command));
+}
+
+TObject* ApplicationCore::findObject(TObject::ID object_id) const
+{
+    return root_->findChild(object_id);
 }
 
 void ApplicationCore::setFPS(FPS fps)
@@ -199,7 +204,7 @@ ApplicationCore::Error ApplicationCore::run()
 
             while (!commands_.empty())
             {
-                commands_.back()->execute();
+                commands_.front()->execute();
                 commands_.pop();
             }
         }
