@@ -26,9 +26,8 @@ public:
     virtual void removeShape(TObject::ID shape_id) = 0;
 
     virtual std::optional<TObject::ID> hitTest(const Vec2F& pos) = 0;
-
-    virtual void accept(Visitor& visitor)       = 0;
     virtual void accept(Visitor& visitor) const = 0;
+
 }; // class IDocument
 
 class IDocument::AShapeComponent
