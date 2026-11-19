@@ -47,7 +47,7 @@ public:
     void                    pushCommand(std::unique_ptr<ACommand> command);
 
     TObject* findObject(TObject::ID object_id) const;
-    void     deleteObject(TObject::ID object_id);
+    void     removeObject(TObject::ID object_id);
     void     pushModal(std::unique_ptr<TObject> object);
     void     popModal();
 
