@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <utility>
+#include <variant>
 
 /* Desktop::Node */
 
@@ -15,12 +16,13 @@ void Desktop::Node::render()
 
 bool Desktop::Node::processEvent(const IInputPump::Event& event)
 {
-	return processEventChildren(event);
-}
+	if(std::holds_alternative<IInputPump::EventQuit>(event))
+	{
+		ApplicationCore::instance().stop();
+		return true;
+	}
 
-void Desktop::Node::addObject(std::unique_ptr<TObject> object)
-{
-	children().push_back(std::move(object));
+	return processEventChildren(event);
 }
 
 /* Desktop */
@@ -41,14 +43,14 @@ Desktop& Desktop::instance()
 Desktop::Error Desktop::add(std::unique_ptr<TObject> object)
 {
 	auto *node = ApplicationCore::instance().findObject(node_id_);
-	static_cast<Node *>(node)->addObject(std::move(object));
+	node->addChild(std::move(object));
 	return Error::SUCCESS;
 }
 
 Desktop::Error Desktop::remove(TObject::ID object_id)
 {
 	ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Use `ApplicationCore::deleteObject` instead of `%s`", __func__);
-	ApplicationCore::instance().deleteObject(object_id);
+	ApplicationCore::instance().removeObject(object_id);
 	return Error::SUCCESS;
 }
 

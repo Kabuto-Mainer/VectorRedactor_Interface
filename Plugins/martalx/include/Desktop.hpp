@@ -37,6 +37,4 @@ class Desktop::Node final : public TWidget
 	public:
 		void render() override;
 		bool processEvent(const IInputPump::Event& event) override;
-
-		void addObject(std::unique_ptr<TObject> object);
 };

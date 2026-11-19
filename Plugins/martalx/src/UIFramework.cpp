@@ -3,10 +3,18 @@
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
+#include "Utils/TObject.hpp"
 
 #include <cassert>
 #include <string>
 #include <variant>
+
+// TODO: mapLocalToGlobal etc move to protected,
+// add func below to box class
+static BoxF globalBox(const TWidget &object)
+{
+	return BoxF { object.mapLocalToGlobal(Vec2F {}), object.mapLocalToGlobal(object.box().size()) };
+}
 
 /* Icon */
 
@@ -56,7 +64,8 @@ void BlankWindow::render()
 		ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));
 	assert(error == ApplicationCore::Error::SUCCESS);
 
-	renderer->renderRect(background_, box());
+	BoxF global_box = ::globalBox(*this);
+	renderer->renderRect(background_, global_box);
 	renderChildren();
 }
 
@@ -81,7 +90,8 @@ bool Button::processEvent(const IInputPump::Event& event)
 
 	IInputPump::EventMouse event_mouse = std::get<IInputPump::EventMouse>(event);
 
-	if (box().contains(event_mouse.cursorPos()))
+	// TODO: yack!
+	if (box().contains(box().topLeft() + mapGlobalToLocal(event_mouse.cursorPos())))
 	{
 		switch (event_mouse.type())
 		{
@@ -122,6 +132,7 @@ bool Button::processEvent(const IInputPump::Event& event)
 				{
 					case State::NORMAL:
 						state_ = State::HOVERED;
+						on_hover_();
 						break;
 
 					case State::PRESSED:
@@ -149,6 +160,11 @@ void Button::connectOnPress(std::function<void()> callback)
 	on_press_.subscribe(callback);
 }
 
+void Button::connectOnHover(std::function<void ()> callback)
+{
+	on_hover_.subscribe(callback);
+}
+
 /* StandardButton */
 
 void StandardButton::render()
@@ -172,7 +188,7 @@ void StandardButton::render()
 		ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));
 	assert(error == ApplicationCore::Error::SUCCESS);
 
-	renderer->renderRect(color, box());
+	renderer->renderRect(color, ::globalBox(*this));
 	renderChildren();
 }
 
@@ -192,13 +208,13 @@ void TexturedButton::render()
 	switch (state())
 	{
 		case State::NORMAL:
-			icons_.normal.render(box());
+			icons_.normal.render(::globalBox(*this));
 			break;
 		case State::HOVERED:
-			icons_.hovered.render(box());
+			icons_.hovered.render(::globalBox(*this));
 			break;
 		case State::PRESSED:
-			icons_.pressed.render(box());
+			icons_.pressed.render(::globalBox(*this));
 			break;
 
 		default:

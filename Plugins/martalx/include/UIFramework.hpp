@@ -50,7 +50,8 @@ class Button : public TWidget
 		virtual ~Button() = default;
 
 		State state() const;
-		void  connectOnPress(std::function<void()> callback);
+		void connectOnPress(std::function<void()> callback);
+		void connectOnHover(std::function<void()> callback);
 
 		void render() override = 0;
 		bool processEvent(const IInputPump::Event& event) override final;
@@ -58,6 +59,7 @@ class Button : public TWidget
 	private:
 		State    state_ = State::NORMAL;
 		Signal<> on_press_;
+		Signal<> on_hover_;
 };
 
 class StandardButton : public Button
@@ -95,8 +97,8 @@ class CloseButton final : public TexturedButton
 		TEXTURE_FILENAMES
 		{
 			// FIXME: specify real files to load
-			.normal  = "",
-			.hovered = "",
-			.pressed = "",
+			.normal  = "./images/normal.png",
+			.hovered = "./images/hovered.png",
+			.pressed = "./images/pressed.png",
 		};
 };
