@@ -61,16 +61,6 @@ void ApplicationCore::Root::popModal()
 
 /* ApplicationCore */
 
-void ApplicationCore::pushModal(std::unique_ptr<TObject> object)
-{
-    root_->pushModal(std::move(object));
-}
-
-void ApplicationCore::popModal()
-{
-    root_->popModal();
-}
-
 ApplicationCore::ApplicationCore() : root_(std::make_unique<Root>())
 {
 }
@@ -117,7 +107,7 @@ const char* ApplicationCore::strError(Error error)
             str = "Attempt to add existing interface";
             break;
         case PACKAGE_NOT_FOUND:
-            str = "Loading package is not found";
+            str = dlerror();
             break;
         case PACKAGE_INVALID_BINARY:
             str = "Package does not have init function";
@@ -166,6 +156,21 @@ void ApplicationCore::pushCommand(std::unique_ptr<ACommand> command)
 TObject* ApplicationCore::findObject(TObject::ID object_id) const
 {
     return root_->findChild(object_id);
+}
+
+void ApplicationCore::removeObject(TObject::ID object_id)
+{
+    root_->removeChild(object_id);
+}
+
+void ApplicationCore::pushModal(std::unique_ptr<TObject> object)
+{
+    root_->pushModal(std::move(object));
+}
+
+void ApplicationCore::popModal()
+{
+    root_->popModal();
 }
 
 void ApplicationCore::setFPS(FPS fps)
