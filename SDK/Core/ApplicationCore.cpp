@@ -226,9 +226,9 @@ ApplicationCore::Error ApplicationCore::run()
         std::this_thread::sleep_until(next_time);
     }
 
-    is_running_ = false;
     return Error::SUCCESS;
 }
+
 void ApplicationCore::stop()
 {
     is_running_ = false;
