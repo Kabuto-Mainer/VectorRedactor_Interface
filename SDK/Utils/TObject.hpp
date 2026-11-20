@@ -86,7 +86,7 @@ inline TObject* TObject::findChild(ID child_id) const
             return child->get();
         }
 
-        auto* found = (*child)->findChild(child_id);
+        auto* found = child->get()->findChild(child_id);
         if (found != nullptr)
         {
             return found;
