@@ -18,6 +18,10 @@ static BoxF globalBox(const TWidget &object)
 
 /* Icon */
 
+Icon::Icon(IRenderer::TextureID texture)
+	: texture_(texture)
+{ }
+
 Icon::Icon(const std::string& filename)
 {
 	IRenderer*             renderer = nullptr;
@@ -33,6 +37,11 @@ Icon::Icon(const std::string& filename)
 	}
 
 	texture_ = *texture;
+}
+
+IRenderer::TextureID Icon::texture() const
+{
+	return texture_;
 }
 
 void Icon::render(const BoxF& box) const
@@ -88,7 +97,7 @@ bool Button::processEvent(const IInputPump::Event& event)
 		return false;
 	}
 
-	IInputPump::EventMouse event_mouse = std::get<IInputPump::EventMouse>(event);
+	const auto &event_mouse = std::get<IInputPump::EventMouse>(event);
 
 	// TODO: yack!
 	if (box().contains(box().topLeft() + mapGlobalToLocal(event_mouse.cursorPos())))

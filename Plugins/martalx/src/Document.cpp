@@ -2,11 +2,26 @@
 
 #include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IDocument.hpp"
+#include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/TObject.hpp"
 
 #include <memory>
 #include <optional>
+
+/* InitPackage */
+
+extern "C" bool INIT_PACKAGE_FUNC_NAME()
+{
+	ApplicationCore::Error error = ApplicationCore::instance().registerInterface(IID_IDOCUMENT, reinterpret_cast<void *>(&Document::instance()));
+	if(error != ApplicationCore::Error::SUCCESS)
+	{
+		ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Failed to register IDocument: %s", ApplicationCore::strError(error));
+		return false;
+	}
+
+	return true;
+}
 
 /* Document */
 
@@ -39,7 +54,7 @@ void Document::removeShape(TObject::ID shape_id)
 	static_cast<Node *>(node)->removeShape(shape_id);
 }
 
-std::optional<TObject::ID> Document::hitTest(const Vec2F& pos) const
+std::optional<TObject::ID> Document::hitTest(const Vec2F& pos)
 {
 	auto *node = ApplicationCore::instance().findObject(node_id_);
 	return static_cast<Node *>(node)->hitTest(pos);
@@ -47,7 +62,6 @@ std::optional<TObject::ID> Document::hitTest(const Vec2F& pos) const
 
 void Document::accept(Visitor& visitor) const
 {
-
 	auto *node = ApplicationCore::instance().findObject(node_id_);
 	static_cast<Node *>(node)->accept(visitor);
 }
@@ -66,13 +80,19 @@ bool Document::Node::processEvent(const IInputPump::Event& event)
 
 void Document::Node::addShape(std::unique_ptr<TShape> shape)
 {
-	children().push_back(std::move(shape));
+	addChild(std::move(shape));
 }
 
-void Document::Node::removeShape(TObject::ID shape_id)
+void Document::Node::removeShape(TShape::ID shape_id)
 {
-	ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "FIXME: %s is stub calls ApplicationCore::deleteObject for now", __func__);
-	ApplicationCore::instance().deleteObject(shape_id);
+	for(auto shape = children().begin(); shape != children().end(); shape++)
+	{
+		if((*shape)->id() == shape_id)
+		{
+			children().erase(shape);
+			return;
+		}
+	}
 }
 
 std::optional<TObject::ID> Document::Node::hitTest(const Vec2F &pos) const
@@ -94,19 +114,5 @@ void Document::Node::accept(Visitor &visitor) const
 	{
 		visitor.visit(static_cast<TShape&>(**child));
 	}
-}
-
-/* InitPackage */
-
-extern "C" bool INIT_PACKAGE_FUNC_NAME()
-{
-	ApplicationCore::Error error = ApplicationCore::instance().registerInterface(IID_DESKTOP, reinterpret_cast<void *>(&Document::instance()));
-	if(error != ApplicationCore::Error::SUCCESS)
-	{
-		ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Failed to register IDocument: %s", ApplicationCore::strError(error));
-		return false;
-	}
-
-	return true;
 }
 

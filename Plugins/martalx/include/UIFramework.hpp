@@ -12,7 +12,10 @@
 class Icon
 {
 	public:
+		explicit Icon(IRenderer::TextureID texture);
 		explicit Icon(const std::string& filename);
+
+		IRenderer::TextureID texture() const;
 		void render(const BoxF& box) const;
 
 	private:

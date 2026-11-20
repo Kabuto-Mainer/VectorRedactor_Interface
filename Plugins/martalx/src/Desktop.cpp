@@ -3,9 +3,24 @@
 #include "Interfaces/IDesktop.hpp"
 #include "Interfaces/Package.hpp"
 
+#include <cassert>
 #include <memory>
 #include <utility>
 #include <variant>
+
+/* InitPackage */
+
+extern "C" bool INIT_PACKAGE_FUNC_NAME()
+{
+	ApplicationCore::Error error = ApplicationCore::instance().registerInterface(IID_DESKTOP, reinterpret_cast<void *>(&Desktop::instance()));
+	if(error != ApplicationCore::Error::SUCCESS)
+	{
+		ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Failed to register IDesktop: %s", ApplicationCore::strError(error));
+		return false;
+	}
+
+	return true;
+}
 
 /* Desktop::Node */
 
@@ -43,6 +58,8 @@ Desktop& Desktop::instance()
 Desktop::Error Desktop::add(std::unique_ptr<TObject> object)
 {
 	auto *node = ApplicationCore::instance().findObject(node_id_);
+	assert(node != nullptr);
+
 	node->addChild(std::move(object));
 	return Error::SUCCESS;
 }
@@ -52,17 +69,5 @@ Desktop::Error Desktop::remove(TObject::ID object_id)
 	ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Use `ApplicationCore::deleteObject` instead of `%s`", __func__);
 	ApplicationCore::instance().removeObject(object_id);
 	return Error::SUCCESS;
-}
-
-bool INIT_PACKAGE_FUNC_NAME()
-{
-	ApplicationCore::Error error = ApplicationCore::instance().registerInterface(IID_DESKTOP, reinterpret_cast<void *>(&Desktop::instance()));
-	if(error != ApplicationCore::Error::SUCCESS)
-	{
-		ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Failed to register IDesktop: %s", ApplicationCore::strError(error));
-		return false;
-	}
-
-	return true;
 }
 

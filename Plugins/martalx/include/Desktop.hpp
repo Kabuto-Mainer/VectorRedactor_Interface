@@ -2,13 +2,10 @@
 
 #include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IInputPump.hpp"
-#include "Interfaces/Package.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/TWidget.hpp"
 
 #include <memory>
-
-extern "C" InitPackageFunc INIT_PACKAGE_FUNC_NAME;
 
 class Desktop final : public IDesktop
 {
