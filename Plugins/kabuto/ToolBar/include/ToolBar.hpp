@@ -1,9 +1,9 @@
 #pragma once
 
-#include "IUIFramework.hpp"
 #include "Interfaces/IToolBar.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
+#include "Plugins/kabuto/UIFW/export/IUIFramework.hpp"
 #include "Utils/TObject.hpp"
 
 #include <vector>

@@ -99,6 +99,7 @@ std::unique_ptr<IUIFramework::SwitcherPool> createPaletteView(IUIFramework& fram
     for (const IRenderer::Color& color : SWATCHES)
     {
         IUIFramework::SwitcherDescription description;
+        description.box  = BoxF(Vec2F(DEFAULT_WIDTH, SWITCHER_HEIGHT));
         description.text = colorLabel(color);
         description.role = IUIFramework::Role::DEFAULT;
         description.on_active.callbacks.emplace_back([&palette, color] { palette.setColor(color); });

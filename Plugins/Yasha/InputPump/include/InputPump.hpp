@@ -10,10 +10,10 @@ class RaylibInputPump final : public IInputPump
 public:
     static RaylibInputPump& instance();
 
-    RaylibInputPump(const RaylibInputPump&) = delete;
-    RaylibInputPump(RaylibInputPump&&) = delete;
+    RaylibInputPump(const RaylibInputPump&)            = delete;
+    RaylibInputPump(RaylibInputPump&&)                 = delete;
     RaylibInputPump& operator=(const RaylibInputPump&) = delete;
-    RaylibInputPump& operator=(RaylibInputPump&&) = delete;
+    RaylibInputPump& operator=(RaylibInputPump&&)      = delete;
 
     std::optional<Event> pollEvent() override;
 
@@ -22,7 +22,7 @@ private:
     void collectEvents();
 
     std::deque<Event> events_;
-    Vec2F previous_mouse_pos_{};
-    bool quit_emitted_ = false;
-    bool events_collected_ = false;
+    Vec2F             previous_mouse_pos_{};
+    bool              quit_emitted_     = false;
+    bool              events_collected_ = false;
 };

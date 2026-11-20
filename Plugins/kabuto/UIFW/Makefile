@@ -6,4 +6,3 @@ clean:
 	rm -rf *.so
 
 .PHONY: all clean
-dd

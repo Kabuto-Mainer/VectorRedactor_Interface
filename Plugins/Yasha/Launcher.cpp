@@ -1,17 +1,18 @@
+#include "Core/ApplicationCore.hpp"
 #include "Desktop.hpp"
 #include "Document.hpp"
-#include "Core/ApplicationCore.hpp"
 
 #include <filesystem>
-#include <fstream> 
+#include <fstream>
 #include <system_error>
 
 static constexpr const char* PLUGINS_LIST_FILENAME = "plugins_list.txt";
 
-int main() {
+int main()
+{
     // Плагины и их ресурсы задаются относительно каталога приложения.
     std::error_code path_error;
-    const auto executable = std::filesystem::canonical("/proc/self/exe", path_error);
+    const auto      executable = std::filesystem::canonical("/proc/self/exe", path_error);
     if (path_error)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Cannot find executable: %s",
@@ -47,7 +48,7 @@ int main() {
                              ApplicationCore::strError(error));
         return EXIT_FAILURE;
     }
-    std::string            plugin_file;
+    std::string plugin_file;
 
     // TODO: подумать можно ли вынести в отдельный метод
 
@@ -74,5 +75,4 @@ int main() {
 
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "application successfully exited");
     return EXIT_SUCCESS;
-    
 }

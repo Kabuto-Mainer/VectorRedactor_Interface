@@ -53,7 +53,7 @@ public:
     void removeShape(TObject::ID shape_id) override;
 
     std::optional<TObject::ID> hitTest(const Vec2F& pos) override;
-    void accept(Visitor& visitor) const override;
+    void                       accept(Visitor& visitor) const override;
 
 private:
     CDocument()           = default;
@@ -61,7 +61,7 @@ private:
 
     TDocument* node() const;
 
-    TDocument* document_node_ = nullptr;
+    TDocument*  document_node_ = nullptr;
     TObject::ID document_id_;
 }; // class CDocument
 

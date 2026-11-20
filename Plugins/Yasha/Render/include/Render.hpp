@@ -34,8 +34,8 @@ public:
     void renderText(const IRenderer::Color& color, const BoxF& box, const std::string& text, const TextFormat& format,
                     float angle = 0) override;
 
-    void                 update() override;
-    void                 clear() override;
+    void update() override;
+    void clear() override;
 
 private:
     struct State;

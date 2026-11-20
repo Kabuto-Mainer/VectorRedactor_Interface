@@ -46,7 +46,8 @@ public:
     bool processEvent(const IInputPump::Event& event) override
     {
         const auto* mouse = std::get_if<IInputPump::EventMouse>(&event);
-        if (mouse == nullptr || mouse->type() != IInputPump::EventMouse::Type::LEFT_BUTTON_PRESSING ||
+        if (mouse == nullptr ||
+            mouse->type() != IInputPump::EventMouse::Type::LEFT_BUTTON_PRESSING ||
             !globalBox().contains(mouse->cursorPos()))
         {
             return false;

@@ -183,6 +183,7 @@ void TToolBar::rebuild()
         IUIFramework::SwitcherDescription switcher_description;
         switcher_description.icon = IUIFramework::Icon{entry.texture_id};
         switcher_description.role = IUIFramework::Role::DEFAULT;
+        switcher_description.box  = BoxF{0, 0, 30, 30};
         switcher_description.on_active.callbacks.emplace_back(
             [tool_manager, tool_id = entry.tool_id]
             {
@@ -263,8 +264,8 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
     ApplicationCore& core = ApplicationCore::instance();
 
-    IUIFramework* framework = nullptr;
-    if (core.queryInterface(IID_IUIFramework, reinterpret_cast<void**>(&framework)) !=
+    Kabuto::IUIFramework* framework = nullptr;
+    if (core.queryInterface(Kabuto::IID_IUIFramework, reinterpret_cast<void**>(&framework)) !=
             ApplicationCore::Error::SUCCESS ||
         framework == nullptr)
     {

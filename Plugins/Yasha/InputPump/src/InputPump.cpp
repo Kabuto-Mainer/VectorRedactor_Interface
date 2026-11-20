@@ -98,10 +98,11 @@ std::optional<Key> mapKey(int ray_key)
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-    auto& core = ApplicationCore::instance();
+    auto& core     = ApplicationCore::instance();
     void* existing = nullptr;
     if (core.queryInterface(IID_INPUT_PUMP, &existing) == ApplicationCore::Error::SUCCESS ||
-        core.queryInterface(IID_RENDERER, &existing) != ApplicationCore::Error::SUCCESS || !IsWindowReady())
+        core.queryInterface(IID_RENDERER, &existing) != ApplicationCore::Error::SUCCESS ||
+        !IsWindowReady())
     {
         return false;
     }

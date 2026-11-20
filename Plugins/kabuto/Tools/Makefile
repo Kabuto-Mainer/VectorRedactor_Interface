@@ -1,6 +1,6 @@
 all:
 	@echo [Building libkabuto_Tools.so]
-	clang++ -std=c++23 -fpic -shared -Iinclude -I../../../SDK -I../Document/include -I../Palette -I. -g -Wall -Wextra -o libkabuto_Tools.so src/Tools.cpp
+	clang++ -std=c++23 -fpic -shared -Iinclude -I../../../SDK -I../Document/include -I../Palette -I../Palette/export -I. -g -Wall -Wextra -o libkabuto_Tools.so src/Tools.cpp
 
 clean:
 	rm -rf *.so

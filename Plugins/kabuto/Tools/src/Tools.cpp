@@ -2,7 +2,6 @@
 #include "Core/ApplicationCore.hpp"
 #include "DeleteShapeTool.hpp"
 #include "EllipseShape.hpp"
-#include "IPalette.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolBar.hpp"
@@ -11,6 +10,7 @@
 #include "RectangleShape.hpp"
 #include "ToolIds.hpp"
 #include "Utils/Vec2F.hpp"
+#include "export/IPalette.hpp"
 
 #include <memory>
 #include <optional>
@@ -28,8 +28,8 @@ struct ToolBarItem
 
 constexpr ToolBarItem TOOL_BAR_ITEMS[] = {
     {Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, "assets/rectangle.png"},
-    {Kabuto::Tools::ADD_ELLIPSE_TOOL_ID,   "assets/ellipse.png"},
-    {Kabuto::Tools::DELETE_TOOL_ID,        "assets/pen.png"},
+    {  Kabuto::Tools::ADD_ELLIPSE_TOOL_ID,   "assets/ellipse.png"},
+    {       Kabuto::Tools::DELETE_TOOL_ID,       "assets/pen.png"},
 };
 
 template<typename T>
@@ -76,7 +76,7 @@ ToolRegistrationGuard& registrationGuard()
     return guard;
 }
 
-std::unique_ptr<Kabuto::Tools::AddShapeTool> makeRectangleTool(IDocument& document, IPalette& palette)
+std::unique_ptr<Kabuto::Tools::AddShapeTool> makeRectangleTool(IDocument& document, Kabuto::IPalette& palette)
 {
     return std::make_unique<Kabuto::Tools::AddShapeTool>(
         Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, document, palette, [](const Vec2F& size)
@@ -84,7 +84,7 @@ std::unique_ptr<Kabuto::Tools::AddShapeTool> makeRectangleTool(IDocument& docume
     );
 }
 
-std::unique_ptr<Kabuto::Tools::AddShapeTool> makeEllipseTool(IDocument& document, IPalette& palette)
+std::unique_ptr<Kabuto::Tools::AddShapeTool> makeEllipseTool(IDocument& document, Kabuto::IPalette& palette)
 {
     return std::make_unique<Kabuto::Tools::AddShapeTool>(
         Kabuto::Tools::ADD_ELLIPSE_TOOL_ID, document, palette, [](const Vec2F& size)
@@ -107,16 +107,22 @@ std::optional<IRenderer::TextureID> loadIcon(IRenderer& renderer, const char* pa
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-    IDocument*    document     = queryInterface<IDocument>(IID_IDOCUMENT);
-    IToolManager* tool_manager = queryInterface<IToolManager>(IID_TOOL_MANAGER);
-    IPalette*     palette      = queryInterface<IPalette>(IID_PALETTE);
-    IToolBar*     tool_bar     = queryInterface<IToolBar>(IID_TOOL_BAR);
-    IRenderer*    renderer     = queryInterface<IRenderer>(IID_RENDERER);
+    IDocument*        document     = queryInterface<IDocument>(IID_IDOCUMENT);
+    IToolManager*     tool_manager = queryInterface<IToolManager>(IID_TOOL_MANAGER);
+    Kabuto::IPalette* palette      = queryInterface<Kabuto::IPalette>(Kabuto::IID_PALETTE);
+    IToolBar*         tool_bar     = queryInterface<IToolBar>(IID_TOOL_BAR);
+    IRenderer*        renderer     = queryInterface<IRenderer>(IID_RENDERER);
 
-    if (document == nullptr || tool_manager == nullptr || palette == nullptr || tool_bar == nullptr || renderer == nullptr)
+    if (document == nullptr ||
+        tool_manager == nullptr ||
+        palette == nullptr ||
+        tool_bar == nullptr ||
+        renderer == nullptr)
     {
-        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL,
-                             "Tools can't find the document, the tool manager, the palette, the tool bar or the renderer");
+        ApplicationCore::log(
+            ApplicationCore::LogLevel::CRITICAL,
+            "Tools can't find the document, the tool manager, the palette, the tool bar or the renderer"
+        );
         return false;
     }
 

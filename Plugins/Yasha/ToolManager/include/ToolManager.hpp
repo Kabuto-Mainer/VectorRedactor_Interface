@@ -17,7 +17,7 @@ private:
 
     std::unordered_map<ATool::ID, std::unique_ptr<ATool>> tools_;
     std::optional<ATool::ID>                              active_tool_id_;
-    std::uint64_t                                          activation_revision_ = 0;
+    std::uint64_t                                         activation_revision_ = 0;
 
 public:
     ToolManager(const ToolManager&)            = delete;

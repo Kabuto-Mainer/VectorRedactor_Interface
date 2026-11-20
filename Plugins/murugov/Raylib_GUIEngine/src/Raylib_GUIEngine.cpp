@@ -11,9 +11,10 @@ namespace Murugov
 
 namespace Engine
 {
-    
+
 namespace
 {
+
 constexpr float RAD_TO_DEG = 180.0F / std::numbers::pi_v<float>;
 
 ::Color toRL(const IRenderer::Color& c)
@@ -27,13 +28,14 @@ Vec2F rotateVec(Vec2F v, float angle)
     float s = std::sin(angle);
     return {v.x() * c - v.y() * s, v.x() * s + v.y() * c};
 }
+
 } // namespace
 
 Raylib_GUIEngine::Raylib_GUIEngine()
 {
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(1600, 900, "Vectoria");
+    InitWindow(1'600, 900, "Vectoria");
     if (!IsWindowReady())
     {
         return;
@@ -305,8 +307,8 @@ void Raylib_GUIEngine::pollSystemEvents()
     float wheel = GetMouseWheelMove();
     if (wheel != 0.0F)
     {
-        events_.emplace(
-            EventMouse(wheel > 0.0F ? EventMouse::Type::WHEEL_FORWARD : EventMouse::Type::WHEEL_BACKWARD, {m.x, m.y}));
+        events_.emplace(EventMouse(wheel > 0.0F ? EventMouse::Type::WHEEL_FORWARD : EventMouse::Type::WHEEL_BACKWARD,
+                                   {m.x, m.y}));
     }
 
     if (IsKeyPressed(KEY_BACKSPACE))

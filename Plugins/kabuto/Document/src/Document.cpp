@@ -3,8 +3,8 @@
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IRenderer.hpp"
-#include "Interfaces/Package.hpp"
 #include "Interfaces/IToolManager.hpp"
+#include "Interfaces/Package.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -110,7 +110,7 @@ CDocument& CDocument::instance()
     return document;
 }
 
-TDocument * CDocument::node() const
+TDocument* CDocument::node() const
 {
     auto node = ApplicationCore::instance().findObject(document_id_);
 
@@ -125,7 +125,7 @@ TDocument * CDocument::node() const
 void CDocument::bindNode(TDocument& document)
 {
     document_node_ = &document;
-    document_id_ = document.id();
+    document_id_   = document.id();
 }
 
 void CDocument::unbindNode()

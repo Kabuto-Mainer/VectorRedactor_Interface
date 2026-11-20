@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Components.hpp"
-#include "IPalette.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
+#include "export/IPalette.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -25,7 +25,7 @@ class AddShapeTool final : public IToolManager::ATool
 public:
     using ShapeFactory = std::function<std::unique_ptr<IDocument::TShape>(const Vec2F& size)>;
 
-    AddShapeTool(ID id, IDocument& document, IPalette& palette, ShapeFactory factory);
+    AddShapeTool(ID id, IDocument& document, Kabuto::IPalette& palette, ShapeFactory factory);
     ~AddShapeTool() override = default;
 
     AddShapeTool(const AddShapeTool&)            = delete;

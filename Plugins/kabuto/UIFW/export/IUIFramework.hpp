@@ -41,7 +41,7 @@ public:
     enum class Direction;
     enum class Role;
     using EventHandler = std::function<bool(const IInputPump::Event&)>;
-    using Icon = std::variant<std::string, IRenderer::TextureID>;
+    using Icon         = std::variant<std::string, IRenderer::TextureID>;
 
     virtual ~IUIFramework() = default;
 
@@ -75,7 +75,6 @@ enum class IUIFramework::Role
 
 struct IUIFramework::Action
 {
-    std::vector<std::unique_ptr<ACommand>> actions;
     std::vector<std::function<void(void)>> callbacks;
 }; // struct Action
 

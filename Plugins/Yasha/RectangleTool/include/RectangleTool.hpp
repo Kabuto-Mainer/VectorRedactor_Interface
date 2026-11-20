@@ -22,11 +22,11 @@ private:
     static constexpr float MIN_DRAG_SIZE = 2.0F;
 
     Vec2F toLocal(const Vec2F& global_pos) const;
-    bool beginDrag(const Vec2F& global_pos);
-    bool updateDrag(const Vec2F& global_pos);
-    bool endDrag(const Vec2F& global_pos);
-    void cancelDrag();
-    void createShape(const Vec2F& center, const Vec2F& size);
+    bool  beginDrag(const Vec2F& global_pos);
+    bool  updateDrag(const Vec2F& global_pos);
+    bool  endDrag(const Vec2F& global_pos);
+    void  cancelDrag();
+    void  createShape(const Vec2F& center, const Vec2F& size);
 
     IDocument&         document_;
     IDocument::TShape* preview_ = nullptr;

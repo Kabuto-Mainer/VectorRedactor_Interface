@@ -30,12 +30,13 @@ public:
     bool processEvent(const IInputPump::Event& event) override;
     void render() override;
 
-    bool hitTest(const Vec2F& pos) const override;
-    BoxF axesAlignedBoundingBox() const override;
+    bool   hitTest(const Vec2F& pos) const override;
+    BoxF   axesAlignedBoundingBox() const override;
     TypeID tid() const override;
 
     Error queryComponent(IDocument::AShapeComponent::ID coid, IDocument::AShapeComponent** component) override;
-    Error queryComponent(IDocument::AShapeComponent::ID coid, const IDocument::AShapeComponent** component) const override;
+    Error queryComponent(IDocument::AShapeComponent::ID     coid,
+                         const IDocument::AShapeComponent** component) const override;
 };
 
 } // namespace Yasha::Tools

@@ -1,11 +1,11 @@
 #include "Core/ApplicationCore.hpp"
-#include "export/IUIFramework.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/ACommand.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
+#include "export/IUIFramework.hpp"
 
 #include <algorithm>
 #include <array>
@@ -15,6 +15,7 @@
 #include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
+#include <list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -40,9 +41,11 @@ constexpr float   PADDING              = 4.0F;
 constexpr float   HEADER_HEIGHT        = 28.0F;
 constexpr float   ACCENT_LINE_HEIGHT   = 2.0F;
 constexpr float   CLOSE_BUTTON_SIZE    = 20.0F;
-constexpr float   CLOSE_AREA_WIDTH     = CLOSE_BUTTON_SIZE + 2.0F * PADDING;
 constexpr float   MENU_ITEM_WIDTH      = 120.0F;
 constexpr float   MENU_ITEM_HEIGHT     = 28.0F;
+constexpr float   POOL_GAP             = 4.0F;
+constexpr float   POOL_DRAG_EDGE       = 2.0F;
+constexpr float   TEXT_WIDTH_FACTOR    = 0.6F;
 constexpr int     FONT_SIZE            = 16;
 constexpr char    DEFAULT_THEME_NAME[] = "default";
 constexpr char    DARK_THEME_NAME[]    = "dark";
@@ -130,9 +133,8 @@ Theme makeTheme(const IRenderer::Color& primary, const IRenderer::Color& seconda
     const IRenderer::Color surface = mix(neutral, white, dark ? DARK_SURFACE_LIFT : LIGHT_SURFACE_LIFT);
     const IRenderer::Color button  = mix(neutral, secondary, SECONDARY_TINT);
 
-    const std::array<IRenderer::Color, static_cast<std::size_t>(IUIFramework::Role::MAX)> role_bases{
-        button, primary, unical
-    };
+    const std::array<IRenderer::Color, static_cast<std::size_t>(IUIFramework::Role::MAX)> role_bases{button, primary,
+                                                                                                     unical};
 
     std::array<Palette, static_cast<std::size_t>(IUIFramework::Role::MAX)> palettes{};
     for (std::size_t index = 0; index < role_bases.size(); ++index)
@@ -140,9 +142,7 @@ Theme makeTheme(const IRenderer::Color& primary, const IRenderer::Color& seconda
         palettes[index] = derive(role_bases[index], surface, neutral);
     }
 
-    return Theme{
-        neutral, surface, accent, palettes
-    };
+    return Theme{neutral, surface, accent, palettes};
 }
 
 struct RenderContext
@@ -155,6 +155,68 @@ struct RenderContext
 BoxF makeBox(const Vec2F& pos, const Vec2F& size)
 {
     return BoxF(pos, pos + size);
+}
+
+struct TextMetrics
+{
+    float width;
+    float height;
+};
+
+TextMetrics measureText(const std::string& text)
+{
+    std::size_t max_line = 0;
+    std::size_t line     = 0;
+    std::size_t lines    = 1;
+
+    for (const unsigned char character : text)
+    {
+        if (character == '\n')
+        {
+            max_line = std::max(max_line, line);
+            line     = 0;
+            ++lines;
+            continue;
+        }
+        /* Count UTF-8 code points, not continuation bytes. */
+        if ((character & 0xC0U) != 0x80U)
+        {
+            ++line;
+        }
+    }
+    max_line = std::max(max_line, line);
+
+    return TextMetrics{static_cast<float>(max_line) * static_cast<float>(FONT_SIZE) * TEXT_WIDTH_FACTOR,
+                       static_cast<float>(lines) * static_cast<float>(FONT_SIZE)};
+}
+
+BoxF ensureMinSize(const BoxF& box, float min_width, float min_height)
+{
+    const Vec2F size   = box.size();
+    const Vec2F origin = box.topLeft();
+    return makeBox(origin, Vec2F(std::max(size.x(), min_width), std::max(size.y(), min_height)));
+}
+
+BoxF fitToText(const BoxF& box, const std::optional<std::string>& text, bool has_icon)
+{
+    if (!text || text->empty())
+    {
+        return box;
+    }
+
+    const TextMetrics metrics    = measureText(*text);
+    const float       icon_width = has_icon ? static_cast<float>(FONT_SIZE) + PADDING : 0.0F;
+    const float       min_width  = metrics.width + 2.0F * PADDING + icon_width;
+    const float       min_height = metrics.height + 2.0F * PADDING;
+    return ensureMinSize(box, min_width, min_height);
+}
+
+BoxF fitWindowBox(const BoxF& box, const std::optional<std::string>& label, float close_width)
+{
+    const TextMetrics metrics   = (label && !label->empty()) ? measureText(*label) : TextMetrics{0.0F, 0.0F};
+    const float       reserved  = close_width > 0.0F ? close_width + 2.0F * PADDING : 0.0F;
+    const float       min_width = metrics.width + 2.0F * PADDING + reserved;
+    return ensureMinSize(box, min_width, HEADER_HEIGHT);
 }
 
 } // namespace
@@ -326,29 +388,14 @@ void drawText(IRenderer* renderer, const RenderContext& context, const std::stri
         return;
     }
     renderer->renderText(color, box, text,
-                         IRenderer::TextFormat{.font = *context.font,
-                                               .font_size = FONT_SIZE,
-                                               .overflow_action = IRenderer::TextOverflowAction::CUTBYBOX,
-                                               .h_align = IRenderer::TextHAlign::LEFT,
-                                               .w_align = IRenderer::TextWAlign::TOP,
-                                               .padding = 0.0F,
-                                               .line_spacing = 0.0F,
-                                               .wrap = false});
-}
-
-void drawContent(IRenderer* renderer, const RenderContext& context, const std::optional<IRenderer::TextureID>& icon,
-                 const std::optional<std::string>& text, const IRenderer::Color& color, const BoxF& box)
-{
-    if (icon)
-    {
-        renderer->renderTexture(*icon,
-                                makeBox(box.topLeft() + Vec2F(PADDING, PADDING), box.size() - Vec2F(2.0F * PADDING)),
-                                NO_ANGLE);
-    }
-    if (text)
-    {
-        drawText(renderer, context, *text, color, box);
-    }
+                         IRenderer::TextFormat{.font            = *context.font,
+                                               .font_size       = FONT_SIZE,
+                                               .overflow_action = IRenderer::TextOverflowAction::TAILREPLACE,
+                                               .h_align         = IRenderer::TextHAlign::LEFT,
+                                               .w_align         = IRenderer::TextWAlign::CENTER,
+                                               .padding         = PADDING,
+                                               .line_spacing    = 0.0F,
+                                               .wrap            = false});
 }
 
 BoxF insetBox(const BoxF& box, float inset)
@@ -371,29 +418,35 @@ BoxF leftSquareBox(const BoxF& box)
     return makeBox(Vec2F(box.left(), top), Vec2F(side, side));
 }
 
-void drawButtonText(IRenderer* renderer, const RenderContext& context, const std::string& text,
-                    const IRenderer::Color& color, const BoxF& box)
+float contentPadding(const BoxF& box)
+{
+    const float side = std::min(box.size().x(), box.size().y());
+    return std::min(PADDING, std::max(0.0F, (side - static_cast<float>(FONT_SIZE) - PADDING) / 2.0F));
+}
+
+void drawControlText(IRenderer* renderer, const RenderContext& context, const std::string& text,
+                     const IRenderer::Color& color, const BoxF& box)
 {
     if (!context.font)
     {
         return;
     }
     renderer->renderText(color, box, text,
-                         IRenderer::TextFormat{.font = *context.font,
-                                               .font_size = FONT_SIZE,
+                         IRenderer::TextFormat{.font            = *context.font,
+                                               .font_size       = FONT_SIZE,
                                                .overflow_action = IRenderer::TextOverflowAction::TAILREPLACE,
-                                               .h_align = IRenderer::TextHAlign::CENTER,
-                                               .w_align = IRenderer::TextWAlign::CENTER,
-                                               .padding = PADDING,
-                                               .line_spacing = 0.0F,
-                                               .wrap = false});
+                                               .h_align         = IRenderer::TextHAlign::CENTER,
+                                               .w_align         = IRenderer::TextWAlign::CENTER,
+                                               .padding         = contentPadding(box),
+                                               .line_spacing    = 0.0F,
+                                               .wrap            = false});
 }
 
-void drawButtonContent(IRenderer* renderer, const RenderContext& context,
-                       const std::optional<IRenderer::TextureID>& icon, const std::optional<std::string>& text,
-                       const IRenderer::Color& color, const BoxF& box)
+void drawControlContent(IRenderer* renderer, const RenderContext& context,
+                        const std::optional<IRenderer::TextureID>& icon, const std::optional<std::string>& text,
+                        const IRenderer::Color& color, const BoxF& box)
 {
-    const BoxF inner = insetBox(box, PADDING);
+    const BoxF inner = insetBox(box, contentPadding(box));
 
     if (icon && text)
     {
@@ -402,7 +455,7 @@ void drawButtonContent(IRenderer* renderer, const RenderContext& context,
 
         const BoxF text_box =
             makeBox(Vec2F(icon_box.right(), box.top()), Vec2F(box.right() - icon_box.right(), box.size().y()));
-        drawButtonText(renderer, context, *text, color, text_box);
+        drawControlText(renderer, context, *text, color, text_box);
         return;
     }
 
@@ -414,49 +467,63 @@ void drawButtonContent(IRenderer* renderer, const RenderContext& context,
 
     if (text)
     {
-        drawButtonText(renderer, context, *text, color, box);
+        drawControlText(renderer, context, *text, color, box);
     }
 }
 
-Vec2F menuSize(IUIFramework::Direction direction, std::size_t count)
+BoxF layoutPool(std::list<std::unique_ptr<TObject>>& children, const BoxF& bounds, IUIFramework::Direction direction)
 {
-    const auto items = static_cast<float>(count);
-    return direction == IUIFramework::Direction::VERTICAL ? Vec2F(MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT * items) :
-                                                            Vec2F(MENU_ITEM_WIDTH * items, MENU_ITEM_HEIGHT);
-}
+    /* Children keep their current main-axis size and are stretched across the
+     * pool. When they do not fit, the pool grows forward along its direction. */
+    const bool  vertical = direction == IUIFramework::Direction::VERTICAL;
+    const Vec2F origin   = bounds.topLeft();
+    const Vec2F current  = bounds.size();
 
-typedef std::optional<BoxF> Placement;
+    std::vector<float> main_sizes;
+    main_sizes.reserve(children.size());
 
-std::vector<Placement> slotsFor(const Vec2F& size, IUIFramework::Direction direction, std::size_t count)
-{
-    std::vector<Placement> slots;
-    if (count == 0)
+    float total     = 0.0F;
+    float max_cross = 0.0F;
+    for (const auto& child : children)
     {
-        return slots;
+        const Vec2F child_size  = static_cast<const TWidget&>(*child).box().size();
+        const float main        = std::max(vertical ? child_size.y() : child_size.x(), 0.0F);
+        const float child_cross = vertical ? child_size.x() : child_size.y();
+        main_sizes.push_back(main);
+        total += main;
+        max_cross = std::max(max_cross, child_cross);
     }
 
-    const auto  divider = static_cast<float>(count);
-    const Vec2F slot    = direction == IUIFramework::Direction::VERTICAL ? Vec2F(size.x(), size.y() / divider) :
-                                                                           Vec2F(size.x() / divider, size.y());
-    const Vec2F step = direction == IUIFramework::Direction::VERTICAL ? Vec2F(0.0F, slot.y()) : Vec2F(slot.x(), 0.0F);
-
-    Vec2F position;
-    for (std::size_t i = 0; i < count; ++i)
+    if (!main_sizes.empty())
     {
-        slots.emplace_back(makeBox(position, slot));
-        position = position + step;
+        total += POOL_GAP * static_cast<float>(main_sizes.size() - 1);
     }
-    return slots;
-}
 
-void layoutChildren(std::list<std::unique_ptr<TObject>>& children, const Vec2F& size, IUIFramework::Direction direction)
-{
-    const std::vector<Placement> placements = slotsFor(size, direction, children.size());
-    std::size_t                  index      = 0;
+    const float cross = std::max(vertical ? current.x() : current.y(), max_cross);
+    Vec2F       size  = current;
+    if (vertical)
+    {
+        size.setX(cross);
+        size.setY(std::max(current.y(), total));
+    }
+    else
+    {
+        size.setY(cross);
+        size.setX(std::max(current.x(), total));
+    }
+
+    float       offset = 0.0F;
+    std::size_t index  = 0;
     for (auto& child : children)
     {
-        static_cast<TWidget&>(*child).setBox(*placements[index++]);
+        const float main       = main_sizes[index++];
+        const Vec2F position   = vertical ? Vec2F(0.0F, offset) : Vec2F(offset, 0.0F);
+        const Vec2F child_size = vertical ? Vec2F(cross, main) : Vec2F(main, cross);
+        static_cast<TWidget&>(*child).setBox(makeBox(position, child_size));
+        offset += main + POOL_GAP;
     }
+
+    return makeBox(origin, size);
 }
 
 enum class PressResult
@@ -523,7 +590,7 @@ inline PressResult PressTracker::process(const BoxF& bounds, const IInputPump::E
             {
                 if (active_ == this)
                 {
-                    active_ = nullptr;
+                    active_  = nullptr;
                     pressed_ = false;
                 }
                 return PressResult::IGNORED;
@@ -572,14 +639,12 @@ inline IRenderer::Color PressTracker::background(const IRenderer::Color& idle, c
     return idle;
 }
 
-void runAction(IUIFramework::Action& action)
+void runAction(const IUIFramework::Action& action)
 {
-    for (auto& command : action.actions)
-    {
-        clone(command)
-        command->execute();
-    }
-    for (auto& callback : action.callbacks)
+    /* Copy the callbacks first: a callback may destroy the widget that owns
+     * the action (for example, a window close callback). */
+    const std::vector<std::function<void(void)>> callbacks = action.callbacks;
+    for (const auto& callback : callbacks)
     {
         callback();
     }
@@ -595,6 +660,74 @@ BoxF globalBounds(const TWidget& widget)
     BoxF bounds(widget.box().size());
     bounds.setCenter(globalCenter(widget));
     return bounds;
+}
+
+struct DragState
+{
+    bool  dragging = false;
+    Vec2F offset;
+};
+
+bool isOnEdge(const BoxF& box, const Vec2F& point, float thickness)
+{
+    if (!box.contains(point))
+    {
+        return false;
+    }
+
+    return (point.x() - box.left() <= thickness) ||
+           (box.right() - point.x() <= thickness) ||
+           (point.y() - box.top() <= thickness) ||
+           (box.bottom() - point.y() <= thickness);
+}
+
+bool startDrag(TWidget& widget, DragState& state, const IInputPump::Event& event, const BoxF& area,
+               float edge_thickness = 0.0F)
+{
+    const IInputPump::EventMouse* mouse = asMouse(event);
+    if (!mouse ||
+        mouse->type() != IInputPump::EventMouse::Type::LEFT_BUTTON_PRESSING ||
+        !area.contains(mouse->cursorPos()))
+    {
+        return false;
+    }
+
+    if (edge_thickness > 0.0F && !isOnEdge(area, mouse->cursorPos(), edge_thickness))
+    {
+        return false;
+    }
+
+    state.dragging = true;
+    state.offset   = mouse->cursorPos() - globalBounds(widget).topLeft();
+    return true;
+}
+
+bool processDrag(TWidget& widget, DragState& state, const IInputPump::Event& event)
+{
+    const IInputPump::EventMouse* mouse = asMouse(event);
+    if (!mouse || !state.dragging)
+    {
+        return false;
+    }
+
+    switch (mouse->type())
+    {
+        case IInputPump::EventMouse::Type::MOTION:
+        {
+            const Vec2F parent_origin =
+                widget.parent() != nullptr ? widget.parent()->mapLocalToGlobal(Vec2F(0.0F, 0.0F)) : Vec2F(0.0F, 0.0F);
+            const Vec2F new_top_left = mouse->cursorPos() - state.offset - parent_origin;
+            widget.setBox(makeBox(new_top_left, widget.box().size()));
+            return true;
+        }
+
+        case IInputPump::EventMouse::Type::LEFT_BUTTON_RELEASING:
+            state.dragging = false;
+            return true;
+
+        default:
+            return true;
+    }
 }
 
 class ButtonObject final : public IUIFramework::Button
@@ -622,7 +755,7 @@ inline ButtonObject::ButtonObject(const RenderContext& context, const BoxF& boun
                                   IUIFramework::Action on_press) :
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_press_(std::move(on_press))
 {
-    setBox(bounds);
+    setBox(fitToText(bounds, text_, icon_.has_value()));
     parent_ = parent();
 }
 
@@ -657,7 +790,7 @@ inline void ButtonObject::render()
     const Palette palette = context_.theme->palette(role_);
     const BoxF    bounds  = globalBounds(*this);
     drawPanel(renderer, press_.background(palette.base, palette), palette.border, bounds);
-    drawButtonContent(renderer, context_, icon_, text_, palette.text, bounds);
+    drawControlContent(renderer, context_, icon_, text_, palette.text, bounds);
 }
 
 class SwitcherObject final : public IUIFramework::Switcher
@@ -684,6 +817,7 @@ private:
     IUIFramework::Action                on_deactive_;
     PressTracker                        press_;
     bool                                active_ = false;
+    TObject*                            parent_ = nullptr;
 };
 
 class SwitcherPoolObject final : public IUIFramework::SwitcherPool
@@ -701,10 +835,12 @@ public:
     void select(SwitcherObject& target);
 
 private:
+    void relayout();
+
     const RenderContext&    context_;
-    Vec2F                   size_;
     IUIFramework::Direction direction_;
     IUIFramework::Role      role_;
+    DragState               drag_;
 };
 
 inline SwitcherObject::SwitcherObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
@@ -713,11 +849,18 @@ inline SwitcherObject::SwitcherObject(const RenderContext& context, const BoxF& 
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_active_(std::move(on_active)),
     on_deactive_(std::move(on_deactive))
 {
-    setBox(bounds);
+    setBox(fitToText(bounds, text_, icon_.has_value()));
+    parent_ = parent();
 }
 
 inline bool SwitcherObject::processEvent(const IInputPump::Event& event)
 {
+    if (parent() != parent_)
+    {
+        parent_ = parent();
+        press_.reset();
+    }
+
     switch (press_.process(globalBounds(*this), event))
     {
         case PressResult::CLICKED:
@@ -755,7 +898,7 @@ inline void SwitcherObject::render()
     const IRenderer::Color text    = active_ ? palette.text : palette.surface_text;
     const IRenderer::Color border  = active_ ? context_.theme->accent : palette.border;
     drawPanel(renderer, press_.background(idle, palette), border, bounds);
-    drawContent(renderer, context_, icon_, text_, text, bounds);
+    drawControlContent(renderer, context_, icon_, text_, text, bounds);
 }
 
 inline bool SwitcherObject::isActive() const
@@ -765,19 +908,27 @@ inline bool SwitcherObject::isActive() const
 
 inline void SwitcherObject::activate()
 {
+    if (active_)
+    {
+        return;
+    }
     active_ = true;
     runAction(on_active_);
 }
 
 inline void SwitcherObject::deactivate()
 {
+    if (!active_)
+    {
+        return;
+    }
     active_ = false;
     runAction(on_deactive_);
 }
 
 inline SwitcherPoolObject::SwitcherPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size,
                                               IUIFramework::Direction direction, IUIFramework::Role role) :
-    context_(context), size_(size), direction_(direction), role_(role)
+    context_(context), direction_(direction), role_(role)
 {
     setBox(makeBox(min_point, size));
 }
@@ -785,16 +936,41 @@ inline SwitcherPoolObject::SwitcherPoolObject(const RenderContext& context, cons
 inline void SwitcherPoolObject::add(std::unique_ptr<IUIFramework::Switcher> switcher)
 {
     addChild(std::move(switcher));
-    layoutChildren(children(), size_, direction_);
+    relayout();
+}
+
+inline void SwitcherPoolObject::relayout()
+{
+    setBox(layoutPool(children(), box(), direction_));
 }
 
 inline bool SwitcherPoolObject::processEvent(const IInputPump::Event& event)
 {
-    return processEventChildren(event);
+    if (processDrag(*this, drag_, event))
+    {
+        return true;
+    }
+
+    relayout();
+
+    const BoxF bounds = globalBounds(*this);
+    if (startDrag(*this, drag_, event, bounds, POOL_DRAG_EDGE))
+    {
+        return true;
+    }
+
+    if (processEventChildren(event))
+    {
+        return true;
+    }
+
+    return startDrag(*this, drag_, event, bounds);
 }
 
 inline void SwitcherPoolObject::render()
 {
+    relayout();
+
     IRenderer* renderer = acquireRenderer(context_);
     if (!renderer)
     {
@@ -815,10 +991,10 @@ inline void SwitcherPoolObject::select(SwitcherObject& target)
 
     for (auto& child : children())
     {
-        auto& switcher = static_cast<SwitcherObject&>(*child);
-        if (switcher.isActive())
+        auto* switcher = dynamic_cast<SwitcherObject*>(child.get());
+        if (switcher != nullptr && switcher->isActive())
         {
-            switcher.deactivate();
+            switcher->deactivate();
         }
     }
     target.activate();
@@ -837,15 +1013,17 @@ public:
     void render() override;
 
 private:
+    void relayout();
+
     const RenderContext&    context_;
-    Vec2F                   size_;
     IUIFramework::Direction direction_;
     IUIFramework::Role      role_;
+    DragState               drag_;
 };
 
 inline ButtonPoolObject::ButtonPoolObject(const RenderContext& context, const Vec2F& min_point, const Vec2F& size,
                                           IUIFramework::Direction direction, IUIFramework::Role role) :
-    context_(context), size_(size), direction_(direction), role_(role)
+    context_(context), direction_(direction), role_(role)
 {
     setBox(makeBox(min_point, size));
 }
@@ -853,16 +1031,41 @@ inline ButtonPoolObject::ButtonPoolObject(const RenderContext& context, const Ve
 inline void ButtonPoolObject::add(std::unique_ptr<IUIFramework::Button> button)
 {
     addChild(std::move(button));
-    layoutChildren(children(), size_, direction_);
+    relayout();
+}
+
+inline void ButtonPoolObject::relayout()
+{
+    setBox(layoutPool(children(), box(), direction_));
 }
 
 inline bool ButtonPoolObject::processEvent(const IInputPump::Event& event)
 {
-    return processEventChildren(event);
+    if (processDrag(*this, drag_, event))
+    {
+        return true;
+    }
+
+    relayout();
+
+    const BoxF bounds = globalBounds(*this);
+    if (startDrag(*this, drag_, event, bounds, POOL_DRAG_EDGE))
+    {
+        return true;
+    }
+
+    if (processEventChildren(event))
+    {
+        return true;
+    }
+
+    return startDrag(*this, drag_, event, bounds);
 }
 
 inline void ButtonPoolObject::render()
 {
+    relayout();
+
     IRenderer* renderer = acquireRenderer(context_);
     if (!renderer)
     {
@@ -872,6 +1075,39 @@ inline void ButtonPoolObject::render()
     const Palette palette = context_.theme->palette(role_);
     drawPanel(renderer, palette.surface, palette.border, globalBounds(*this));
     renderChildren();
+}
+
+class RemoveObjectCommand final : public ACommand
+{
+public:
+    explicit RemoveObjectCommand(TObject::ID object_id) : object_id_(object_id)
+    {
+    }
+
+    void execute() const override
+    {
+        if (ApplicationCore::instance().findObject(object_id_) != nullptr)
+        {
+            ApplicationCore::instance().removeObject(object_id_);
+        }
+    }
+
+private:
+    TObject::ID object_id_;
+};
+
+void destroyAfterEvent(TObject::ID object_id)
+{
+    if (ApplicationCore::instance().findObject(object_id) == nullptr)
+    {
+        return;
+    }
+    ApplicationCore::instance().pushCommand(std::make_unique<RemoveObjectCommand>(object_id));
+}
+
+void destroyAfterEvent(const TObject& object)
+{
+    destroyAfterEvent(object.id());
 }
 
 class ContextMenuObject final : public IUIFramework::ContextMenu
@@ -893,7 +1129,6 @@ private:
     bool isPressOutside(const IInputPump::Event& event) const;
 
     const RenderContext&                      context_;
-    Vec2F                                     min_point_;
     IUIFramework::Direction                   direction_;
     IUIFramework::Role                        role_;
     std::optional<IUIFramework::EventHandler> on_event_;
@@ -903,8 +1138,9 @@ private:
 inline ContextMenuObject::ContextMenuObject(const RenderContext& context, const Vec2F& min_point,
                                             IUIFramework::Direction direction, IUIFramework::Role role,
                                             std::optional<IUIFramework::EventHandler> on_event) :
-    context_(context), min_point_(min_point), direction_(direction), role_(role), on_event_(std::move(on_event))
+    context_(context), direction_(direction), role_(role), on_event_(std::move(on_event))
 {
+    setBox(makeBox(min_point, Vec2F(0.0F, 0.0F)));
     relayout();
 }
 
@@ -922,8 +1158,30 @@ inline void ContextMenuObject::add(std::unique_ptr<IUIFramework::Switcher> switc
 
 inline void ContextMenuObject::relayout()
 {
-    setBox(makeBox(min_point_, menuSize(direction_, children().size())));
-    layoutChildren(children(), box().size(), direction_);
+    const bool vertical = direction_ == IUIFramework::Direction::VERTICAL;
+
+    /* Use the largest child as the uniform item size, but keep the default menu
+     * metrics as the lower bound so small items do not shrink the menu. */
+    float item_width  = MENU_ITEM_WIDTH;
+    float item_height = MENU_ITEM_HEIGHT;
+    for (const auto& child : children())
+    {
+        const Vec2F child_size = static_cast<const TWidget&>(*child).box().size();
+        item_width             = std::max(item_width, child_size.x());
+        item_height            = std::max(item_height, child_size.y());
+    }
+
+    const auto  count     = static_cast<float>(children().size());
+    const Vec2F menu_size = vertical ? Vec2F(item_width, item_height * count) : Vec2F(item_width * count, item_height);
+    setBox(makeBox(box().topLeft(), menu_size));
+
+    float offset = 0.0F;
+    for (auto& child : children())
+    {
+        const Vec2F position = vertical ? Vec2F(0.0F, offset) : Vec2F(offset, 0.0F);
+        static_cast<TWidget&>(*child).setBox(makeBox(position, Vec2F(item_width, item_height)));
+        offset += vertical ? item_height : item_width;
+    }
 }
 
 inline bool ContextMenuObject::processEvent(const IInputPump::Event& event)
@@ -932,6 +1190,8 @@ inline bool ContextMenuObject::processEvent(const IInputPump::Event& event)
     {
         return false;
     }
+
+    relayout();
 
     if (on_event_)
     {
@@ -943,14 +1203,22 @@ inline bool ContextMenuObject::processEvent(const IInputPump::Event& event)
     else if (isPressOutside(event))
     {
         visible_ = false;
+        destroyAfterEvent(*this);
     }
     return processEventChildren(event);
 }
 
 inline void ContextMenuObject::render()
 {
+    if (!visible_)
+    {
+        return;
+    }
+
+    relayout();
+
     IRenderer* renderer = acquireRenderer(context_);
-    if (!visible_ || !renderer)
+    if (!renderer)
     {
         return;
     }
@@ -986,10 +1254,15 @@ public:
     void render() override;
 
 private:
+    void relayout();
+
     const RenderContext&                      context_;
     std::optional<std::string>                label_;
     IUIFramework::Role                        role_;
     std::optional<IUIFramework::EventHandler> on_event_;
+    ButtonObject*                             close_button_ = nullptr;
+    Vec2F                                     close_size_   = Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE);
+    DragState                                 drag_;
 };
 
 inline WindowMenuObject::WindowMenuObject(const RenderContext& context, const BoxF& bounds,
@@ -1002,13 +1275,33 @@ inline WindowMenuObject::WindowMenuObject(const RenderContext& context, const Bo
 
     if (on_close)
     {
-        const Vec2F size = bounds.size();
-        const Vec2F close_pos(size.x() - CLOSE_BUTTON_SIZE - PADDING, PADDING);
-        addChild(
-            std::make_unique<ButtonObject>(context_, makeBox(close_pos, Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
-                                           std::optional<std::string>("X"), std::nullopt, role_, std::move(*on_close))
-        );
+        IUIFramework::Action close_action = std::move(*on_close);
+        const TObject::ID    window_id    = id();
+        close_action.callbacks.emplace_back([window_id]() { destroyAfterEvent(window_id); });
+
+        auto close    = std::make_unique<ButtonObject>(context_, BoxF(Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
+                                                       std::optional<std::string>("X"), std::nullopt, role_,
+                                                       std::move(close_action));
+        close_size_   = close->box().size();
+        close_button_ = close.get();
+        addChild(std::move(close));
     }
+
+    const float close_width = close_button_ != nullptr ? close_size_.x() : 0.0F;
+    setBox(fitWindowBox(bounds, label_, close_width));
+    relayout();
+}
+
+inline void WindowMenuObject::relayout()
+{
+    if (close_button_ == nullptr)
+    {
+        return;
+    }
+
+    const Vec2F size      = box().size();
+    const Vec2F close_pos = Vec2F(size.x() - close_size_.x() - PADDING, (HEADER_HEIGHT - close_size_.y()) / 2.0F);
+    close_button_->setBox(makeBox(close_pos, close_size_));
 }
 
 inline void WindowMenuObject::add(std::unique_ptr<IUIFramework::Button> button)
@@ -1038,15 +1331,32 @@ inline void WindowMenuObject::add(std::unique_ptr<IUIFramework::SwitcherPool> po
 
 inline bool WindowMenuObject::processEvent(const IInputPump::Event& event)
 {
+    if (processDrag(*this, drag_, event))
+    {
+        return true;
+    }
+
+    relayout();
+
     if (on_event_ && (*on_event_)(event))
     {
         return true;
     }
-    return processEventChildren(event);
+
+    if (processEventChildren(event))
+    {
+        return true;
+    }
+
+    const BoxF window = globalBounds(*this);
+    const BoxF header = makeBox(window.topLeft(), Vec2F(window.size().x(), HEADER_HEIGHT));
+    return startDrag(*this, drag_, event, header);
 }
 
 inline void WindowMenuObject::render()
 {
+    relayout();
+
     IRenderer* renderer = acquireRenderer(context_);
     if (!renderer)
     {
@@ -1067,8 +1377,8 @@ inline void WindowMenuObject::render()
 
     if (label_)
     {
-        const BoxF label_box =
-            makeBox(header_box.topLeft(), Vec2F(header_box.size().x() - CLOSE_AREA_WIDTH, HEADER_HEIGHT));
+        const float reserved  = close_button_ != nullptr ? close_size_.x() + 2.0F * PADDING : 0.0F;
+        const BoxF  label_box = makeBox(header_box.topLeft(), Vec2F(header_box.size().x() - reserved, HEADER_HEIGHT));
         drawText(renderer, context_, *label_, palette.text, label_box);
     }
 
@@ -1211,9 +1521,9 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
 
     Kabuto::UI::UIWi& framework = Kabuto::UI::UIWi::instance();
 
-    const ApplicationCore::Error error =
-        ApplicationCore::instance().registerInterface(Kabuto::IID_IUIFramework,
-                                                      reinterpret_cast<void*>(static_cast<Kabuto::IUIFramework*>(&framework)));
+    const ApplicationCore::Error error = ApplicationCore::instance().registerInterface(
+        Kabuto::IID_IUIFramework, reinterpret_cast<void*>(static_cast<Kabuto::IUIFramework*>(&framework))
+    );
     if (error != ApplicationCore::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to register IUIFramework: %s",

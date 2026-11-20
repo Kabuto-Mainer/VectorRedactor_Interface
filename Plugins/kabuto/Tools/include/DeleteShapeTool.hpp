@@ -59,7 +59,7 @@ inline bool DeleteShapeTool::processEvent(const IInputPump::Event& event)
         return false;
     }
 
-    const Vec2F position = mouse->cursorPos();
+    const Vec2F                      position = mouse->cursorPos();
     const std::optional<TObject::ID> shape_id = document_.hitTest(position);
     if (shape_id.has_value())
     {

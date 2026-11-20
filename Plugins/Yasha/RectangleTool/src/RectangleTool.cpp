@@ -26,7 +26,8 @@ bool RectangleTool::processEvent(const IInputPump::Event& event)
 {
     if (const auto* key = std::get_if<IInputPump::EventKeyboard>(&event))
     {
-        if (dragging_ && key->type() == IInputPump::EventKeyboard::Type::KEY_DOWN &&
+        if (dragging_ &&
+            key->type() == IInputPump::EventKeyboard::Type::KEY_DOWN &&
             key->key() == IInputPump::EventKeyboard::Key::ESC)
         {
             cancelDrag();
@@ -60,7 +61,7 @@ bool RectangleTool::beginDrag(const Vec2F& global_pos)
     {
         cancelDrag();
     }
-    anchor_ = toLocal(global_pos);
+    anchor_   = toLocal(global_pos);
     dragging_ = true;
     return true;
 }
@@ -100,13 +101,12 @@ bool RectangleTool::endDrag(const Vec2F& global_pos)
     }
 
     updateDrag(global_pos);
-    if (preview_ != nullptr &&
-        (std::abs(preview_->scaling().x()) * 2.0F < MIN_DRAG_SIZE ||
-         std::abs(preview_->scaling().y()) * 2.0F < MIN_DRAG_SIZE))
+    if (preview_ != nullptr && (std::abs(preview_->scaling().x()) * 2.0F < MIN_DRAG_SIZE ||
+                                std::abs(preview_->scaling().y()) * 2.0F < MIN_DRAG_SIZE))
     {
         cancelDrag();
     }
-    preview_ = nullptr;
+    preview_  = nullptr;
     dragging_ = false;
     return true;
 }
@@ -117,7 +117,7 @@ void RectangleTool::cancelDrag()
     {
         document_.removeShape(preview_);
     }
-    preview_ = nullptr;
+    preview_  = nullptr;
     dragging_ = false;
 }
 

@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Interfaces/Package.hpp"
 #include "export/IPalette.hpp"
 #include "export/IUIFramework.hpp"
-#include "Interfaces/Package.hpp"
 
 #include <memory>
 

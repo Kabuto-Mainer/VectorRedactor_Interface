@@ -1,11 +1,10 @@
-#include "RectangleTool.hpp"
-
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolBar.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
+#include "RectangleTool.hpp"
 #include "ToolBarIID.hpp"
 
 #include <memory>
@@ -35,7 +34,10 @@ public:
         }
     }
 
-    void setManager(IToolManager* manager) { manager_ = manager; }
+    void setManager(IToolManager* manager)
+    {
+        manager_ = manager;
+    }
 
 private:
     IToolManager* manager_ = nullptr;
@@ -52,8 +54,8 @@ ToolRegistration& registration()
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
     auto* document = queryInterface<IDocument>(IID_IDOCUMENT);
-    auto* manager = queryInterface<IToolManager>(IID_TOOL_MANAGER);
-    auto* toolbar = queryInterface<IToolBar>(IID_TOOL_BAR);
+    auto* manager  = queryInterface<IToolManager>(IID_TOOL_MANAGER);
+    auto* toolbar  = queryInterface<IToolBar>(IID_TOOL_BAR);
     auto* renderer = queryInterface<IRenderer>(IID_RENDERER);
 
     if (document == nullptr || manager == nullptr || toolbar == nullptr || renderer == nullptr)
