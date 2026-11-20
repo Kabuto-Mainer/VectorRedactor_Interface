@@ -4,6 +4,7 @@
 #include "Utils/ACommand.hpp"
 #include "Utils/TWidget.hpp"
 
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -100,6 +101,8 @@ public:
     bool remove(TObject::ID button_id);
     bool processEvent(const IInputPump::Event& event) override;
     void render() override;
+
+    const std::list<std::unique_ptr<TObject>>& buttons() const { return children(); }
 
     // clang-format off
     ButtonPoolDirection direction() const { return direction_; }

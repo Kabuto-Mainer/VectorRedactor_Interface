@@ -4,21 +4,23 @@
 #include "Interfaces/IDesktop.hpp"
 
 #include <memory>
+#include <utility>
 
-void Document::addShape(TShape* shape)
+namespace Yasha {
+void Document::addShape(std::unique_ptr<TShape> shape)
 {
     if (shape == nullptr || shape->parent() != nullptr)
     {
         return;
     }
-    addChild(std::unique_ptr<TObject>(shape));
+    addChild(std::move(shape));
 }
 
-void Document::removeShape(TShape* shape)
+void Document::removeShape(TObject::ID shape_id)
 {
     for (auto it = children().begin(); it != children().end(); ++it)
     {
-        if (it->get() == shape)
+        if ((*it)->id() == shape_id)
         {
             children().erase(it);
             return;
@@ -37,17 +39,6 @@ std::optional<TObject::ID> Document::hitTest(const Vec2F& pos)
         }
     }
     return std::nullopt;
-}
-
-void Document::accept(Visitor& visitor)
-{
-    for (auto& child : children())
-    {
-        if (auto* shape = dynamic_cast<TShape*>(child.get()); shape != nullptr && !visitor.visit(*shape))
-        {
-            return;
-        }
-    }
 }
 
 void Document::accept(Visitor& visitor) const
@@ -96,3 +87,4 @@ ApplicationCore::Error initializeDocument()
     }
     return error;
 }
+} // namespace Yasha

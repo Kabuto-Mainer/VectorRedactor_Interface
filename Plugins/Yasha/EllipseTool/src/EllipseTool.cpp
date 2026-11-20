@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
+#include <utility>
 #include <variant>
 
 namespace Yasha::Tools
@@ -115,7 +117,7 @@ void EllipseTool::cancelDrag()
 {
     if (preview_ != nullptr)
     {
-        document_.removeShape(preview_);
+        document_.removeShape(preview_->id());
     }
     preview_  = nullptr;
     dragging_ = false;
@@ -123,17 +125,10 @@ void EllipseTool::cancelDrag()
 
 void EllipseTool::createShape(const Vec2F& center, const Vec2F& size)
 {
-    auto* shape = new EllipseShape(size);
+    auto shape = std::make_unique<EllipseShape>(size);
     shape->setTranslation(center);
-    document_.addShape(shape);
-    if (shape->parent() != nullptr)
-    {
-        preview_ = shape;
-    }
-    else
-    {
-        delete shape;
-    }
+    preview_ = shape.get();
+    document_.addShape(std::move(shape));
 }
 
 } // namespace Yasha::Tools

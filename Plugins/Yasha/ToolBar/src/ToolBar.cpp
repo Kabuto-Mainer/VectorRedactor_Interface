@@ -73,7 +73,7 @@ private:
 
 ToolButton* findToolButton(TToolBar& toolbar, IToolManager::ATool::ID tool_id)
 {
-    for (const auto& child : toolbar.pool().children())
+    for (const auto& child : toolbar.pool().buttons())
     {
         auto* button = dynamic_cast<ToolButton*>(child.get());
         if (button != nullptr && button->toolId() == tool_id)

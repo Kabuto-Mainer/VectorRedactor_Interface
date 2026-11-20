@@ -9,7 +9,7 @@ SOURCES := Launcher.cpp Desktop/src/Desktop.cpp Document/src/Document.cpp UIFram
 OBJECTS := $(addprefix build/,$(SOURCES:.cpp=.o)) build/Core/ApplicationCore.o
 DEPS := $(OBJECTS:.o=.d)
 
-all: Render/libRender.so InputPump/libInputPump.so ToolManager/ToolManager.so ToolBar/libToolBar.so RectangleTool/libRectangleTool.so EllipseTool/libEllipseTool.so SelectorTool/libSelectorTool.so app
+all: Render/libRender.so InputPump/libInputPump.so ToolManager/ToolManager.so ToolBar/libToolBar.so RectangleTool/libRectangleTool.so EllipseTool/libEllipseTool.so MurugovSelectTool/libMurugovSelectTool.so app
 
 Render/libRender.so: Render/Makefile Render/src/Render.cpp Render/include/Render.hpp ../../SDK/Interfaces/IRenderer.hpp
 	$(MAKE) -C Render
@@ -29,8 +29,8 @@ RectangleTool/libRectangleTool.so: RectangleTool/Makefile RectangleTool/src/Plug
 EllipseTool/libEllipseTool.so: EllipseTool/Makefile EllipseTool/src/Plugin.cpp EllipseTool/src/EllipseTool.cpp EllipseTool/src/EllipseShape.cpp EllipseTool/include/EllipseTool.hpp EllipseTool/include/EllipseShape.hpp ../../SDK/Interfaces/IDocument.hpp ../../SDK/Interfaces/IToolBar.hpp ../../SDK/Interfaces/IToolManager.hpp
 	$(MAKE) -C EllipseTool
 
-SelectorTool/libSelectorTool.so: SelectorTool/Makefile SelectorTool/src/Plugin.cpp SelectorTool/src/SelectorTool.cpp SelectorTool/src/SelectionOverlay.cpp SelectorTool/src/ShapeLookup.cpp SelectorTool/include/SelectorTool.hpp SelectorTool/include/SelectionOverlay.hpp SelectorTool/include/ShapeLookup.hpp ToolManager/include/ToolManager.hpp ../../SDK/Interfaces/IDocument.hpp ../../SDK/Interfaces/IToolManager.hpp
-	$(MAKE) -C SelectorTool
+MurugovSelectTool/libMurugovSelectTool.so: MurugovSelectTool/Makefile MurugovSelectTool/src/Plugin.cpp MurugovSelectTool/src/SelectTool.cpp MurugovSelectTool/include/SelectTool.hpp ToolManager/include/ToolManager.hpp ../../SDK/Interfaces/IDocument.hpp ../../SDK/Interfaces/IToolManager.hpp
+	$(MAKE) -C MurugovSelectTool
 
 app: $(OBJECTS)
 	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
@@ -48,6 +48,7 @@ clean:
 	$(MAKE) -C RectangleTool clean
 	$(MAKE) -C EllipseTool clean
 	$(MAKE) -C SelectorTool clean
+	$(MAKE) -C MurugovSelectTool clean
 	$(MAKE) -C ToolBar clean
 
 -include $(DEPS)

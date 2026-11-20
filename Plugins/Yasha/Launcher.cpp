@@ -40,7 +40,7 @@ int main() {
                              ApplicationCore::strError(error));
         return EXIT_FAILURE;
     }
-    error = initializeDocument();
+    error = Yasha::initializeDocument();
     if (error != ApplicationCore::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Document initialization failed: %s",

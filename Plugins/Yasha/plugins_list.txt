@@ -4,4 +4,4 @@
 ./ToolBar/libToolBar.so
 ./RectangleTool/libRectangleTool.so
 ./EllipseTool/libEllipseTool.so
-./SelectorTool/libSelectorTool.so
+./MurugovSelectTool/libMurugovSelectTool.so

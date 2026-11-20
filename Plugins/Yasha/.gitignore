@@ -15,3 +15,6 @@
 /SelectorTool/*.so
 /SelectorTool/src/*.o
 /SelectorTool/src/*.d
+/MurugovSelectTool/*.so
+/MurugovSelectTool/src/*.o
+/MurugovSelectTool/src/*.d

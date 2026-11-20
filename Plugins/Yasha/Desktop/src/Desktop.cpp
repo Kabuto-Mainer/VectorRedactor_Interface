@@ -74,6 +74,7 @@ ApplicationCore::Error initializeDesktop()
 {
     auto& core     = ApplicationCore::instance();
     void* existing = nullptr;
+
     if (core.queryInterface(IID_DESKTOP, &existing) == ApplicationCore::Error::SUCCESS)
     {
         return ApplicationCore::Error::INTERFACE_ALREADY_EXISTS;
@@ -82,10 +83,12 @@ ApplicationCore::Error initializeDesktop()
     auto       desktop   = std::make_unique<Desktop>();
     auto*      interface = static_cast<IDesktop*>(desktop.get());
     const auto error     = core.registerInterface(IID_DESKTOP, interface);
+
     if (error != ApplicationCore::Error::SUCCESS)
     {
         return error;
     }
-    core.root()->addChild(std::move(desktop));
+
+    core.pushModal(std::move(desktop));
     return ApplicationCore::Error::SUCCESS;
 }
