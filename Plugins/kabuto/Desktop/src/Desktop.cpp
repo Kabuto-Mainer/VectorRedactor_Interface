@@ -105,7 +105,7 @@ IDesktop::Error CDesktop::add(std::unique_ptr<TObject> object)
 
 IDesktop::Error CDesktop::remove(TObject::ID object_id)
 {
-    ApplicationCore::instance().deleteObject(object_id);
+    ApplicationCore::instance().removeObject(object_id);
     return Error::SUCCESS;
 }
 

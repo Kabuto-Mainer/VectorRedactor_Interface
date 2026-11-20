@@ -1,7 +1,7 @@
 #pragma once
 
-#include "IPalette.hpp"
-#include "IUIFramework.hpp"
+#include "export/IPalette.hpp"
+#include "export/IUIFramework.hpp"
 #include "Interfaces/Package.hpp"
 
 #include <memory>

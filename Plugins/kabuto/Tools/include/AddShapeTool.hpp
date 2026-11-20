@@ -5,7 +5,6 @@
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IToolManager.hpp"
-#include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
@@ -26,7 +25,7 @@ class AddShapeTool final : public IToolManager::ATool
 public:
     using ShapeFactory = std::function<std::unique_ptr<IDocument::TShape>(const Vec2F& size)>;
 
-    AddShapeTool(ID id, IDocument& document, IPalette& palette, const BoxF& ui_box, ShapeFactory factory);
+    AddShapeTool(ID id, IDocument& document, IPalette& palette, ShapeFactory factory);
     ~AddShapeTool() override = default;
 
     AddShapeTool(const AddShapeTool&)            = delete;
@@ -52,7 +51,6 @@ private:
     ID           id_;
     IDocument&   document_;
     IPalette&    palette_;
-    BoxF         ui_box_;
     ShapeFactory factory_;
 
     IDocument::TShape* shape_    = nullptr;
@@ -63,9 +61,8 @@ private:
 
 /* ====================== Implementation ====================== */
 
-inline AddShapeTool::AddShapeTool(ID id, IDocument& document, IPalette& palette, const BoxF& ui_box,
-                                  ShapeFactory factory) :
-    id_(id), document_(document), palette_(palette), ui_box_(ui_box), factory_(std::move(factory))
+inline AddShapeTool::AddShapeTool(ID id, IDocument& document, IPalette& palette, ShapeFactory factory) :
+    id_(id), document_(document), palette_(palette), factory_(std::move(factory))
 {
 }
 
@@ -115,11 +112,6 @@ inline bool AddShapeTool::processEvent(const IInputPump::Event& event)
 
 inline bool AddShapeTool::beginDrag(const Vec2F& global_pos)
 {
-    if (ui_box_.contains(global_pos))
-    {
-        return false;
-    }
-
     anchor_   = global_pos;
     shape_    = nullptr;
     shape_id_ = 0;

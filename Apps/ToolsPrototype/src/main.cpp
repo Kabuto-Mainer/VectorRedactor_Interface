@@ -42,9 +42,25 @@ int main(int argc, char** argv)
 
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "Loading plugins from '%s'", plugins_file.string().c_str());
 
-    std::string plugin_file;
-    while (list >> plugin_file)
+    std::string line;
+    while (std::getline(list, line))
     {
+        // обрезаем пробельные символы (включая '\r' от Windows-файлов)
+        const std::size_t first = line.find_first_not_of(" \t\r");
+        if (first == std::string::npos)
+        {
+            continue;
+        }
+
+        const std::size_t last        = line.find_last_not_of(" \t\r");
+        const std::string plugin_file = line.substr(first, last - first + 1);
+
+        // пропускаем строки-комментарии
+        if (plugin_file.front() == '#' || plugin_file.starts_with("//"))
+        {
+            continue;
+        }
+
         const std::filesystem::path plugin_path = app_dir / plugin_file;
 
         const ApplicationCore::Error error = ApplicationCore::instance().loadPackage(plugin_path.string());

@@ -120,12 +120,14 @@ std::unique_ptr<IUIFramework::SwitcherPool> createPaletteView(IUIFramework& fram
 
 } // namespace Kabuto
 
+
+
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
     ApplicationCore& core = ApplicationCore::instance();
 
-    IUIFramework* framework = nullptr;
-    if (core.queryInterface(IID_IUIFramework, reinterpret_cast<void**>(&framework)) !=
+    Kabuto::IUIFramework* framework = nullptr;
+    if (core.queryInterface(Kabuto::IID_IUIFramework, reinterpret_cast<void**>(&framework)) !=
             ApplicationCore::Error::SUCCESS ||
         framework == nullptr)
     {
@@ -143,7 +145,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
 
     Kabuto::Palette::CPalette& palette = Kabuto::Palette::CPalette::instance();
 
-    std::unique_ptr<IUIFramework::SwitcherPool> view = Kabuto::Palette::createPaletteView(*framework, palette);
+    std::unique_ptr<Kabuto::IUIFramework::SwitcherPool> view = Kabuto::Palette::createPaletteView(*framework, palette);
     if (!view)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Palette can't create its view");
@@ -158,7 +160,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     }
 
     const ApplicationCore::Error error =
-        core.registerInterface(IID_PALETTE, static_cast<void*>(static_cast<IPalette*>(&palette)));
+        core.registerInterface(Kabuto::IID_PALETTE, static_cast<void*>(static_cast<Kabuto::IPalette*>(&palette)));
     if (error != ApplicationCore::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to register IPalette: %s",

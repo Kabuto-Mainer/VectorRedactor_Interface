@@ -151,7 +151,7 @@ ApplicationCore::Error ApplicationCore::queryInterface(IID iid, void** interface
 
 void ApplicationCore::pushCommand(std::unique_ptr<ACommand> command)
 {
-    commands_.push_back(std::move(command));
+    commands_.push(std::move(command));
 }
 
 TObject* ApplicationCore::findObject(TObject::ID object_id) const

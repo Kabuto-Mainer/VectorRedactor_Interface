@@ -10,7 +10,6 @@
 #include "Interfaces/Package.hpp"
 #include "RectangleShape.hpp"
 #include "ToolIds.hpp"
-#include "Utils/BoxF.hpp"
 #include "Utils/Vec2F.hpp"
 
 #include <memory>
@@ -21,11 +20,6 @@
 namespace
 {
 
-constexpr float TOOL_BAR_LEFT   = 312.0F;
-constexpr float TOOL_BAR_TOP    = 24.0F;
-constexpr float TOOL_BAR_RIGHT  = 492.0F;
-constexpr float TOOL_BAR_BOTTOM = 228.0F;
-
 struct ToolBarItem
 {
     IToolManager::ATool::ID tool_id;
@@ -34,14 +28,9 @@ struct ToolBarItem
 
 constexpr ToolBarItem TOOL_BAR_ITEMS[] = {
     {Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, "assets/rectangle.png"},
-    {  Kabuto::Tools::ADD_ELLIPSE_TOOL_ID,   "assets/ellipse.png"},
-    {       Kabuto::Tools::DELETE_TOOL_ID,       "assets/pen.png"},
+    {Kabuto::Tools::ADD_ELLIPSE_TOOL_ID,   "assets/ellipse.png"},
+    {Kabuto::Tools::DELETE_TOOL_ID,        "assets/pen.png"},
 };
-
-BoxF toolBarBox()
-{
-    return BoxF(TOOL_BAR_LEFT, TOOL_BAR_TOP, TOOL_BAR_RIGHT, TOOL_BAR_BOTTOM);
-}
 
 template<typename T>
 T* queryInterface(const IID& iid)
@@ -87,19 +76,18 @@ ToolRegistrationGuard& registrationGuard()
     return guard;
 }
 
-std::unique_ptr<Kabuto::Tools::AddShapeTool> makeRectangleTool(IDocument& document, IPalette& palette,
-                                                               const BoxF& ui_box)
+std::unique_ptr<Kabuto::Tools::AddShapeTool> makeRectangleTool(IDocument& document, IPalette& palette)
 {
     return std::make_unique<Kabuto::Tools::AddShapeTool>(
-        Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, document, palette, ui_box, [](const Vec2F& size)
+        Kabuto::Tools::ADD_RECTANGLE_TOOL_ID, document, palette, [](const Vec2F& size)
         { return std::unique_ptr<IDocument::TShape>(std::make_unique<Kabuto::Document::RectangleShape>(size)); }
     );
 }
 
-std::unique_ptr<Kabuto::Tools::AddShapeTool> makeEllipseTool(IDocument& document, IPalette& palette, const BoxF& ui_box)
+std::unique_ptr<Kabuto::Tools::AddShapeTool> makeEllipseTool(IDocument& document, IPalette& palette)
 {
     return std::make_unique<Kabuto::Tools::AddShapeTool>(
-        Kabuto::Tools::ADD_ELLIPSE_TOOL_ID, document, palette, ui_box, [](const Vec2F& size)
+        Kabuto::Tools::ADD_ELLIPSE_TOOL_ID, document, palette, [](const Vec2F& size)
         { return std::unique_ptr<IDocument::TShape>(std::make_unique<Kabuto::Document::EllipseShape>(size)); }
     );
 }
@@ -125,23 +113,15 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     IToolBar*     tool_bar     = queryInterface<IToolBar>(IID_TOOL_BAR);
     IRenderer*    renderer     = queryInterface<IRenderer>(IID_RENDERER);
 
-    if (document == nullptr || tool_manager == nullptr)
-    {
-        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't find the document or the tool manager");
-        return false;
-    }
-
-    if (palette == nullptr || tool_bar == nullptr || renderer == nullptr)
+    if (document == nullptr || tool_manager == nullptr || palette == nullptr || tool_bar == nullptr || renderer == nullptr)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL,
-                             "Tools can't find the palette, the tool bar or the renderer");
+                             "Tools can't find the document, the tool manager, the palette, the tool bar or the renderer");
         return false;
     }
 
-    const BoxF ui_box = toolBarBox();
-
-    std::unique_ptr<Kabuto::Tools::AddShapeTool> rectangle = makeRectangleTool(*document, *palette, ui_box);
-    std::unique_ptr<Kabuto::Tools::AddShapeTool> ellipse   = makeEllipseTool(*document, *palette, ui_box);
+    std::unique_ptr<Kabuto::Tools::AddShapeTool> rectangle = makeRectangleTool(*document, *palette);
+    std::unique_ptr<Kabuto::Tools::AddShapeTool> ellipse   = makeEllipseTool(*document, *palette);
 
     if (tool_manager->addTool(std::move(rectangle)) != IToolManager::Error::SUCCESS)
     {
@@ -157,8 +137,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     }
     registrationGuard().remember(Kabuto::Tools::ADD_ELLIPSE_TOOL_ID);
 
-    auto delete_tool =
-        std::make_unique<Kabuto::Tools::DeleteShapeTool>(Kabuto::Tools::DELETE_TOOL_ID, *document, ui_box);
+    auto delete_tool = std::make_unique<Kabuto::Tools::DeleteShapeTool>(Kabuto::Tools::DELETE_TOOL_ID, *document);
     if (tool_manager->addTool(std::move(delete_tool)) != IToolManager::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't register the delete tool");

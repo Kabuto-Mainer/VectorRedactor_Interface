@@ -3,7 +3,6 @@
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IToolManager.hpp"
-#include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
@@ -25,7 +24,7 @@ namespace Tools
 class DeleteShapeTool final : public IToolManager::ATool
 {
 public:
-    DeleteShapeTool(ID id, IDocument& document, const BoxF& ui_box);
+    DeleteShapeTool(ID id, IDocument& document);
     ~DeleteShapeTool() override = default;
 
     DeleteShapeTool(const DeleteShapeTool&)            = delete;
@@ -39,13 +38,11 @@ public:
 private:
     ID         id_;
     IDocument& document_;
-    BoxF       ui_box_;
 }; // class DeleteShapeTool
 
 /* ====================== Implementation ====================== */
 
-inline DeleteShapeTool::DeleteShapeTool(ID id, IDocument& document, const BoxF& ui_box) :
-    id_(id), document_(document), ui_box_(ui_box)
+inline DeleteShapeTool::DeleteShapeTool(ID id, IDocument& document) : id_(id), document_(document)
 {
 }
 
@@ -63,11 +60,6 @@ inline bool DeleteShapeTool::processEvent(const IInputPump::Event& event)
     }
 
     const Vec2F position = mouse->cursorPos();
-    if (ui_box_.contains(position))
-    {
-        return false;
-    }
-
     const std::optional<TObject::ID> shape_id = document_.hitTest(position);
     if (shape_id.has_value())
     {

@@ -14,6 +14,9 @@
 #include <variant>
 #include <vector>
 
+namespace Kabuto
+{
+
 constexpr IID IID_IUIFramework = 0x00'06;
 
 class IUIFramework
@@ -164,3 +167,5 @@ struct IUIFramework::WindowMenuDescription
     std::optional<std::string>  label;
     Role                        role = Role::DEFAULT;
 }; // struct WindowMenuDescription
+
+}; // namespace Kabuto

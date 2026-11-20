@@ -1,5 +1,5 @@
 #include "Core/ApplicationCore.hpp"
-#include "IUIFramework.hpp"
+#include "export/IUIFramework.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/ACommand.hpp"
@@ -7,6 +7,7 @@
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -22,6 +23,9 @@
 #include <utility>
 #include <variant>
 #include <vector>
+
+namespace Kabuto
+{
 
 namespace UI
 {
@@ -105,17 +109,17 @@ Palette derive(const IRenderer::Color& base, const IRenderer::Color& surface, co
 
 struct Theme
 {
-    IRenderer::Color                                                                canvas;
-    IRenderer::Color                                                                surface;
-    IRenderer::Color                                                                accent;
-    std::array<IRenderer::Color, static_cast<std::size_t>(IUIFramework::Role::MAX)> role_bases;
+    IRenderer::Color                                                       canvas;
+    IRenderer::Color                                                       surface;
+    IRenderer::Color                                                       accent;
+    std::array<Palette, static_cast<std::size_t>(IUIFramework::Role::MAX)> palettes;
 
-    Palette palette(IUIFramework::IUIFramework::Role role) const;
+    Palette palette(IUIFramework::Role role) const;
 };
 
 inline Palette Theme::palette(IUIFramework::Role role) const
 {
-    return derive(role_bases[static_cast<std::size_t>(role)], surface, canvas);
+    return palettes[static_cast<std::size_t>(role)];
 }
 
 Theme makeTheme(const IRenderer::Color& primary, const IRenderer::Color& secondary, const IRenderer::Color& neutral,
@@ -126,8 +130,18 @@ Theme makeTheme(const IRenderer::Color& primary, const IRenderer::Color& seconda
     const IRenderer::Color surface = mix(neutral, white, dark ? DARK_SURFACE_LIFT : LIGHT_SURFACE_LIFT);
     const IRenderer::Color button  = mix(neutral, secondary, SECONDARY_TINT);
 
+    const std::array<IRenderer::Color, static_cast<std::size_t>(IUIFramework::Role::MAX)> role_bases{
+        button, primary, unical
+    };
+
+    std::array<Palette, static_cast<std::size_t>(IUIFramework::Role::MAX)> palettes{};
+    for (std::size_t index = 0; index < role_bases.size(); ++index)
+    {
+        palettes[index] = derive(role_bases[index], surface, neutral);
+    }
+
     return Theme{
-        neutral, surface, accent, {button, primary, unical}
+        neutral, surface, accent, palettes
     };
 }
 
@@ -135,6 +149,7 @@ struct RenderContext
 {
     const Theme*                     theme = nullptr;
     std::optional<IRenderer::FontID> font;
+    mutable IRenderer*               renderer = nullptr;
 };
 
 BoxF makeBox(const Vec2F& pos, const Vec2F& size)
@@ -263,6 +278,15 @@ IRenderer* queryRenderer()
     return renderer;
 }
 
+IRenderer* acquireRenderer(const RenderContext& context)
+{
+    if (context.renderer == nullptr)
+    {
+        context.renderer = queryRenderer();
+    }
+    return context.renderer;
+}
+
 const IInputPump::EventMouse* asMouse(const IInputPump::Event& event)
 {
     return std::get_if<IInputPump::EventMouse>(&event);
@@ -301,7 +325,15 @@ void drawText(IRenderer* renderer, const RenderContext& context, const std::stri
     {
         return;
     }
-    renderer->renderText(color, box, text, IRenderer::TextFormat{.font = *context.font, .font_size = FONT_SIZE});
+    renderer->renderText(color, box, text,
+                         IRenderer::TextFormat{.font = *context.font,
+                                               .font_size = FONT_SIZE,
+                                               .overflow_action = IRenderer::TextOverflowAction::CUTBYBOX,
+                                               .h_align = IRenderer::TextHAlign::LEFT,
+                                               .w_align = IRenderer::TextWAlign::TOP,
+                                               .padding = 0.0F,
+                                               .line_spacing = 0.0F,
+                                               .wrap = false});
 }
 
 void drawContent(IRenderer* renderer, const RenderContext& context, const std::optional<IRenderer::TextureID>& icon,
@@ -316,6 +348,73 @@ void drawContent(IRenderer* renderer, const RenderContext& context, const std::o
     if (text)
     {
         drawText(renderer, context, *text, color, box);
+    }
+}
+
+BoxF insetBox(const BoxF& box, float inset)
+{
+    return makeBox(box.topLeft() + Vec2F(inset, inset), box.size() - Vec2F(2.0F * inset));
+}
+
+BoxF squareBoxCentered(const BoxF& box)
+{
+    const float side = std::min(box.size().x(), box.size().y());
+    BoxF        square(Vec2F(side, side));
+    square.setCenter(box.center());
+    return square;
+}
+
+BoxF leftSquareBox(const BoxF& box)
+{
+    const float side = std::min(box.size().x(), box.size().y());
+    const float top  = box.center().y() - side / 2.0F;
+    return makeBox(Vec2F(box.left(), top), Vec2F(side, side));
+}
+
+void drawButtonText(IRenderer* renderer, const RenderContext& context, const std::string& text,
+                    const IRenderer::Color& color, const BoxF& box)
+{
+    if (!context.font)
+    {
+        return;
+    }
+    renderer->renderText(color, box, text,
+                         IRenderer::TextFormat{.font = *context.font,
+                                               .font_size = FONT_SIZE,
+                                               .overflow_action = IRenderer::TextOverflowAction::TAILREPLACE,
+                                               .h_align = IRenderer::TextHAlign::CENTER,
+                                               .w_align = IRenderer::TextWAlign::CENTER,
+                                               .padding = PADDING,
+                                               .line_spacing = 0.0F,
+                                               .wrap = false});
+}
+
+void drawButtonContent(IRenderer* renderer, const RenderContext& context,
+                       const std::optional<IRenderer::TextureID>& icon, const std::optional<std::string>& text,
+                       const IRenderer::Color& color, const BoxF& box)
+{
+    const BoxF inner = insetBox(box, PADDING);
+
+    if (icon && text)
+    {
+        const BoxF icon_box = leftSquareBox(inner);
+        renderer->renderTexture(*icon, icon_box, NO_ANGLE);
+
+        const BoxF text_box =
+            makeBox(Vec2F(icon_box.right(), box.top()), Vec2F(box.right() - icon_box.right(), box.size().y()));
+        drawButtonText(renderer, context, *text, color, text_box);
+        return;
+    }
+
+    if (icon)
+    {
+        renderer->renderTexture(*icon, squareBoxCentered(inner), NO_ANGLE);
+        return;
+    }
+
+    if (text)
+    {
+        drawButtonText(renderer, context, *text, color, box);
     }
 }
 
@@ -370,14 +469,41 @@ enum class PressResult
 class PressTracker
 {
 public:
+    PressTracker()                               = default;
+    PressTracker(const PressTracker&)            = delete;
+    PressTracker& operator=(const PressTracker&) = delete;
+    ~PressTracker();
+
     PressResult process(const BoxF& bounds, const IInputPump::Event& event);
+
+    void reset();
 
     IRenderer::Color background(const IRenderer::Color& idle, const Palette& palette) const;
 
 private:
+    inline static PressTracker* active_ = nullptr;
+
     bool hovered_ = false;
     bool pressed_ = false;
 };
+
+inline PressTracker::~PressTracker()
+{
+    if (active_ == this)
+    {
+        active_ = nullptr;
+    }
+}
+
+inline void PressTracker::reset()
+{
+    if (active_ == this)
+    {
+        active_ = nullptr;
+    }
+    hovered_ = false;
+    pressed_ = false;
+}
 
 inline PressResult PressTracker::process(const BoxF& bounds, const IInputPump::Event& event)
 {
@@ -393,14 +519,34 @@ inline PressResult PressTracker::process(const BoxF& bounds, const IInputPump::E
     switch (mouse->type())
     {
         case IInputPump::EventMouse::Type::LEFT_BUTTON_PRESSING:
-            if (inside)
+            if (!inside)
             {
-                pressed_ = true;
-                return PressResult::CONSUMED;
+                if (active_ == this)
+                {
+                    active_ = nullptr;
+                    pressed_ = false;
+                }
+                return PressResult::IGNORED;
             }
-            return PressResult::IGNORED;
+
+            if (active_ != nullptr && active_ != this)
+            {
+                pressed_ = false;
+                return PressResult::IGNORED;
+            }
+
+            active_  = this;
+            pressed_ = true;
+            return PressResult::CONSUMED;
 
         case IInputPump::EventMouse::Type::LEFT_BUTTON_RELEASING:
+            if (active_ != this)
+            {
+                pressed_ = false;
+                return PressResult::IGNORED;
+            }
+
+            active_ = nullptr;
             if (!pressed_)
             {
                 return PressResult::IGNORED;
@@ -415,7 +561,7 @@ inline PressResult PressTracker::process(const BoxF& bounds, const IInputPump::E
 
 inline IRenderer::Color PressTracker::background(const IRenderer::Color& idle, const Palette& palette) const
 {
-    if (hovered_ && pressed_)
+    if (pressed_)
     {
         return palette.pressed;
     }
@@ -430,6 +576,7 @@ void runAction(IUIFramework::Action& action)
 {
     for (auto& command : action.actions)
     {
+        clone(command)
         command->execute();
     }
     for (auto& callback : action.callbacks)
@@ -467,6 +614,7 @@ private:
     IUIFramework::Role                  role_;
     IUIFramework::Action                on_press_;
     PressTracker                        press_;
+    TObject*                            parent_ = nullptr;
 };
 
 inline ButtonObject::ButtonObject(const RenderContext& context, const BoxF& bounds, std::optional<std::string> text,
@@ -475,10 +623,17 @@ inline ButtonObject::ButtonObject(const RenderContext& context, const BoxF& boun
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_press_(std::move(on_press))
 {
     setBox(bounds);
+    parent_ = parent();
 }
 
 inline bool ButtonObject::processEvent(const IInputPump::Event& event)
 {
+    if (parent() != parent_)
+    {
+        parent_ = parent();
+        press_.reset();
+    }
+
     switch (press_.process(globalBounds(*this), event))
     {
         case PressResult::CLICKED:
@@ -493,7 +648,7 @@ inline bool ButtonObject::processEvent(const IInputPump::Event& event)
 
 inline void ButtonObject::render()
 {
-    IRenderer* renderer = queryRenderer();
+    IRenderer* renderer = acquireRenderer(context_);
     if (!renderer)
     {
         return;
@@ -502,7 +657,7 @@ inline void ButtonObject::render()
     const Palette palette = context_.theme->palette(role_);
     const BoxF    bounds  = globalBounds(*this);
     drawPanel(renderer, press_.background(palette.base, palette), palette.border, bounds);
-    drawContent(renderer, context_, icon_, text_, palette.text, bounds);
+    drawButtonContent(renderer, context_, icon_, text_, palette.text, bounds);
 }
 
 class SwitcherObject final : public IUIFramework::Switcher
@@ -588,7 +743,7 @@ inline bool SwitcherObject::processEvent(const IInputPump::Event& event)
 
 inline void SwitcherObject::render()
 {
-    IRenderer* renderer = queryRenderer();
+    IRenderer* renderer = acquireRenderer(context_);
     if (!renderer)
     {
         return;
@@ -640,7 +795,7 @@ inline bool SwitcherPoolObject::processEvent(const IInputPump::Event& event)
 
 inline void SwitcherPoolObject::render()
 {
-    IRenderer* renderer = queryRenderer();
+    IRenderer* renderer = acquireRenderer(context_);
     if (!renderer)
     {
         return;
@@ -708,7 +863,7 @@ inline bool ButtonPoolObject::processEvent(const IInputPump::Event& event)
 
 inline void ButtonPoolObject::render()
 {
-    IRenderer* renderer = queryRenderer();
+    IRenderer* renderer = acquireRenderer(context_);
     if (!renderer)
     {
         return;
@@ -794,7 +949,7 @@ inline bool ContextMenuObject::processEvent(const IInputPump::Event& event)
 
 inline void ContextMenuObject::render()
 {
-    IRenderer* renderer = queryRenderer();
+    IRenderer* renderer = acquireRenderer(context_);
     if (!visible_ || !renderer)
     {
         return;
@@ -892,7 +1047,7 @@ inline bool WindowMenuObject::processEvent(const IInputPump::Event& event)
 
 inline void WindowMenuObject::render()
 {
-    IRenderer* renderer = queryRenderer();
+    IRenderer* renderer = acquireRenderer(context_);
     if (!renderer)
     {
         return;
@@ -1041,6 +1196,8 @@ inline bool UIWi::setFont(const std::string& path)
 
 } // namespace UI
 
+} // namespace Kabuto
+
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
     IRenderer* renderer = nullptr;
@@ -1052,11 +1209,11 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    UI::UIWi& framework = UI::UIWi::instance();
+    Kabuto::UI::UIWi& framework = Kabuto::UI::UIWi::instance();
 
     const ApplicationCore::Error error =
-        ApplicationCore::instance().registerInterface(IID_IUIFramework,
-                                                      reinterpret_cast<void*>(static_cast<IUIFramework*>(&framework)));
+        ApplicationCore::instance().registerInterface(Kabuto::IID_IUIFramework,
+                                                      reinterpret_cast<void*>(static_cast<Kabuto::IUIFramework*>(&framework)));
     if (error != ApplicationCore::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to register IUIFramework: %s",
