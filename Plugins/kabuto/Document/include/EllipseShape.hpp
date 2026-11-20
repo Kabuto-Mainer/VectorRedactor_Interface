@@ -66,8 +66,9 @@ inline void EllipseShape::render()
 
 inline bool EllipseShape::hitTest(Vec2F const& pos) const
 {
-    /* NOTE: In render(), the size of BoxF is defined by scaling(), so the semi-axes of the ellipse are equal to 0.5 * scaling().
-             After mapGlobalToLocal(pos), a point on the boundary of the ellipse has a length of 0.5, and after multiplication by 2.0F, it becomes exactly 1.0F.
+    /* NOTE: In render(), the size of BoxF is defined by scaling(), so the semi-axes of the ellipse are equal to 0.5 *
+       scaling(). After mapGlobalToLocal(pos), a point on the boundary of the ellipse has a length of 0.5, and after
+       multiplication by 2.0F, it becomes exactly 1.0F.
     */
     return (mapGlobalToLocal(pos) * 2.0F).len2() <= 1.0F;
 }
@@ -78,8 +79,10 @@ inline BoxF EllipseShape::axesAlignedBoundingBox() const
              After applying transform(), its X coordinate is tx + 0.5 * (m00 * cos(t) + m01 * sin(t)),
              whose maximum deviation from tx is 0.5 * sqrt(m00^2 + m01^2) (and analogously for Y).
     */
-    Vec2F const extent{0.5F * std::sqrt((transform()[0][0] * transform()[0][0]) + (transform()[0][1] * transform()[0][1])),
-                       0.5F * std::sqrt((transform()[1][0] * transform()[1][0]) + (transform()[1][1] * transform()[1][1]))};
+    Vec2F const extent{
+        0.5F * std::sqrt((transform()[0][0] * transform()[0][0]) + (transform()[0][1] * transform()[0][1])),
+        0.5F * std::sqrt((transform()[1][0] * transform()[1][0]) + (transform()[1][1] * transform()[1][1]))
+    };
 
     return BoxF{translation().x() - extent.x(), translation().y() - extent.y(), translation().x() + extent.x(),
                 translation().y() + extent.y()};
