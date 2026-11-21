@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <memory>
 
-constexpr static const IID IID_TOOL_MANAGER = 3;
+constexpr static IID IID_TOOL_MANAGER = 3;
 
 class IToolManager
 {
