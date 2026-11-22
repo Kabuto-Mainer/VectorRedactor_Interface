@@ -1,0 +1,175 @@
+
+#include "include/ShapeFactory.hpp"
+#include "Core/ApplicationCore.hpp"
+#include "Interfaces/IDocument.hpp"
+
+#include <fstream>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace Kabuto
+{
+
+namespace ShapeFactory
+{
+
+namespace
+{
+
+class CSaveVisitor final : public IDocument::Visitor
+{
+public:
+    using Writer = std::function<bool(IDocument::TShape&, std::ostream&)>;
+
+    CSaveVisitor(Writer writer, std::ostream& stream) : writer_(std::move(writer)), stream_(stream)
+    {
+    }
+
+    bool visit(IDocument::TShape& shape) override
+    {
+        return writer_(shape, stream_);
+    }
+
+    bool visit(const IDocument::TShape& shape) override
+    {
+        return writer_(const_cast<IDocument::TShape&>(shape), stream_);
+    }
+
+private:
+    Writer        writer_;
+    std::ostream& stream_;
+}; // class CSaveVisitor
+
+} // namespace
+
+std::unique_ptr<std::vector<std::unique_ptr<IDocument::TShape>>> CShapeFactory::loadFrom(const std::string& path) const
+{
+    std::ifstream file{path};
+    if (!file.is_open())
+    {
+        ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "File %s not founded", path.c_str());
+        return std::make_unique<std::vector<std::unique_ptr<IDocument::TShape>>>();
+    }
+
+    auto shapes = std::make_unique<std::vector<std::unique_ptr<IDocument::TShape>>>();
+
+    file >> std::ws;
+    while (file.peek() != std::char_traits<char>::eof())
+    {
+        IDocument::TShape::TypeID type_id = 0;
+        if (!(file >> type_id))
+        {
+            ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "Invalid shape IID in file '%s'",
+                                            path.c_str());
+            break;
+        }
+
+        const auto found = map_.find(type_id);
+        if (found == map_.end())
+        {
+            ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "Shape IID %llu is not registered",
+                                            static_cast<unsigned long long>(type_id));
+            break;
+        }
+
+        std::unique_ptr<IDocument::TShape> shape = found->second.loader_(file);
+        if (!shape)
+        {
+            ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR,
+                                            "Failed to load shape with IID %llu from '%s'",
+                                            static_cast<unsigned long long>(type_id), path.c_str());
+            break;
+        }
+
+        shapes->push_back(std::move(shape));
+        file >> std::ws;
+    }
+
+    if (file.bad())
+    {
+        ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "Failed to read file '%s'", path.c_str());
+    }
+
+    return shapes;
+}
+
+void CShapeFactory::saveTo(const std::string& path) const
+{
+    IDocument*                   document = nullptr;
+    const ApplicationCore::Error error =
+        ApplicationCore::instance().queryInterface(IID_IDOCUMENT, reinterpret_cast<void**>(&document));
+    if (error != ApplicationCore::Error::SUCCESS || document == nullptr)
+    {
+        ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "Shape factory can't find the document: %s",
+                                        ApplicationCore::strError(error));
+        return;
+    }
+
+    std::ofstream file{path};
+    if (!file.is_open())
+    {
+        ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "File '%s' can't be opened for writing",
+                                        path.c_str());
+        return;
+    }
+
+    CSaveVisitor visitor(
+        [this](IDocument::TShape& shape, std::ostream& stream) -> bool
+        {
+            const auto found = map_.find(shape.tid());
+            if (found == map_.end())
+            {
+                ApplicationCore::instance().log(ApplicationCore::LogLevel::WARNING,
+                                                "Shape IID %llu is not registered and will be skipped",
+                                                static_cast<unsigned long long>(shape.tid()));
+                return true;
+            }
+
+            stream << shape.tid() << ' ';
+            found->second.saver_(shape, stream);
+            stream << '\n';
+
+            if (!stream)
+            {
+                ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "Failed to save shape with IID %llu",
+                                                static_cast<unsigned long long>(shape.tid()));
+                return false;
+            }
+
+            return true;
+        },
+        file
+    );
+
+    document->accept(visitor);
+
+    if (!file)
+    {
+        ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "Failed to write file '%s'", path.c_str());
+    }
+}
+
+void CShapeFactory::registry(IDocument::TShape::TypeID type_id, Loader loader, Saver saver)
+{
+    if (!loader || !saver)
+    {
+        ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR,
+                                        "Can't register shape IID %llu: loader or saver is empty",
+                                        static_cast<unsigned long long>(type_id));
+        return;
+    }
+
+    const auto result = map_.insert_or_assign(type_id, Item{std::move(loader), std::move(saver)});
+    if (!result.second)
+    {
+        ApplicationCore::instance().log(ApplicationCore::LogLevel::WARNING,
+                                        "Shape IID %llu is already registered; loader and saver are replaced",
+                                        static_cast<unsigned long long>(type_id));
+    }
+}
+
+} // namespace ShapeFactory
+
+} // namespace Kabuto
