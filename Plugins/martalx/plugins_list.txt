@@ -1,0 +1,8 @@
+./libSDL_GUIEngine.so
+./libDesktop.so
+./libDocument.so
+./libToolManager.so
+./libToolBar.so
+./libTools.so
+./libMainPlugin.so
+
