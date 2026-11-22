@@ -46,16 +46,16 @@ private:
 
 } // namespace
 
-std::unique_ptr<std::vector<std::unique_ptr<IDocument::TShape>>> CShapeFactory::loadFrom(const std::string& path) const
+bool CShapeFactory::loadFrom(const std::string& path) const
 {
     std::ifstream file{path};
     if (!file.is_open())
     {
         ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "File %s not founded", path.c_str());
-        return std::make_unique<std::vector<std::unique_ptr<IDocument::TShape>>>();
+        return false;
     }
 
-    auto shapes = std::make_unique<std::vector<std::unique_ptr<IDocument::TShape>>>();
+    auto shapes = std::vector<std::unique_ptr<IDocument::TShape>>();
 
     file >> std::ws;
     while (file.peek() != std::char_traits<char>::eof())
@@ -76,7 +76,7 @@ std::unique_ptr<std::vector<std::unique_ptr<IDocument::TShape>>> CShapeFactory::
             break;
         }
 
-        std::unique_ptr<IDocument::TShape> shape = found->second.loader_(file);
+        std::unique_ptr<IDocument::TShape> shape = found->second.loader(file);
         if (!shape)
         {
             ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR,
@@ -85,19 +85,32 @@ std::unique_ptr<std::vector<std::unique_ptr<IDocument::TShape>>> CShapeFactory::
             break;
         }
 
-        shapes->push_back(std::move(shape));
+        shapes.push_back(std::move(shape));
         file >> std::ws;
     }
 
     if (file.bad())
     {
         ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "Failed to read file '%s'", path.c_str());
+        return false;
     }
 
-    return shapes;
+    IDocument * document = nullptr;
+    auto result = ApplicationCore::instance().queryInterface(IID_IDOCUMENT, reinterpret_cast<void**>(&document));
+    if (result != ApplicationCore::Error::SUCCESS)
+    {
+        ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "ShapeFactory can't find Document to load shapes");
+        return false;
+    }
+
+    for (auto & it : shapes)
+    {
+        document->addShape(std::move(it));
+    }
+    return true;
 }
 
-void CShapeFactory::saveTo(const std::string& path) const
+bool CShapeFactory::saveTo(const std::string& path) const
 {
     IDocument*                   document = nullptr;
     const ApplicationCore::Error error =
@@ -106,7 +119,7 @@ void CShapeFactory::saveTo(const std::string& path) const
     {
         ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "Shape factory can't find the document: %s",
                                         ApplicationCore::strError(error));
-        return;
+        return false;
     }
 
     std::ofstream file{path};
@@ -114,7 +127,7 @@ void CShapeFactory::saveTo(const std::string& path) const
     {
         ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "File '%s' can't be opened for writing",
                                         path.c_str());
-        return;
+        return false;
     }
 
     CSaveVisitor visitor(
@@ -130,7 +143,7 @@ void CShapeFactory::saveTo(const std::string& path) const
             }
 
             stream << shape.tid() << ' ';
-            found->second.saver_(shape, stream);
+            found->second.saver(shape, stream);
             stream << '\n';
 
             if (!stream)
@@ -150,7 +163,9 @@ void CShapeFactory::saveTo(const std::string& path) const
     if (!file)
     {
         ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "Failed to write file '%s'", path.c_str());
+        return false;
     }
+    return true;
 }
 
 void CShapeFactory::registry(IDocument::TShape::TypeID type_id, Loader loader, Saver saver)

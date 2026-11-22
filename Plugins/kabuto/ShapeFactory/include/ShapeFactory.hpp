@@ -16,8 +16,8 @@ namespace ShapeFactory
 class CShapeFactory final : public IShapeFactory
 {
 public:
-    std::unique_ptr<std::vector<std::unique_ptr<IDocument::TShape>>> loadFrom(const std::string & path) const override;
-    void saveTo(const std::string & path) const override;
+    bool loadFrom(const std::string & path) const override;
+    bool saveTo(const std::string & path) const override;
     void registry(IDocument::TShape::TypeID type_id, Loader loader, Saver saver) override;
 
     static CShapeFactory& instance();
@@ -25,8 +25,8 @@ public:
 private:
     struct Item
     {
-        Loader loader_;
-        Saver saver_;
+        Loader loader;
+        Saver saver;
     }; // struct Item
 
     std::map<IDocument::TShape::TypeID, Item> map_;
