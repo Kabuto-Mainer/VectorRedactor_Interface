@@ -27,11 +27,11 @@ public:
     void render() override;
 
     bool                              hitTest(Vec2F const& pos) const override;
-    virtual BoxF                      axesAlignedBoundingBox() const override;
-    virtual IDocument::TShape::TypeID tid() const override;
+    BoxF                      axesAlignedBoundingBox() const override;
+    IDocument::TShape::TypeID tid() const override;
 
-    virtual Error queryComponent(IDocument::AShapeComponent::ID coid, IDocument::AShapeComponent** component) override;
-    virtual Error queryComponent(IDocument::AShapeComponent::ID     coid,
+    Error queryComponent(IDocument::AShapeComponent::ID coid, IDocument::AShapeComponent** component) override;
+    Error queryComponent(IDocument::AShapeComponent::ID     coid,
                                  IDocument::AShapeComponent const** component) const override;
 };
 
