@@ -69,6 +69,9 @@ while IFS= read -r line || [ -n "$line" ]; do
     echo "------------------------------------------------------------"
 done < "$LIST"
 
+echo "[BUILD Launcher]"
+make
+
 echo
 echo "Итог: собрано $built, пропущено $skipped, ошибок $failed"
 
