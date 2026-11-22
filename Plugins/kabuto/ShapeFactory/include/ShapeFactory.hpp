@@ -20,6 +20,8 @@ public:
     void saveTo(const std::string & path) const override;
     void registry(IDocument::TShape::TypeID type_id, Loader loader, Saver saver) override;
 
+    static CShapeFactory& instance();
+
 private:
     struct Item
     {

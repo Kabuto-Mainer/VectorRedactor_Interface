@@ -2,6 +2,8 @@
 #include "include/ShapeFactory.hpp"
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
+#include "Interfaces/Package.hpp"
+#include "export/IShapeFactory.hpp"
 
 #include <fstream>
 #include <ostream>
@@ -170,6 +172,36 @@ void CShapeFactory::registry(IDocument::TShape::TypeID type_id, Loader loader, S
     }
 }
 
+CShapeFactory& CShapeFactory::instance()
+{
+    static CShapeFactory factory;
+    return factory;
+}
+
 } // namespace ShapeFactory
 
 } // namespace Kabuto
+
+
+extern "C" bool INIT_PACKAGE_FUNC_NAME()
+{
+    ApplicationCore& core = ApplicationCore::instance();
+
+    IDocument* document = nullptr;
+    if (core.queryInterface(IID_IDOCUMENT, reinterpret_cast<void**>(&document)) != ApplicationCore::Error::SUCCESS ||
+        document == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "ShapeFactory can't find the document");
+        return false;
+    }
+
+    const ApplicationCore::Error error =
+        core.registerInterface(Kabuto::IID_ISHAPE_FACTORY, static_cast<void*>(static_cast<Kabuto::IShapeFactory*>(&Kabuto::ShapeFactory::CShapeFactory::instance())));
+    if (error != ApplicationCore::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to register ShapeFactory: %s",
+                             ApplicationCore::strError(error));
+        return false;
+    }
+    return true;
+}
