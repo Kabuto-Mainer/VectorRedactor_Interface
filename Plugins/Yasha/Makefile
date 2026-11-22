@@ -1,11 +1,11 @@
 CXX := clang++
-CPPFLAGS := -I../../SDK -I. -IToolBar/include -IDesktop/include -IDocument/include -IToolManager/include
+CPPFLAGS := -I../../SDK -I. -IToolBar/include -IDesktop/include -IDocument/include -IPalette/include -IToolManager/include
 CXXFLAGS := -std=c++23 -g -Wall -Wextra -MMD -MP
 LDFLAGS := -rdynamic
-LDLIBS := -ldl
+LDLIBS := -ldl -ljsoncpp
 
 SOURCES := Launcher.cpp Desktop/src/Desktop.cpp Document/src/Document.cpp UIFramework/Button.cpp UIFramework/ButtonPool.cpp \
-           UIFramework/ColorButton.cpp UIFramework/IconButton.cpp
+           UIFramework/ColorButton.cpp UIFramework/IconButton.cpp Palette/src/Palette.cpp
 OBJECTS := $(addprefix build/,$(SOURCES:.cpp=.o)) build/Core/ApplicationCore.o
 DEPS := $(OBJECTS:.o=.d)
 

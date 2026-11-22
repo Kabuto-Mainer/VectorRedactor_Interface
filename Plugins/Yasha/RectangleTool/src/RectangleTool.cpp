@@ -1,5 +1,6 @@
 #include "RectangleTool.hpp"
-
+#include "Palette.hpp"
+#include "QueryInterface.hpp"
 #include "RectangleShape.hpp"
 
 #include <algorithm>
@@ -125,8 +126,10 @@ void RectangleTool::cancelDrag()
 
 void RectangleTool::createShape(const Vec2F& center, const Vec2F& size)
 {
+    auto palette = queryInterface<IPalette>(IID_PALETTE);
     auto shape = std::make_unique<RectangleShape>(size);
     shape->setTranslation(center);
+    shape->setColor(palette->selectedColor());
     preview_ = shape.get();
     document_.addShape(std::move(shape));
 }

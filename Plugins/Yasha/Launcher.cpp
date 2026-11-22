@@ -1,6 +1,7 @@
 #include "Desktop.hpp"
 #include "Document.hpp"
 #include "Core/ApplicationCore.hpp"
+#include "Palette.hpp"
 
 #include <filesystem>
 #include <fstream> 
@@ -47,6 +48,13 @@ int main() {
                              ApplicationCore::strError(error));
         return EXIT_FAILURE;
     }
+    error = Yasha::initializePalette(BoxF(Vec2F{1'000.0F, 1'000.0F}));
+    if (error != ApplicationCore::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Palette initialization failed: %s",
+                             ApplicationCore::strError(error));
+        return EXIT_FAILURE;
+    }
     std::string            plugin_file;
 
     // TODO: подумать можно ли вынести в отдельный метод
@@ -62,6 +70,22 @@ int main() {
         }
 
         ApplicationCore::log(ApplicationCore::LogLevel::OK, "'%s' loaded", plugin_file.c_str());
+    }
+
+    if (std::filesystem::exists("drawing.json"))
+    {
+        IDocument* document = nullptr;
+        auto& core = ApplicationCore::instance();
+        if (core.queryInterface(IID_IDOCUMENT, reinterpret_cast<void**>(&document)) != ApplicationCore::Error::SUCCESS ||
+            document == nullptr)
+        {
+            return EXIT_FAILURE;
+        }
+        auto* yasha_document = dynamic_cast<Yasha::Document*>(document);
+        if (yasha_document == nullptr || !yasha_document->load())
+        {
+            return EXIT_FAILURE;
+        }
     }
 
     error = ApplicationCore::instance().run();

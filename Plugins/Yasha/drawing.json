@@ -1,0 +1,81 @@
+{
+	"shapes" : 
+	[
+		{
+			"color" : 
+			[
+				0,
+				0,
+				0,
+				255
+			],
+			"rotation" : 0.0,
+			"scale_x" : 156.5,
+			"scale_y" : 238.0,
+			"type" : "rectangle",
+			"x" : 312.5,
+			"y" : 461.0
+		},
+		{
+			"color" : 
+			[
+				0,
+				0,
+				0,
+				255
+			],
+			"rotation" : 0.0,
+			"scale_x" : 144.0,
+			"scale_y" : 107.5,
+			"type" : "ellipse",
+			"x" : 644.0,
+			"y" : 199.5
+		},
+		{
+			"color" : 
+			[
+				255,
+				255,
+				255,
+				255
+			],
+			"rotation" : 0.0,
+			"scale_x" : 105.0,
+			"scale_y" : 185.0,
+			"type" : "ellipse",
+			"x" : 719.0,
+			"y" : 570.0
+		},
+		{
+			"color" : 
+			[
+				255,
+				255,
+				255,
+				255
+			],
+			"rotation" : 0.0,
+			"scale_x" : 180.0,
+			"scale_y" : 71.0,
+			"type" : "ellipse",
+			"x" : 388.0,
+			"y" : 848.0
+		},
+		{
+			"color" : 
+			[
+				255,
+				255,
+				255,
+				255
+			],
+			"rotation" : 0.0,
+			"scale_x" : 160.5,
+			"scale_y" : 108.0,
+			"type" : "ellipse",
+			"x" : 710.5,
+			"y" : 877.0
+		}
+	],
+	"version" : 1
+}

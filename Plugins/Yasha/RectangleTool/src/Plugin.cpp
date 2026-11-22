@@ -1,4 +1,6 @@
 #include "RectangleTool.hpp"
+#include "RectangleShape.hpp"
+#include "Document.hpp"
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
@@ -6,23 +8,13 @@
 #include "Interfaces/IToolBar.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
+#include "QueryInterface.hpp"
 #include "ToolBarIID.hpp"
 
 #include <memory>
 
 namespace
 {
-
-template<typename T>
-T* queryInterface(IID iid)
-{
-    void* raw = nullptr;
-    if (ApplicationCore::instance().queryInterface(iid, &raw) != ApplicationCore::Error::SUCCESS)
-    {
-        return nullptr;
-    }
-    return static_cast<T*>(raw);
-}
 
 class ToolRegistration final
 {
@@ -56,7 +48,8 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     auto* toolbar = queryInterface<IToolBar>(IID_TOOL_BAR);
     auto* renderer = queryInterface<IRenderer>(IID_RENDERER);
 
-    if (document == nullptr || manager == nullptr || toolbar == nullptr || renderer == nullptr)
+    auto* yasha_document = dynamic_cast<Yasha::Document*>(document);
+    if (yasha_document == nullptr || manager == nullptr || toolbar == nullptr || renderer == nullptr)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL,
                              "Rectangle tool requires Document, ToolManager, ToolBar and Render");
@@ -68,6 +61,20 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     if (!texture)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Rectangle tool icon could not be loaded");
+        return false;
+    }
+
+    if (!yasha_document->registerShapeType(
+            Yasha::Tools::RectangleShape::TYPE_ID, "rectangle",
+            [](IRenderer::Color color) -> std::unique_ptr<IDocument::TShape>
+            {
+                auto shape = std::make_unique<Yasha::Tools::RectangleShape>(Vec2F{2.0F, 2.0F});
+                shape->setColor(color);
+                return shape;
+            },
+            [](const IDocument::TShape& shape)
+            { return static_cast<const Yasha::Tools::RectangleShape&>(shape).color(); }))
+    {
         return false;
     }
 

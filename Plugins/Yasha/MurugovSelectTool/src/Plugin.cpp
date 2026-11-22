@@ -5,6 +5,7 @@
 #include "Interfaces/IToolBar.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
+#include "QueryInterface.hpp"
 #include "SelectTool.hpp"
 #include "ToolBarIID.hpp"
 #include "ToolManager.hpp"
@@ -13,17 +14,6 @@
 
 namespace
 {
-
-template<typename T>
-T* queryInterface(IID iid)
-{
-    void* result = nullptr;
-    if (ApplicationCore::instance().queryInterface(iid, &result) != ApplicationCore::Error::SUCCESS)
-    {
-        return nullptr;
-    }
-    return static_cast<T*>(result);
-}
 
 class SelectOverlay final : public TObject
 {

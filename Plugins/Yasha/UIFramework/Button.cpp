@@ -14,6 +14,12 @@ Button::Button(const Vec2F& pos, const Vec2F& size, ACommand& command, IRenderer
     setBox(BoxF(pos, pos + size));
 }
 
+Button::Button(const BoxF& box, ACommand& command, IRenderer::Color color, ButtonState state) :
+    command_(command), color_(color), state_(state)
+{
+    setBox(box);
+}
+
 bool Button::processEvent(const IInputPump::Event& event)
 {
     const auto* mouse = std::get_if<IInputPump::EventMouse>(&event);
@@ -79,6 +85,11 @@ IRenderer* Button::renderer() const
 
 ButtonText::ButtonText(const Vec2F& pos, const Vec2F& size, std::string name, ACommand& command, IRenderer::FontID font,
                        IRenderer::Color color) : Button(pos, size, command, color), name_(std::move(name)), font_(font)
+{
+}
+
+ButtonText::ButtonText(const BoxF& box, std::string name, ACommand& command, IRenderer::FontID font,
+                       IRenderer::Color color) : Button(box, command, color), name_(std::move(name)), font_(font)
 {
 }
 

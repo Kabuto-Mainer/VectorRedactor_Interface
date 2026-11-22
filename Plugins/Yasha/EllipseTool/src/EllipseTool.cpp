@@ -1,5 +1,6 @@
 #include "EllipseTool.hpp"
-
+#include "Palette.hpp"
+#include "QueryInterface.hpp"
 #include "EllipseShape.hpp"
 
 #include <algorithm>
@@ -86,6 +87,7 @@ bool EllipseTool::updateDrag(const Vec2F& global_pos)
         {
             return true;
         }
+        
         createShape((min + max) / 2.0F, size);
         return preview_ != nullptr;
     }
@@ -124,8 +126,10 @@ void EllipseTool::cancelDrag()
 }
 
 void EllipseTool::createShape(const Vec2F& center, const Vec2F& size)
-{
+{ 
+    auto palette = queryInterface<IPalette>(IID_PALETTE);
     auto shape = std::make_unique<EllipseShape>(size);
+    shape->setColor(palette->selectedColor());
     shape->setTranslation(center);
     preview_ = shape.get();
     document_.addShape(std::move(shape));

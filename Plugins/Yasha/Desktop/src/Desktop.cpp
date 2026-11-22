@@ -1,4 +1,5 @@
 #include "Desktop.hpp"
+#include "Document.hpp"
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
@@ -49,6 +50,26 @@ bool Desktop::processEvent(const IInputPump::Event& event)
     {
         ApplicationCore::instance().stop();
         return true;
+    }
+    if (const auto* key = std::get_if<IInputPump::EventKeyboard>(&event);
+        key != nullptr && key->type() == IInputPump::EventKeyboard::Type::KEY_DOWN &&
+        key->key() == IInputPump::EventKeyboard::Key::S)
+    {
+        auto keyboard = *key;
+        if (keyboard.hasModifiers(IInputPump::EventKeyboard::Modifier::LEFT_CTRL) ||
+            keyboard.hasModifiers(IInputPump::EventKeyboard::Modifier::RIGHT_CTRL))
+        {
+            IDocument* interface = nullptr;
+            if (ApplicationCore::instance().queryInterface(IID_IDOCUMENT, reinterpret_cast<void**>(&interface)) ==
+                ApplicationCore::Error::SUCCESS)
+            {
+                if (auto* document = dynamic_cast<Yasha::Document*>(interface))
+                {
+                    document->save();
+                }
+            }
+            return true;
+        }
     }
     if (processEventChildren(event))
     {
