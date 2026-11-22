@@ -4,5 +4,6 @@
 ../Plugins/martalx/ToolManager/libToolManager.so
 ../Plugins/martalx/ToolBar/libToolBar.so
 ../Plugins/martalx/Tools/libRectangleTool.so
+../Plugins/martalx/Tools/libBrowseTool.so
 ../Plugins/martalx/MainPlugin/libMainPlugin.so
 

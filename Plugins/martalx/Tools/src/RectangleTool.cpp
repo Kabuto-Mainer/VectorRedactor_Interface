@@ -27,27 +27,29 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
 		return false;
 	}
 
-	tool_manager->addTool(std::make_unique<RectangleTool>());
+	tool_manager->addTool(std::make_unique<Rectangle>());
+
+	IToolBar *toolbar = nullptr;
+	error = ApplicationCore::instance().queryInterface(IID_TOOLBAR, reinterpret_cast<void **>(&toolbar));
+	if(error != ApplicationCore::Error::SUCCESS)
+	{
+		ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Failed to requesting for ToolBar: %s", ApplicationCore::strError(error));
+		return false;
+	}
+
+	toolbar->addTool(ID_RECTANGLE, MartAlx::UIFW::Icon("./images/rectangle.png").texture());
+
 	return true;
 }
 
-/* RectangleTool */
+/* Rectangle */
 
-RectangleTool::RectangleTool()
-{
-	IToolBar *toolbar = nullptr;
-	ApplicationCore::Error error = ApplicationCore::instance().queryInterface(IID_TOOLBAR, reinterpret_cast<void **>(&toolbar));
-	assert(error == ApplicationCore::Error::SUCCESS);
-
-	toolbar->addTool(ID_RECTANGLE, UIFW::Icon("./images/rectangle.png").texture());
-}
-
-RectangleTool::ID RectangleTool::id() const
+Rectangle::ID Rectangle::id() const
 {
 	return ID_RECTANGLE;
 }
 
-bool RectangleTool::processEvent(const IInputPump::Event &event)
+bool Rectangle::processEvent(const IInputPump::Event &event)
 {
 	if(!std::holds_alternative<IInputPump::EventMouse>(event))
 	{
@@ -71,7 +73,7 @@ bool RectangleTool::processEvent(const IInputPump::Event &event)
 		assert(error == ApplicationCore::Error::SUCCESS);
 
 		document->addShape(std::move(rectangle));
-		ApplicationCore::log(ApplicationCore::LogLevel::OK, "RectangleTool: added rectangle");
+		ApplicationCore::log(ApplicationCore::LogLevel::OK, "Rectangle: added rectangle");
 		return true;
 	}
 

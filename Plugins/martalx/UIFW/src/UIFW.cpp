@@ -3,9 +3,12 @@
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
+#include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
+#include "Utils/Vec2F.hpp"
 
 #include <cassert>
+#include <memory>
 #include <string>
 #include <variant>
 
@@ -58,6 +61,11 @@ void Icon::render(const BoxF& box) const
 
 /* BlankWindow */
 
+BlankWindow::BlankWindow(const BoxF &box)
+{
+	setBox(box);
+}
+
 void BlankWindow::setBackground(const IRenderer::Color& background)
 {
 	background_ = background;
@@ -81,6 +89,11 @@ void BlankWindow::render()
 }
 
 /* Button */
+
+Button::Button(const BoxF &box)
+{
+	setBox(box);
+}
 
 Button::State Button::state() const
 {
@@ -144,7 +157,13 @@ bool Button::processEvent(const IInputPump::Event& event)
 					case State::NORMAL:
 						state_ = State::HOVERED;
 						on_hover_();
-						break;
+						/* NOTE:
+						 * If the button has just been hovered,
+						 * the previously hovered button should
+						 * go back to State::NORMAL, so it's
+						 * necessary to return false in this case
+						 */
+						return false;
 
 					case State::PRESSED:
 					case State::HOVERED:
@@ -178,8 +197,14 @@ void Button::connectOnHover(std::function<void ()> callback)
 
 /* StandardButton */
 
-StandardButton::StandardButton(const Icon &icon)
+StandardButton::StandardButton(const BoxF &box, const Icon &icon)
 	: icon_(icon)
+{
+	setBox(box);
+}
+
+StandardButton::StandardButton(const Icon &icon)
+	: StandardButton(BoxF {}, icon)
 { }
 
 void StandardButton::render()
@@ -208,9 +233,134 @@ void StandardButton::render()
 	renderer->renderRect(tone, ::globalBox(*this));
 }
 
+/* ToggleButton */
+
+ToggleButton::ToggleButton(const BoxF &box, const Icon &icon)
+	: StandardButton(icon), is_toggled_([](){ return false; })
+{
+	setBox(box);
+}
+
+ToggleButton::ToggleButton(const Icon &icon)
+	: ToggleButton(BoxF {}, icon)
+{ }
+
+void ToggleButton::connectIsToggled(std::function<bool ()> callback)
+{
+	is_toggled_ = callback;
+}
+
+void ToggleButton::render()
+{
+	static constexpr auto TOGGLED_TONE = IRenderer::Color { .r = 0, .g = 0, .b = 255, .a = 50 };
+
+	if(is_toggled_())
+	{
+		IRenderer *renderer = nullptr;
+		ApplicationCore::Error error = ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void **>(&renderer));
+		assert(error == ApplicationCore::Error::SUCCESS);
+
+		renderer->renderRect(TOGGLED_TONE, ::globalBox(*this));
+	}
+
+	StandardButton::render();
+}
+
+/* ASwitcher */
+
+void ASwitcher::connectOnSwitch(std::function<void (ID)> callback)
+{
+	on_switch_.subscribe(callback);
+}
+
+void ASwitcher::render()
+{
+	renderChildren();
+}
+
+bool ASwitcher::processEvent(const IInputPump::Event &event)
+{
+	return processEventChildren(event);
+}
+
+/* HorizontalSwitcher */
+
+HorizontalSwitcher::HorizontalSwitcher(const BoxF &top_left_button_box)
+	: button_size_(top_left_button_box.size())
+{
+	setBox(BoxF { top_left_button_box.topLeft(), top_left_button_box.bottomLeft() });
+}
+
+Button::ID HorizontalSwitcher::addButton(const Icon &icon)
+{
+	auto button = std::make_unique<ToggleButton>(BoxF { box().topRight(), box().topRight() + button_size_ }, icon);
+	const auto button_id = button->id();
+
+	auto new_box = box();
+	new_box.setRight(box().right() + button_size_.x());
+	setBox(std::move(new_box));
+
+	auto on_press = [this, button_id]() -> void
+	{
+		toggled_button_ = button_id;
+		on_switch_(button_id);
+	};
+	button->connectOnPress(on_press);
+
+	auto is_toggled = [this, button_id]() -> bool
+	{
+		return button_id == toggled_button_;
+	};
+	button->connectIsToggled(is_toggled);
+
+	addChild(std::move(button));
+	return button_id;
+}
+
+/* VerticalSwitcher */
+
+VerticalSwitcher::VerticalSwitcher(const BoxF &top_left_button_box)
+	: button_size_(top_left_button_box.size())
+{
+	setBox(BoxF { top_left_button_box.topLeft(), top_left_button_box.topRight() });
+}
+
+Button::ID VerticalSwitcher::addButton(const Icon &icon)
+{
+	auto button = std::make_unique<ToggleButton>(BoxF { box().bottomLeft(), box().bottomLeft() + button_size_ }, icon);
+	const auto button_id = button->id();
+
+	auto new_box = box();
+	new_box.setBottom(box().bottom() + button_size_.y());
+	setBox(std::move(new_box));
+
+	auto on_press = [this, button_id]() -> void
+	{
+		toggled_button_ = button_id;
+		on_switch_(button_id);
+	};
+	button->connectOnPress(on_press);
+
+	auto is_toggled = [this, button_id]() -> bool
+	{
+		return button_id == toggled_button_;
+	};
+	button->connectIsToggled(is_toggled);
+
+	addChild(std::move(button));
+	return button_id;
+}
+
 /* TexturedButton */
 
-TexturedButton::TexturedButton(const Icons& icons) : icons_(icons)
+TexturedButton::TexturedButton(const BoxF &box, const Icons &icons)
+	: icons_(icons)
+{
+	setBox(box);
+}
+
+TexturedButton::TexturedButton(const Icons& icons)
+	: TexturedButton(BoxF {}, icons)
 { }
 
 void TexturedButton::render()
@@ -238,4 +388,10 @@ void TexturedButton::render()
 
 	renderChildren();
 }
+
+//CloseableWindow::CloseableWindow()
+//{
+//	auto close_button = std::make_unique<StandardButton>(Icon(CLOSE_BUTTON_FILENAME));
+//
+//}
 

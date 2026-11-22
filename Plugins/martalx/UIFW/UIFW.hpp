@@ -5,8 +5,10 @@
 #include "Utils/BoxF.hpp"
 #include "Utils/Signal.hpp"
 #include "Utils/TWidget.hpp"
+#include "Utils/Vec2F.hpp"
 
 #include <functional>
+#include <memory>
 #include <string>
 
 namespace MartAlx::UIFW
@@ -28,6 +30,9 @@ class Icon
 class BlankWindow : public TWidget
 {
 	public:
+		BlankWindow() = default;
+		explicit BlankWindow(const BoxF &box);
+
 		void setBackground(const IRenderer::Color& background);
 
 		bool processEvent(const IInputPump::Event& event) override;
@@ -35,12 +40,6 @@ class BlankWindow : public TWidget
 
 	private:
 		IRenderer::Color background_ = IRenderer::Color::TRANSPARENT;
-};
-
-class CloseableWindow : public BlankWindow
-{
-	public:
-		CloseableWindow();
 };
 
 class Button : public TWidget
@@ -53,7 +52,8 @@ class Button : public TWidget
 			PRESSED,
 		};
 
-		virtual ~Button() = default;
+		Button() = default;
+		explicit Button(const BoxF &box);
 
 		State state() const;
 		void connectOnPress(std::function<void()> callback);
@@ -72,11 +72,66 @@ class StandardButton : public Button
 {
 	public:
 		explicit StandardButton(const Icon &icon);
+		StandardButton(const BoxF &box, const Icon &icon);
 
-		void render() override final;
+		void render() override;
 
 	private:
 		Icon icon_;
+};
+
+/* NOTE:
+ * ToggleButton is a button that can have another, toggle state
+ * that does mean that the button is selected now.
+ */
+class ToggleButton : public StandardButton
+{
+	public:
+		explicit ToggleButton(const Icon &icon);
+		ToggleButton(const BoxF &box, const Icon &icon);
+
+		void connectIsToggled(std::function<bool()> callback);
+		void render() override;
+
+	private:
+		std::function<bool()> is_toggled_;
+};
+
+class ASwitcher : public TWidget
+{
+	protected:
+		Signal<ID> on_switch_;
+
+	public:
+		virtual ID addButton(const Icon &icon) = 0;
+		void connectOnSwitch(std::function<void(ID)> callback);
+
+		void render() override final;
+		bool processEvent(const IInputPump::Event &event) override final;
+};
+
+class HorizontalSwitcher : public ASwitcher
+{
+	private:
+		const Vec2F button_size_;
+		ID toggled_button_;
+
+	public:
+		explicit HorizontalSwitcher(const BoxF &top_left_button_box);
+
+		ID addButton(const Icon &icon) override final;
+};
+
+class VerticalSwitcher : public ASwitcher
+{
+	private:
+		const Vec2F button_size_;
+		ID toggled_button_;
+
+	public:
+		explicit VerticalSwitcher(const BoxF &top_left_button_box);
+
+		ID addButton(const Icon &icon) override final;
 };
 
 class TexturedButton : public Button
@@ -88,12 +143,23 @@ class TexturedButton : public Button
 		};
 
 		explicit TexturedButton(const Icons& icons);
+		TexturedButton(const BoxF &box, const Icons &icons);
 
 		void render() override final;
 
 	private:
 		Icons icons_;
 };
+
+//class CloseableWindow : public BlankWindow
+//{
+//	private:
+//		static constexpr const char *CLOSE_BUTTON_FILENAME = "./images/close.png";
+//		static constexpr auto CLOSE_BUTTON_SIZE = Vec2F {  }
+//
+//	public:
+//		CloseableWindow();
+//};
 
 }
 

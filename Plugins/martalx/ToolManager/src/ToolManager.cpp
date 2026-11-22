@@ -54,8 +54,7 @@ ToolManager::Error ToolManager::addTool(std::unique_ptr<ATool> tool)
 ToolManager::Error ToolManager::removeTool([[maybe_unused]] ATool::ID tool_id)
 {
 	// FIXME: 
-	active_tool_ = std::nullopt;
-	ApplicationCore::instance().popModal();
+	ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "%s is a stub", __func__);
 	return Error::SUCCESS;
 }
 

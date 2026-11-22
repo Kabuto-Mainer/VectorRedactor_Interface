@@ -28,7 +28,6 @@ class ToolManager final : public IToolManager
 		static ToolManager &instance();
 
 		Error addTool(std::unique_ptr<ATool> tool) override;
-		/* NOTE: used as `unsetActiveTool` */
 		Error removeTool(ATool::ID tool_id) override;
 		Error setActiveTool(ATool::ID tool_id) override;
 

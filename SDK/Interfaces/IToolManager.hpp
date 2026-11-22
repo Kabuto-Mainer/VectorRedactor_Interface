@@ -23,6 +23,7 @@ public:
 
     enum class Error;
 
+    // ISSUE: getActiveTool
     virtual Error addTool(std::unique_ptr<ATool> tool) = 0;
     virtual Error removeTool(uint64_t tool_id)         = 0;
     virtual Error setActiveTool(uint64_t tool_id)      = 0;

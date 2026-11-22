@@ -44,7 +44,6 @@ ToolBar &ToolBar::instance()
 	return instance;
 }
 
-// FIXME: how to render hovered, pressedbuttons?
 void ToolBar::addTool(IToolManager::ATool::ID tool_id, IRenderer::TextureID texture_id)
 {
 	auto *node = static_cast<Node *>(ApplicationCore::instance().findObject(node_id_));
@@ -63,7 +62,12 @@ void ToolBar::removeTool(IToolManager::ATool::ID tool_id)
 ToolBar::Node::Node()
 {
 	setBackground(BACKGROUND);
-	setBox(BoxF(TOOLBAR_SIZE));
+
+	auto switcher = std::make_unique<UIFW::VerticalSwitcher>(TOP_LEFT_BUTTON_SIZE);
+	switcher_id_ = switcher->id();
+	setBox(switcher->box());
+
+	addChild(std::move(switcher));
 }
 
 bool ToolBar::Node::processEvent(const IInputPump::Event &event)
@@ -73,15 +77,20 @@ bool ToolBar::Node::processEvent(const IInputPump::Event &event)
 
 void ToolBar::Node::addToolButton(IToolManager::ATool::ID tool_id, IRenderer::TextureID texture_id)
 {
-	auto button = std::make_unique<UIFW::StandardButton>(UIFW::Icon(texture_id));
+	auto *found = ApplicationCore::instance().findObject(switcher_id_);
+	assert(found);
 
-	auto button_box = BoxF(BUTTON_SIZE);
-	button_box.setCenter(next_button_pos_);
-	next_button_pos_ += BUTTON_SIZE;
-	button->setBox(button_box);
+	auto *switcher = static_cast<UIFW::VerticalSwitcher *>(found);
 
-	auto button_action = [tool_id]() -> void
+	ID button_id = switcher->addButton(UIFW::Icon(texture_id));
+
+	auto on_switch = [tool_id, button_id](ID switched_button_id) -> void
 	{
+		if(button_id != switched_button_id)
+		{
+			return;
+		}
+
 		ApplicationCore::log(ApplicationCore::LogLevel::OK, "selected tool with id = %d", tool_id);
 
 		IToolManager *tool_manager = nullptr;
@@ -90,8 +99,8 @@ void ToolBar::Node::addToolButton(IToolManager::ATool::ID tool_id, IRenderer::Te
 
 		tool_manager->setActiveTool(tool_id);
 	};
-	button->connectOnPress(button_action);
+	switcher->connectOnSwitch(on_switch);
 
-	addChild(std::move(button));
+	setBox(switcher->box());
 }
 

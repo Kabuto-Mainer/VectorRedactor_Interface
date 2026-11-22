@@ -3,6 +3,7 @@
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolBar.hpp"
 #include "UIFW/UIFW.hpp"
+#include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 
@@ -32,12 +33,11 @@ class ToolBar final : public IToolBar
 class ToolBar::Node final : public UIFW::BlankWindow
 {
 	private:
-		static constexpr IRenderer::Color BACKGROUND = IRenderer::Color::GRAY;
-		// ISSUE: constexpr Vec2F
-		inline static const Vec2F BUTTON_SIZE = { 50.0F, 50.0F };
-		inline static const Vec2F TOOLBAR_SIZE = { 50.0F, 800.0F };
+		static constexpr auto BACKGROUND = IRenderer::Color::GRAY;
+		// ISSUE: constexpr Vec2F, BoxF
+		inline static const auto TOP_LEFT_BUTTON_SIZE = BoxF { 0, 0, 50.0F, 50.0F };
 
-		Vec2F next_button_pos_ = BUTTON_SIZE / 2;
+		ID switcher_id_;
 
 	public:
 		Node();
