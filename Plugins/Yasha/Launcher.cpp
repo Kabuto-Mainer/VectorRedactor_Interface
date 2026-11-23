@@ -1,7 +1,6 @@
 #include "Desktop.hpp"
 #include "Document.hpp"
 #include "Core/ApplicationCore.hpp"
-#include "Palette.hpp"
 
 #include <filesystem>
 #include <fstream> 
@@ -45,13 +44,6 @@ int main() {
     if (error != ApplicationCore::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Document initialization failed: %s",
-                             ApplicationCore::strError(error));
-        return EXIT_FAILURE;
-    }
-    error = Yasha::initializePalette(BoxF(Vec2F{1'000.0F, 1'000.0F}));
-    if (error != ApplicationCore::Error::SUCCESS)
-    {
-        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Palette initialization failed: %s",
                              ApplicationCore::strError(error));
         return EXIT_FAILURE;
     }

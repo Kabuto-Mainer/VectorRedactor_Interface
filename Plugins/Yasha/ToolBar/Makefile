@@ -7,8 +7,8 @@ DEPS := $(OBJECTS:.o=.d)
 
 all: libToolBar.so
 
-libToolBar.so: $(OBJECTS)
-	$(CXX) -shared $^ -o $@
+libToolBar.so: $(OBJECTS) ../UIFramework/libUIFramework.so
+	$(CXX) -shared $(OBJECTS) -L../UIFramework -lUIFramework -Wl,-rpath,'$$ORIGIN/../UIFramework' -o $@
 
 src/%.o: src/%.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
