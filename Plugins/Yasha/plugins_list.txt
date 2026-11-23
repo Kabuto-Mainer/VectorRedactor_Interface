@@ -1,0 +1,9 @@
+./Render/libRender.so
+./InputPump/libInputPump.so
+./UIFramework/libUIFramework.so
+./Palette/libPalette.so
+./ToolManager/ToolManager.so
+./ToolBar/libToolBar.so
+./RectangleTool/libRectangleTool.so
+./EllipseTool/libEllipseTool.so
+./MurugovSelectTool/libMurugovSelectTool.so
