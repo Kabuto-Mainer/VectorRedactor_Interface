@@ -114,7 +114,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    desktop->addObject(std::move(window));
+    desktop->add(std::move(window));
 
     return true;
 }
