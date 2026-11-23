@@ -1,4 +1,5 @@
 #include "Desktop.hpp"
+#include "Document.hpp"
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
@@ -50,6 +51,26 @@ bool Desktop::processEvent(const IInputPump::Event& event)
         ApplicationCore::instance().stop();
         return true;
     }
+    if (const auto* key = std::get_if<IInputPump::EventKeyboard>(&event);
+        key != nullptr && key->type() == IInputPump::EventKeyboard::Type::KEY_DOWN &&
+        key->key() == IInputPump::EventKeyboard::Key::S)
+    {
+        auto keyboard = *key;
+        if (keyboard.hasModifiers(IInputPump::EventKeyboard::Modifier::LEFT_CTRL) ||
+            keyboard.hasModifiers(IInputPump::EventKeyboard::Modifier::RIGHT_CTRL))
+        {
+            IDocument* interface = nullptr;
+            if (ApplicationCore::instance().queryInterface(IID_IDOCUMENT, reinterpret_cast<void**>(&interface)) ==
+                ApplicationCore::Error::SUCCESS)
+            {
+                if (auto* document = dynamic_cast<Yasha::Document*>(interface))
+                {
+                    document->save();
+                }
+            }
+            return true;
+        }
+    }
     if (processEventChildren(event))
     {
         return true;
@@ -74,6 +95,7 @@ ApplicationCore::Error initializeDesktop()
 {
     auto& core     = ApplicationCore::instance();
     void* existing = nullptr;
+
     if (core.queryInterface(IID_DESKTOP, &existing) == ApplicationCore::Error::SUCCESS)
     {
         return ApplicationCore::Error::INTERFACE_ALREADY_EXISTS;
@@ -82,10 +104,12 @@ ApplicationCore::Error initializeDesktop()
     auto       desktop   = std::make_unique<Desktop>();
     auto*      interface = static_cast<IDesktop*>(desktop.get());
     const auto error     = core.registerInterface(IID_DESKTOP, interface);
+
     if (error != ApplicationCore::Error::SUCCESS)
     {
         return error;
     }
-    core.root()->addChild(std::move(desktop));
+
+    core.pushModal(std::move(desktop));
     return ApplicationCore::Error::SUCCESS;
 }

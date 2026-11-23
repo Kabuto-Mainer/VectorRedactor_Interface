@@ -8,6 +8,11 @@ IconButton::IconButton(const Vec2F& pos, const Vec2F& size, ACommand& command, I
 {
 }
 
+IconButton::IconButton(const BoxF& box, ACommand& command, IRenderer::TextureID texture,
+                       IRenderer::Color color) : Button(box, command, color), texture_(texture)
+{
+}
+
 void IconButton::render()
 {
     Button::render();

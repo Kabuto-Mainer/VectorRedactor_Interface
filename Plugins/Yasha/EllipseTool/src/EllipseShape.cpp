@@ -1,6 +1,7 @@
 #include "EllipseShape.hpp"
 
 #include "Core/ApplicationCore.hpp"
+#include "QueryInterface.hpp"
 
 #include <cmath>
 #include <numbers>

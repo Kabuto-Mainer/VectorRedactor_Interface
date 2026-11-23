@@ -5,6 +5,7 @@
 #include "Interfaces/IToolBar.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
+#include "QueryInterface.hpp"
 #include "SelectorTool.hpp"
 #include "ToolBarIID.hpp"
 #include "ToolManager.hpp"
@@ -13,17 +14,6 @@
 
 namespace
 {
-
-template<typename T>
-T* queryInterface(IID iid)
-{
-    void* raw = nullptr;
-    if (ApplicationCore::instance().queryInterface(iid, &raw) != ApplicationCore::Error::SUCCESS)
-    {
-        return nullptr;
-    }
-    return static_cast<T*>(raw);
-}
 
 class ToolRegistration final
 {
@@ -41,7 +31,10 @@ public:
         manager_ = manager;
     }
 
+    Yasha::Tools::SelectionState& state() { return state_; }
+
 private:
+    Yasha::Tools::SelectionState state_;
     IToolManager* manager_ = nullptr;
 };
 
@@ -81,7 +74,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    auto       state       = std::make_shared<Yasha::Tools::SelectionState>();
+    auto&      state       = registration().state();
     auto       overlay     = std::make_unique<Yasha::Tools::SelectionOverlay>(*document, *yasha_manager,
                                                                               Yasha::Tools::SELECTOR_TOOL_ID, state);
     const auto overlay_id  = overlay->id();

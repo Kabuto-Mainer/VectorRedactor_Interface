@@ -8,6 +8,11 @@ ColorButton::ColorButton(const Vec2F& pos, const Vec2F& size, ACommand& command,
 {
 }
 
+ColorButton::ColorButton(const BoxF& box, ACommand& command, IRenderer::Color color) :
+    Button(box, command, color)
+{
+}
+
 void ColorButton::render()
 {
     Button::render();

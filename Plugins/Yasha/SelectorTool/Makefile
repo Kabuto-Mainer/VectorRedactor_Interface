@@ -1,5 +1,5 @@
 CXX := clang++
-CPPFLAGS := -Iinclude -I../ToolManager/include -I../ToolBar/include -I../../../SDK
+CPPFLAGS := -Iinclude -I.. -I../ToolManager/include -I../ToolBar/include -I../../../SDK
 CXXFLAGS := -std=c++23 -fPIC -g -Wall -Wextra -MMD -MP
 SOURCES := src/Plugin.cpp src/SelectorTool.cpp src/SelectionOverlay.cpp src/ShapeLookup.cpp
 OBJECTS := $(SOURCES:.cpp=.o)

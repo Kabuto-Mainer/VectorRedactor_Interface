@@ -4,6 +4,7 @@
 #include "Utils/ACommand.hpp"
 #include "Utils/TWidget.hpp"
 
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -30,6 +31,8 @@ class Button : public TWidget
 {
 public:
     Button(const Vec2F& pos, const Vec2F& size, ACommand& command, IRenderer::Color color,
+           ButtonState state = ButtonState::NO_PRESSED);
+    Button(const BoxF& box, ACommand& command, IRenderer::Color color,
            ButtonState state = ButtonState::NO_PRESSED);
 
     bool processEvent(const IInputPump::Event& event) override;
@@ -58,6 +61,8 @@ class ButtonText : public Button
 public:
     ButtonText(const Vec2F& pos, const Vec2F& size, std::string name, ACommand& command, IRenderer::FontID font,
                IRenderer::Color color);
+    ButtonText(const BoxF& box, std::string name, ACommand& command, IRenderer::FontID font,
+               IRenderer::Color color);
 
     void render() override;
 
@@ -75,6 +80,7 @@ class ColorButton : public Button
 {
 public:
     ColorButton(const Vec2F& pos, const Vec2F& size, ACommand& command, IRenderer::Color color);
+    ColorButton(const BoxF& box, ACommand& command, IRenderer::Color color);
 
     void render() override;
 };
@@ -84,6 +90,7 @@ class IconButton : public Button
 public:
     IconButton(const Vec2F& pos, const Vec2F& size, ACommand& command, IRenderer::TextureID texture,
                IRenderer::Color color);
+    IconButton(const BoxF& box, ACommand& command, IRenderer::TextureID texture, IRenderer::Color color);
 
     void render() override;
 
@@ -100,6 +107,8 @@ public:
     bool remove(TObject::ID button_id);
     bool processEvent(const IInputPump::Event& event) override;
     void render() override;
+
+    const std::list<std::unique_ptr<TObject>>& buttons() const { return children(); }
 
     // clang-format off
     ButtonPoolDirection direction() const { return direction_; }
