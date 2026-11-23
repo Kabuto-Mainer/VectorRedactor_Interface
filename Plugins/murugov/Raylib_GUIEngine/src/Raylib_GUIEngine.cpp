@@ -45,7 +45,7 @@ Raylib_GUIEngine::Raylib_GUIEngine()
     initialized_ = true;
 
     BeginDrawing();
-    ClearBackground(toRL(Color::Black));
+    ClearBackground(toRL(Color::BLACK));
     is_drawing_ = true;
 }
 
@@ -145,7 +145,7 @@ void Raylib_GUIEngine::renderTexture(const TextureID& texture, const BoxF& box, 
     Vec2F            sz  = box.size();
     DrawTexturePro(tex, {0.0F, 0.0F, static_cast<float>(tex.width), static_cast<float>(tex.height)},
                    {ctr.x(), ctr.y(), sz.x(), sz.y()}, {sz.x() * 0.5F, sz.y() * 0.5F}, angle * RAD_TO_DEG,
-                   toRL(Color::White));
+                   toRL(Color::WHITE));
 }
 
 void Raylib_GUIEngine::renderEllipse(const Color& color, const BoxF& box, float angle)
@@ -264,12 +264,12 @@ void Raylib_GUIEngine::update()
     EndDrawing();
     pollSystemEvents();
     BeginDrawing();
-    ClearBackground(toRL(Color::Black));
+    ClearBackground(toRL(Color::BLACK));
 }
 
 void Raylib_GUIEngine::clear()
 {
-    ClearBackground(toRL(Color::Black));
+    ClearBackground(toRL(Color::BLACK));
 }
 
 void Raylib_GUIEngine::pollSystemEvents()

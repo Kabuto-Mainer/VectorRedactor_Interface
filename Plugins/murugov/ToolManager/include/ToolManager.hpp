@@ -9,14 +9,19 @@
 
 extern "C" InitPackageFunc INIT_PACKAGE_FUNC_NAME;
 
+namespace Murugov
+{
+
 class ToolManager final : public IToolManager
 {
 private:
-    ToolManager()  = default;
-    ~ToolManager() = default;
+    bool initialized_ = false;
 
     std::unordered_map<ATool::ID, std::unique_ptr<ATool>> tools_;
     std::optional<ATool::ID>                              active_tool_id_;
+
+    ToolManager() : initialized_(true) {}
+    ~ToolManager() = default;
 
 public:
     ToolManager(const ToolManager&)            = delete;
@@ -26,9 +31,15 @@ public:
 
     static ToolManager& instance();
 
+    bool isValid() const;
+
+    /* from IToolManager */
+
     Error addTool(std::unique_ptr<ATool> tool) override;
     Error removeTool(ATool::ID tool_id) override;
     Error setActiveTool(ATool::ID tool_id) override;
 
     bool processEvent(const IInputPump::Event& event) override;
 };
+
+} // namespace Murugov

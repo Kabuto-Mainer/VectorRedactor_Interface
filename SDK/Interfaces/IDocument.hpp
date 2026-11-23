@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <optional>
 
-constexpr static const IID IID_IDOCUMENT = 0x0'01'20;
+constexpr static const IID IID_IDOCUMENT = 0x0'01'20;       // FIXME: IID_DOCUMENT
 
 class IDocument
 {

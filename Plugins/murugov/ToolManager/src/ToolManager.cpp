@@ -2,19 +2,18 @@
 
 #include "Core/ApplicationCore.hpp"
 
-extern "C" bool INIT_PACKAGE_FUNC_NAME()
+namespace Murugov
 {
-    auto err = ApplicationCore::instance().registerInterface(
-        IID_TOOL_MANAGER, reinterpret_cast<void*>(static_cast<IToolManager*>(&ToolManager::instance()))
-    );
-
-    return err == ApplicationCore::Error::SUCCESS;
-}
-
+    
 ToolManager& ToolManager::instance()
 {
     static ToolManager instance;
     return instance;
+}
+
+bool ToolManager::isValid() const
+{
+    return initialized_;
 }
 
 IToolManager::Error ToolManager::addTool(std::unique_ptr<ATool> tool)
@@ -76,4 +75,18 @@ bool ToolManager::processEvent(const IInputPump::Event& event)
     }
 
     return it->second->processEvent(event);
+}
+
+} // namespace Murugov
+
+extern "C" bool INIT_PACKAGE_FUNC_NAME()
+{
+    auto& tool_manager = Murugov::ToolManager::instance();
+    if (!tool_manager.isValid())
+    {
+        return false;
+    }
+
+    return ApplicationCore::instance().registerInterface(IID_TOOL_MANAGER, static_cast<IToolManager*>(&tool_manager)) ==
+           ApplicationCore::Error::SUCCESS;
 }

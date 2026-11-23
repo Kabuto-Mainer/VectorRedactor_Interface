@@ -12,6 +12,33 @@
 #include <string>
 #include <unordered_map>
 
+#undef LIGHTGRAY
+#undef GRAY
+#undef DARKGRAY
+#undef YELLOW
+#undef GOLD
+#undef ORANGE
+#undef PINK
+#undef RED
+#undef MAROON
+#undef GREEN
+#undef LIME
+#undef DARKGREEN
+#undef SKYBLUE
+#undef BLUE
+#undef DARKBLUE
+#undef PURPLE
+#undef VIOLET
+#undef DARKPURPLE
+#undef BEIGE
+#undef BROWN
+#undef DARKBROWN
+#undef WHITE
+#undef BLACK
+#undef BLANK
+#undef MAGENTA
+#undef RAYWHITE
+
 extern "C" InitPackageFunc INIT_PACKAGE_FUNC_NAME;
 
 namespace Murugov

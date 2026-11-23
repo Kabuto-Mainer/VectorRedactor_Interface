@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 
-static constexpr const char* PLUGINS_LIST_FILENAME = "plugins_list.txt";
+static constexpr const char* PLUGINS_LIST_FILENAME = "../../plugins_list.txt";
 
 int main()
 {

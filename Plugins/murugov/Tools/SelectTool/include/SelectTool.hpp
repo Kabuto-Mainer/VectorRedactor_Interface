@@ -27,6 +27,8 @@ namespace Tools
 
 constexpr IToolManager::ATool::ID SELECT_TOOL_ID = 5;
 
+/* ====================== SelectTool ====================== */
+
 class SelectTool final : public IToolManager::ATool
 {
 public:
@@ -72,6 +74,7 @@ private:
     std::vector<IDocument::TShape*> selectedShapes() const;
     bool                            isSelected(TObject::ID id) const;
     void                            clearSelection();
+    void                            syncGroupFrame();
     void                            captureInitialStates(const std::vector<IDocument::TShape*>& shapes);
 
     std::optional<BoxF>  groupBounds(const std::vector<IDocument::TShape*>& shapes) const;
@@ -102,9 +105,11 @@ private:
     Vec2F                                              prev_mouse_local_;
     Vec2F                                              fixed_anchor_;
     Vec2F                                              group_center_;
+    BoxF                                               group_box_;
     BoxF                                               initial_group_box_;
-    float                                              group_visual_angle_ = 0.0F;
-    int                                                active_handle_idx_  = -1;
+    float                                              group_angle_         = 0.0F;
+    float                                              initial_group_angle_ = 0.0F;
+    int                                                active_handle_idx_   = -1;
     std::unordered_map<TObject::ID, InitialShapeState> initial_states_;
 }; // class SelectTool
 
@@ -188,9 +193,26 @@ inline void SelectTool::clearSelection()
 {
     selected_ids_.clear();
     initial_states_.clear();
-    mode_               = Mode::NONE;
-    active_handle_idx_  = -1;
-    group_visual_angle_ = 0.0F;
+    mode_                = Mode::NONE;
+    active_handle_idx_   = -1;
+    group_box_           = BoxF{};
+    group_angle_         = 0.0F;
+    initial_group_angle_ = 0.0F;
+}
+
+inline void SelectTool::syncGroupFrame()
+{
+    const auto shapes = selectedShapes();
+    if (shapes.size() > 1)
+    {
+        group_box_   = groupBounds(shapes).value_or(BoxF{});
+        group_angle_ = 0.0F;
+    }
+    else
+    {
+        group_box_   = BoxF{};
+        group_angle_ = 0.0F;
+    }
 }
 
 inline void SelectTool::captureInitialStates(const std::vector<IDocument::TShape*>& shapes)
@@ -249,12 +271,10 @@ inline std::array<Vec2F, 8> SelectTool::selectionHandles(const std::vector<IDocu
         };
     }
 
-    // For a group of several shapes, we construct a common axial frame
-    const BoxF  box    = (mode_ == Mode::ROTATE) ? initial_group_box_ : groupBounds(shapes).value_or(BoxF{});
-    const Vec2F center = box.center();
-    const Vec2F half   = box.size() * 0.5F;
-    const float angle  = (mode_ == Mode::ROTATE) ? group_visual_angle_ : 0.0F;
-    const auto  rot    = Matrix3F::rotation(angle);
+    // For a group of several shapes, keep the oriented bounding box and its accumulated angle
+    const Vec2F center = group_box_.center();
+    const Vec2F half   = group_box_.size() * 0.5F;
+    const auto  rot    = Matrix3F::rotation(group_angle_);
 
     return {
         center + rot.transformPoint({-half.x(), -half.y()}), center + rot.transformPoint({0.0F, -half.y()}),
@@ -278,12 +298,10 @@ inline Vec2F SelectTool::rotateHandlePos(const std::vector<IDocument::TShape*>& 
         return shape->transform().transformPoint({0.0F, norm_offset_y});
     }
 
-    const BoxF  box    = (mode_ == Mode::ROTATE) ? initial_group_box_ : groupBounds(shapes).value_or(BoxF{});
-    const Vec2F center = box.center();
-    const Vec2F half   = box.size() * 0.5F;
-    const float angle  = (mode_ == Mode::ROTATE) ? group_visual_angle_ : 0.0F;
+    const Vec2F center = group_box_.center();
+    const Vec2F half   = group_box_.size() * 0.5F;
 
-    return center + Matrix3F::rotation(angle).transformPoint({0.0F, -half.y() - ROTATE_HANDLE_DIST});
+    return center + Matrix3F::rotation(group_angle_).transformPoint({0.0F, -half.y() - ROTATE_HANDLE_DIST});
 }
 
 inline bool SelectTool::hitTestPoint(const Vec2F& p, const Vec2F& target, float radius) const
@@ -349,7 +367,6 @@ inline bool SelectTool::onKeyDown(const IInputPump::EventKeyboard& key)
             clearSelection();
             return true;
         }
-
         return false;
     }
 
@@ -361,7 +378,6 @@ inline bool SelectTool::onKeyDown(const IInputPump::EventKeyboard& key)
             {
                 document_.removeShape(id);
             }
-
             clearSelection();
             return true;
         }
@@ -374,23 +390,24 @@ inline bool SelectTool::onMouseDown(const Vec2F& global_pos)
 {
     const Vec2F local_pos = toLocal(global_pos);
     const auto  shapes    = selectedShapes();
+
     if (!shapes.empty())
     {
-        // General rotation knob
+        // 1. General rotation knob
         if (hitTestPoint(local_pos, rotateHandlePos(shapes), HANDLE_HALF_SIZE + 4.0F))
         {
-            prev_mouse_local_   = local_pos;
-            group_visual_angle_ = 0.0F;
-
+            prev_mouse_local_    = local_pos;
+            initial_group_angle_ = group_angle_;
             captureInitialStates(shapes);
+
             if (shapes.size() == 1)
             {
                 group_center_ = shapes.front()->translation();
             }
             else
             {
-                initial_group_box_ = groupBounds(shapes).value_or(BoxF{});
-                group_center_      = initial_group_box_.center();
+                initial_group_box_ = group_box_;
+                group_center_      = group_box_.center();
             }
 
             mode_ = Mode::ROTATE;
@@ -404,11 +421,11 @@ inline bool SelectTool::onMouseDown(const Vec2F& global_pos)
             const auto handles = selectionHandles(shapes);
             active_handle_idx_ = handle_idx;
             fixed_anchor_      = handles[(handle_idx + 4) % 8];
-
             captureInitialStates(shapes);
+
             if (shapes.size() > 1)
             {
-                initial_group_box_ = groupBounds(shapes).value_or(BoxF{});
+                initial_group_box_ = group_box_;
             }
 
             mode_ = Mode::RESIZE;
@@ -416,22 +433,17 @@ inline bool SelectTool::onMouseDown(const Vec2F& global_pos)
         }
     }
 
-    // 3. If a group (2+ shapes) is selected, clicking anywhere inside the bounding box moves the entire group.
+    // 3. If a group (2+ shapes) is selected, clicking anywhere inside the oriented bounding box moves the group.
     if (shapes.size() > 1)
     {
-        if (const auto bounds = groupBounds(shapes); bounds.has_value())
-        {
-            const float min_x = std::min(bounds->left(), bounds->right());
-            const float max_x = std::max(bounds->left(), bounds->right());
-            const float min_y = std::min(bounds->top(), bounds->bottom());
-            const float max_y = std::max(bounds->top(), bounds->bottom());
+        const Vec2F rel  = Matrix3F::rotation(-group_angle_).transformPoint(local_pos - group_box_.center());
+        const Vec2F half = group_box_.size() * 0.5F;
 
-            if (local_pos.x() >= min_x && local_pos.x() <= max_x && local_pos.y() >= min_y && local_pos.y() <= max_y)
-            {
-                prev_mouse_local_ = local_pos;
-                mode_             = Mode::MOVE;
-                return true;
-            }
+        if (std::abs(rel.x()) <= half.x() && std::abs(rel.y()) <= half.y())
+        {
+            prev_mouse_local_ = local_pos;
+            mode_             = Mode::MOVE;
+            return true;
         }
     }
 
@@ -443,6 +455,7 @@ inline bool SelectTool::onMouseDown(const Vec2F& global_pos)
         {
             selected_ids_.clear();
             selected_ids_.insert(*hit);
+            syncGroupFrame();
         }
 
         prev_mouse_local_ = local_pos;
@@ -487,6 +500,11 @@ inline bool SelectTool::onMouseMove(const Vec2F& global_pos)
             shape->translate(delta);
         }
 
+        if (shapes.size() > 1)
+        {
+            group_box_ = BoxF(group_box_.topLeft() + delta, group_box_.bottomRight() + delta);
+        }
+
         prev_mouse_local_ = local_pos;
         return true;
     }
@@ -499,7 +517,7 @@ inline bool SelectTool::onMouseMove(const Vec2F& global_pos)
         if (start_vec.len() > 1e-3F && curr_vec.len() > 1e-3F)
         {
             const float delta_angle = std::atan2(curr_vec.y(), curr_vec.x()) - std::atan2(start_vec.y(), start_vec.x());
-            group_visual_angle_     = delta_angle;
+            group_angle_            = initial_group_angle_ + delta_angle;
 
             const auto rot = Matrix3F::rotation(delta_angle);
             for (auto* shape : shapes)
@@ -527,7 +545,6 @@ inline bool SelectTool::onMouseMove(const Vec2F& global_pos)
         const bool resize_x = (active_handle_idx_ % 2 == 0) || (active_handle_idx_ == 3) || (active_handle_idx_ == 7);
         const bool resize_y = (active_handle_idx_ % 2 == 0) || (active_handle_idx_ == 1) || (active_handle_idx_ == 5);
 
-        // Determine the expected direction from `fixed_anchor_` to the active marker:
         // Right markers (2, 3, 4) -> +1; Left markers (0, 6, 7) -> -1
         const float dir_x =
             (active_handle_idx_ == 2 || active_handle_idx_ == 3 || active_handle_idx_ == 4) ? 1.0F : -1.0F;
@@ -566,25 +583,39 @@ inline bool SelectTool::onMouseMove(const Vec2F& global_pos)
             return true;
         }
 
-        // Batch resize
-        const float old_w = std::abs(initial_group_box_.size().x());
-        const float old_h = std::abs(initial_group_box_.size().y());
-        const Vec2F diag  = local_pos - fixed_anchor_;
+        // Batch resize in the oriented group frame
+        const float old_w      = std::abs(initial_group_box_.size().x());
+        const float old_h      = std::abs(initial_group_box_.size().y());
+        const Vec2F diag_local = Matrix3F::rotation(-group_angle_).transformPoint(local_pos - fixed_anchor_);
 
-        float sx = 1.0F;
-        float sy = 1.0F;
+        float sx       = 1.0F;
+        float sy       = 1.0F;
+        float new_w    = old_w;
+        float new_h    = old_h;
+        float offset_x = 0.0F;
+        float offset_y = 0.0F;
 
         if (resize_x && old_w > 1e-3F)
         {
-            const float new_w = std::max(diag.x() * dir_x, MIN_SHAPE_SIZE);
-            sx                = new_w / old_w;
+            new_w    = std::max(diag_local.x() * dir_x, MIN_SHAPE_SIZE);
+            sx       = new_w / old_w;
+            offset_x = dir_x * new_w * 0.5F;
         }
 
         if (resize_y && old_h > 1e-3F)
         {
-            const float new_h = std::max(diag.y() * dir_y, MIN_SHAPE_SIZE);
-            sy                = new_h / old_h;
+            new_h    = std::max(diag_local.y() * dir_y, MIN_SHAPE_SIZE);
+            sy       = new_h / old_h;
+            offset_y = dir_y * new_h * 0.5F;
         }
+
+        const Vec2F new_group_center =
+            fixed_anchor_ + Matrix3F::rotation(group_angle_).transformPoint({offset_x, offset_y});
+        group_box_ = BoxF(Vec2F{new_w, new_h});
+        group_box_.setCenter(new_group_center);
+
+        const auto to_group_local = Matrix3F::rotation(-group_angle_);
+        const auto to_world       = Matrix3F::rotation(group_angle_);
 
         for (auto* shape : shapes)
         {
@@ -594,15 +625,17 @@ inline bool SelectTool::onMouseMove(const Vec2F& global_pos)
                 continue;
             }
 
-            const InitialShapeState& st  = it->second;
-            const Vec2F              rel = st.translation - fixed_anchor_;
+            const InitialShapeState& st        = it->second;
+            const Vec2F              rel_local = to_group_local.transformPoint(st.translation - fixed_anchor_);
+            const Vec2F              scaled_rel{rel_local.x() * sx, rel_local.y() * sy};
 
-            const float c     = std::cos(st.rotation);
-            const float s     = std::sin(st.rotation);
-            const float loc_x = std::hypot(sx * c, sy * s);
-            const float loc_y = std::hypot(-sx * s, sy * c);
+            const float rel_angle = st.rotation - group_angle_;
+            const float c         = std::cos(rel_angle);
+            const float s         = std::sin(rel_angle);
+            const float loc_x     = std::hypot(sx * c, sy * s);
+            const float loc_y     = std::hypot(-sx * s, sy * c);
 
-            shape->setTranslation({fixed_anchor_.x() + rel.x() * sx, fixed_anchor_.y() + rel.y() * sy});
+            shape->setTranslation(fixed_anchor_ + to_world.transformPoint(scaled_rel));
             shape->setScaling({
                 std::max(st.scaling.x() * loc_x, MIN_SHAPE_SIZE),
                 std::max(st.scaling.y() * loc_y, MIN_SHAPE_SIZE),
@@ -649,11 +682,12 @@ inline bool SelectTool::onMouseUp()
                 }
             }
         }
+
+        syncGroupFrame();
     }
 
-    mode_               = Mode::NONE;
-    active_handle_idx_  = -1;
-    group_visual_angle_ = 0.0F;
+    mode_              = Mode::NONE;
+    active_handle_idx_ = -1;
     initial_states_.clear();
 
     return true;
@@ -716,6 +750,6 @@ inline void SelectTool::render()
     }
 }
 
-}; // namespace Tools
+} // namespace Tools
 
-}; // namespace Murugov
+} // namespace Murugov

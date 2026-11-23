@@ -1,6 +1,6 @@
 CXX      := clang++
 CXXFLAGS := -std=c++23 -fPIC -g -Wall -Wextra
-INCLUDES := -I../../../SDK -Iinclude -I.
+INCLUDES := -Iinclude -I../../../SDK -I.
 SRCS     := src/Raylib_GUIEngine.cpp
 BASE_NAME := libmurugov_Raylib_GUIEngine
 

@@ -1,8 +1,8 @@
 CXX       := clang++
 CXXFLAGS  := -std=c++23 -fPIC -g -Wall -Wextra
-INCLUDES  := -Iinclude -I../../../SDK -I.
-SRCS      := src/Tools.cpp
-BASE_NAME := libmurugov_Tools
+INCLUDES  := -Iinclude -I../../../../SDK -I.
+SRCS      := src/BezierTool.cpp
+BASE_NAME := libmurugov_BezierTool
 
 UNAME_S := $(shell uname -s)
 
@@ -16,7 +16,7 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): $(SRCS) include/SelectTool.hpp
+$(TARGET): $(SRCS)
 	@echo "[Building $(TARGET) on $(UNAME_S)]"
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $(SRCS) $(LDFLAGS) -o $(TARGET)
 
