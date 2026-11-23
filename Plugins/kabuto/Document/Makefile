@@ -1,6 +1,6 @@
 all:
 	@echo [Building libkabuto_Document.so]
-	clang++ -std=c++23 -fpic -shared -Iinclude -I../../../SDK -I. -g -Wall -Wextra -o libkabuto_Document.so src/Document.cpp
+	clang++ -std=c++23 -fpic -shared -I../../../SDK -I. -g -Wall -Wextra -o libkabuto_Document.so src/Document.cpp
 
 clean:
 	rm -rf *.so

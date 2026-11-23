@@ -1,18 +1,24 @@
 #pragma once
 
-#include "Components.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IInputPump.hpp"
+#include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 #include "export/IPalette.hpp"
+#include "include/Components.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <string>
+#include <utility>
 #include <variant>
+#include <vector>
 
 namespace Kabuto
 {
@@ -20,12 +26,36 @@ namespace Kabuto
 namespace Tools
 {
 
+/**
+ * Creates a shape by dragging on the canvas.
+ *
+ * The shape type is chosen through a context menu. The first left click on the
+ * canvas opens the menu; a right click opens it again so that the type can be
+ * changed at any moment.
+ */
 class AddShapeTool final : public IToolManager::ATool
 {
 public:
-    using ShapeFactory = std::function<std::unique_ptr<IDocument::TShape>(const Vec2F& size)>;
+    using Factory = std::function<std::unique_ptr<IDocument::TShape>(const Vec2F& size)>;
 
-    AddShapeTool(ID id, IDocument& document, Kabuto::IPalette& palette, ShapeFactory factory);
+    struct ShapeOption
+    {
+        std::string                         label;
+        std::optional<IRenderer::TextureID> icon;
+        Factory                             factory;
+    }; // struct ShapeOption
+
+    using ChosenHandler = std::function<void(std::size_t index)>;
+
+    /**
+     * Shows the shape menu at the given global position. The handler must be
+     * called with the index of the chosen option. The menu may keep the handler
+     * alive after processEvent() returns.
+     */
+    using ShapeMenu =
+        std::function<void(const Vec2F& anchor, const std::vector<ShapeOption>& options, ChosenHandler on_chosen)>;
+
+    AddShapeTool(ID tool_id, IDocument& document, IPalette& palette, std::vector<ShapeOption> options, ShapeMenu menu);
     ~AddShapeTool() override = default;
 
     AddShapeTool(const AddShapeTool&)            = delete;
@@ -38,20 +68,23 @@ public:
 
 private:
     static constexpr float MIN_DRAG_SIZE = 2.0F;
+    static constexpr float CENTER_FACTOR = 0.5F;
 
     bool beginDrag(const Vec2F& global_pos);
     bool updateDrag(const Vec2F& global_pos);
     bool endDrag(const Vec2F& global_pos);
     void cancelDrag();
 
+    bool openShapeMenu(const Vec2F& global_pos);
     void createShape(const Vec2F& center, const Vec2F& size);
     void applyPaletteColor(IDocument::TShape& shape) const;
 
-private:
-    ID           id_;
-    IDocument&   document_;
-    IPalette&    palette_;
-    ShapeFactory factory_;
+    ID                       id_;
+    IDocument&               document_;
+    IPalette&                palette_;
+    std::vector<ShapeOption> options_;
+    ShapeMenu                menu_;
+    Factory                  factory_;
 
     IDocument::TShape* shape_    = nullptr;
     TObject::ID        shape_id_ = 0;
@@ -61,8 +94,9 @@ private:
 
 /* ====================== Implementation ====================== */
 
-inline AddShapeTool::AddShapeTool(ID id, IDocument& document, IPalette& palette, ShapeFactory factory) :
-    id_(id), document_(document), palette_(palette), factory_(std::move(factory))
+inline AddShapeTool::AddShapeTool(ID tool_id, IDocument& document, IPalette& palette, std::vector<ShapeOption> options,
+                                  ShapeMenu menu) :
+    id_(tool_id), document_(document), palette_(palette), options_(std::move(options)), menu_(std::move(menu))
 {
 }
 
@@ -97,7 +131,18 @@ inline bool AddShapeTool::processEvent(const IInputPump::Event& event)
     switch (mouse->type())
     {
         case LEFT_BUTTON_PRESSING:
+            if (!factory_)
+            {
+                return openShapeMenu(mouse->cursorPos());
+            }
             return beginDrag(mouse->cursorPos());
+
+        case RIGHT_BUTTON_PRESSING:
+            if (dragging_)
+            {
+                cancelDrag();
+            }
+            return openShapeMenu(mouse->cursorPos());
 
         case MOTION:
             return updateDrag(mouse->cursorPos());
@@ -108,6 +153,25 @@ inline bool AddShapeTool::processEvent(const IInputPump::Event& event)
         default:
             return false;
     }
+}
+
+inline bool AddShapeTool::openShapeMenu(const Vec2F& global_pos)
+{
+    if (!menu_ || options_.empty())
+    {
+        return false;
+    }
+
+    menu_(global_pos, options_,
+          [this](std::size_t index)
+          {
+              if (index < options_.size())
+              {
+                  factory_ = options_[index].factory;
+              }
+          });
+
+    return true;
 }
 
 inline bool AddShapeTool::beginDrag(const Vec2F& global_pos)
@@ -139,7 +203,7 @@ inline bool AddShapeTool::updateDrag(const Vec2F& global_pos)
             return true;
         }
 
-        createShape((min + max) / 2.0F, size);
+        createShape((min + max) * CENTER_FACTOR, size);
         if (shape_ == nullptr)
         {
             dragging_ = false;
@@ -150,7 +214,7 @@ inline bool AddShapeTool::updateDrag(const Vec2F& global_pos)
     }
 
     shape_->setScaling(size);
-    shape_->setTranslation((min + max) / 2.0F);
+    shape_->setTranslation((min + max) * CENTER_FACTOR);
 
     return true;
 }

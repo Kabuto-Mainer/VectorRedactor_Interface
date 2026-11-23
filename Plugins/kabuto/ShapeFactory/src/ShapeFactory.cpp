@@ -1,5 +1,5 @@
-
 #include "include/ShapeFactory.hpp"
+
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/Package.hpp"
@@ -95,15 +95,16 @@ bool CShapeFactory::loadFrom(const std::string& path) const
         return false;
     }
 
-    IDocument * document = nullptr;
-    auto result = ApplicationCore::instance().queryInterface(IID_IDOCUMENT, reinterpret_cast<void**>(&document));
+    IDocument* document = nullptr;
+    auto       result = ApplicationCore::instance().queryInterface(IID_IDOCUMENT, reinterpret_cast<void**>(&document));
     if (result != ApplicationCore::Error::SUCCESS)
     {
-        ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR, "ShapeFactory can't find Document to load shapes");
+        ApplicationCore::instance().log(ApplicationCore::LogLevel::ERROR,
+                                        "ShapeFactory can't find Document to load shapes");
         return false;
     }
 
-    for (auto & it : shapes)
+    for (auto& it : shapes)
     {
         document->addShape(std::move(it));
     }
@@ -210,8 +211,10 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    const ApplicationCore::Error error =
-        core.registerInterface(Kabuto::IID_ISHAPE_FACTORY, static_cast<void*>(static_cast<Kabuto::IShapeFactory*>(&Kabuto::ShapeFactory::CShapeFactory::instance())));
+    const ApplicationCore::Error error = core.registerInterface(
+        Kabuto::IID_ISHAPE_FACTORY,
+        static_cast<void*>(static_cast<Kabuto::IShapeFactory*>(&Kabuto::ShapeFactory::CShapeFactory::instance()))
+    );
     if (error != ApplicationCore::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to register ShapeFactory: %s",

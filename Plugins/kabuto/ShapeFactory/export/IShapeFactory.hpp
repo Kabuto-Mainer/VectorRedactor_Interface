@@ -2,6 +2,7 @@
 
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IID.hpp"
+
 #include <functional>
 #include <istream>
 #include <memory>
@@ -9,16 +10,16 @@
 namespace Kabuto
 {
 
-constexpr static const IID IID_ISHAPE_FACTORY = 1236172;
+constexpr static const IID IID_ISHAPE_FACTORY = 1'236'172;
 
 class IShapeFactory
 {
 public:
     using Loader = std::function<std::unique_ptr<IDocument::TShape>(std::istream&)>;
-    using Saver = std::function<void(IDocument::TShape&, std::ostream&)>;
+    using Saver  = std::function<void(IDocument::TShape&, std::ostream&)>;
 
-    virtual bool loadFrom(const std::string & path) const = 0;
-    virtual bool saveTo(const std::string & path) const = 0;
+    virtual bool loadFrom(const std::string& path) const = 0;
+    virtual bool saveTo(const std::string& path) const   = 0;
 
     virtual void registry(IDocument::TShape::TypeID type_id, Loader loader, Saver saver) = 0;
 }; // class IShapeFactory

@@ -1,10 +1,12 @@
-#include "Document.hpp"
+#include "include/Document.hpp"
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
+#include "export/EllipseShape.hpp"
+#include "export/RectangleShape.hpp"
 
 #include <algorithm>
 #include <iterator>
