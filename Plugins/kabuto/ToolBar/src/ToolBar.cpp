@@ -26,7 +26,7 @@ namespace
 constexpr float TOOL_BAR_LEFT   = 312.0F;
 constexpr float TOOL_BAR_TOP    = 24.0F;
 constexpr float TOOL_BAR_RIGHT  = 352.0F;
-constexpr float TOOL_BAR_BOTTOM = 228.0F;
+constexpr float TOOL_BAR_BOTTOM = 280.0F;
 
 constexpr float HEADER_HEIGHT = 28.0F;
 constexpr float PADDING       = 8.0F;

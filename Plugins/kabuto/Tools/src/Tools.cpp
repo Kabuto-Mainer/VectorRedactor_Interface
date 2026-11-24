@@ -1,12 +1,15 @@
+#include "AddPolygonTool.hpp"
 #include "AddShapeTool.hpp"
 #include "CameraTool.hpp"
 #include "Core/ApplicationCore.hpp"
 #include "DeleteShapeTool.hpp"
+#include "EditPolygonTool.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolBar.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
+#include "Plugins/kabuto/ToolManager/export/IToolManagerPro.hpp"
 #include "SetColorTool.hpp"
 #include "ToolIds.hpp"
 #include "Utils/Vec2F.hpp"
@@ -15,20 +18,24 @@
 #include "export/IPalette.hpp"
 #include "export/RectangleShape.hpp"
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace
 {
 
-constexpr const char* RECTANGLE_ICON = "assets/rectangle.png";
-constexpr const char* ELLIPSE_ICON   = "assets/ellipse.png";
-constexpr const char* DELETE_ICON    = "assets/clean.png";
-constexpr const char* COLOR_ICON     = "assets/fill.png";
-constexpr const char* CAMERA_ICON    = "assets/camera.png";
+constexpr const char* RECTANGLE_ICON    = "assets/rectangle.png";
+constexpr const char* ELLIPSE_ICON      = "assets/ellipse.png";
+constexpr const char* POLYGON_ICON      = "assets/polygon.png";
+constexpr const char* EDIT_POLYGON_ICON = "assets/edit_polygon.png";
+constexpr const char* DELETE_ICON       = "assets/clean.png";
+constexpr const char* COLOR_ICON        = "assets/fill.png";
+constexpr const char* CAMERA_ICON       = "assets/camera.png";
 
 struct ToolBarItem
 {
@@ -37,10 +44,12 @@ struct ToolBarItem
 }; // struct ToolBarItem
 
 constexpr ToolBarItem TOOL_BAR_ITEMS[] = {
-    {   Kabuto::Tools::ADD_SHAPE_TOOL_ID, RECTANGLE_ICON},
-    {Kabuto::Tools::DELETE_SHAPE_TOOL_ID,    DELETE_ICON},
-    {   Kabuto::Tools::SET_COLOR_TOOL_ID,     COLOR_ICON},
-    {      Kabuto::Tools::CAMERA_TOOL_ID,    CAMERA_ICON},
+    {   Kabuto::Tools::ADD_SHAPE_TOOL_ID,    RECTANGLE_ICON},
+    { Kabuto::Tools::ADD_POLYGON_TOOL_ID,      POLYGON_ICON},
+    {Kabuto::Tools::EDIT_POLYGON_TOOL_ID, EDIT_POLYGON_ICON},
+    {Kabuto::Tools::DELETE_SHAPE_TOOL_ID,       DELETE_ICON},
+    {   Kabuto::Tools::SET_COLOR_TOOL_ID,        COLOR_ICON},
+    {      Kabuto::Tools::CAMERA_TOOL_ID,       CAMERA_ICON},
 };
 
 template<typename T>
@@ -55,11 +64,66 @@ T* queryInterface(const IID& iid)
     return static_cast<T*>(raw);
 }
 
+/**
+ * Keeps a deactivation callback for every tool that owns auxiliary objects.
+ * The tool manager only knows the common ATool interface, so the plugin itself
+ * maps tool ids to the concrete tools it has created.
+ */
+class ToolDeactivationRegistry final
+{
+public:
+    using Callback = std::function<void()>;
+
+    void remember(IToolManager::ATool::ID tool_id, Callback callback)
+    {
+        callbacks_.insert_or_assign(tool_id, std::move(callback));
+    }
+
+    void forget(IToolManager::ATool::ID tool_id)
+    {
+        callbacks_.erase(tool_id);
+    }
+
+    void deactivate(IToolManager::ATool::ID tool_id) const
+    {
+        const auto found = callbacks_.find(tool_id);
+        if (found != callbacks_.end())
+        {
+            found->second();
+        }
+    }
+
+    void deactivateAll() const
+    {
+        for (const auto& [tool_id, callback] : callbacks_)
+        {
+            callback();
+        }
+    }
+
+    void clear()
+    {
+        callbacks_.clear();
+    }
+
+private:
+    std::unordered_map<IToolManager::ATool::ID, Callback> callbacks_;
+}; // class ToolDeactivationRegistry
+
+ToolDeactivationRegistry& deactivationRegistry()
+{
+    static ToolDeactivationRegistry registry;
+    return registry;
+}
+
 class ToolRegistrationGuard final
 {
 public:
     ~ToolRegistrationGuard()
     {
+        deactivationRegistry().deactivateAll();
+        deactivationRegistry().clear();
+
         IToolManager* manager = queryInterface<IToolManager>(IID_TOOL_MANAGER);
         if (manager == nullptr)
         {
@@ -85,6 +149,33 @@ ToolRegistrationGuard& registrationGuard()
 {
     static ToolRegistrationGuard guard;
     return guard;
+}
+
+void subscribeToToolSwitches()
+{
+    Kabuto::IToolManagerPro* manager = queryInterface<Kabuto::IToolManagerPro>(Kabuto::IID_TOOL_MANAGER_PRO);
+    if (manager == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING,
+                             "Tools can't observe tool switches: IToolManagerPro is not available");
+        return;
+    }
+
+    manager->followSwitchTool(
+        [](Kabuto::IToolManagerPro::ID previous, Kabuto::IToolManagerPro::ID current)
+        {
+            /* NO_TOOL means the previous tool is being removed and has already
+               been destroyed, so only the registration guard may clean it up. */
+            if (current == Kabuto::IToolManagerPro::NO_TOOL)
+            {
+                return;
+            }
+
+            deactivationRegistry().deactivate(previous);
+        }
+    );
+
+    manager->followRemoveTool([](Kabuto::IToolManagerPro::ID tool_id) { deactivationRegistry().forget(tool_id); });
 }
 
 std::optional<IRenderer::TextureID> loadIcon(IRenderer& renderer, const char* path)
@@ -148,7 +239,13 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
+    /* The registration guard deactivates the tools on unload, so its registry
+       has to be constructed first and therefore destroyed last. */
+    (void)deactivationRegistry();
+    subscribeToToolSwitches();
+
     std::unique_ptr<Kabuto::Tools::AddShapeTool> add_shape = makeAddShapeTool(*document, *palette, *camera, *renderer);
+    Kabuto::Tools::AddShapeTool*                 add_shape_tool = add_shape.get();
 
     if (tool_manager->addTool(std::move(add_shape)) != IToolManager::Error::SUCCESS)
     {
@@ -156,6 +253,30 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
     registrationGuard().remember(Kabuto::Tools::ADD_SHAPE_TOOL_ID);
+    deactivationRegistry().remember(Kabuto::Tools::ADD_SHAPE_TOOL_ID,
+                                    [add_shape_tool] { add_shape_tool->deactivate(); });
+
+    auto add_polygon = std::make_unique<Kabuto::Tools::AddPolygonTool>(*document, *palette, *camera);
+    Kabuto::Tools::AddPolygonTool* add_polygon_tool = add_polygon.get();
+    if (tool_manager->addTool(std::move(add_polygon)) != IToolManager::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't register the add polygon tool");
+        return false;
+    }
+    registrationGuard().remember(Kabuto::Tools::ADD_POLYGON_TOOL_ID);
+    deactivationRegistry().remember(Kabuto::Tools::ADD_POLYGON_TOOL_ID,
+                                    [add_polygon_tool] { add_polygon_tool->deactivate(); });
+
+    auto                            edit_polygon      = std::make_unique<Kabuto::Tools::EditPolygonTool>(*document);
+    Kabuto::Tools::EditPolygonTool* edit_polygon_tool = edit_polygon.get();
+    if (tool_manager->addTool(std::move(edit_polygon)) != IToolManager::Error::SUCCESS)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't register the edit polygon tool");
+        return false;
+    }
+    registrationGuard().remember(Kabuto::Tools::EDIT_POLYGON_TOOL_ID);
+    deactivationRegistry().remember(Kabuto::Tools::EDIT_POLYGON_TOOL_ID,
+                                    [edit_polygon_tool] { edit_polygon_tool->deactivate(); });
 
     auto delete_shape = std::make_unique<Kabuto::Tools::DeleteShapeTool>(*document);
     if (tool_manager->addTool(std::move(delete_shape)) != IToolManager::Error::SUCCESS)
@@ -173,13 +294,16 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     }
     registrationGuard().remember(Kabuto::Tools::SET_COLOR_TOOL_ID);
 
-    auto camera_tool = std::make_unique<Kabuto::Tools::CameraTool>(*camera);
+    auto                       camera_tool     = std::make_unique<Kabuto::Tools::CameraTool>(*camera);
+    Kabuto::Tools::CameraTool* camera_tool_raw = camera_tool.get();
     if (tool_manager->addTool(std::move(camera_tool)) != IToolManager::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Tools can't register the camera tool");
         return false;
     }
     registrationGuard().remember(Kabuto::Tools::CAMERA_TOOL_ID);
+    deactivationRegistry().remember(Kabuto::Tools::CAMERA_TOOL_ID,
+                                    [camera_tool_raw] { camera_tool_raw->deactivate(); });
 
     for (const ToolBarItem& item : TOOL_BAR_ITEMS)
     {

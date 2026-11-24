@@ -45,7 +45,7 @@ namespace Tools
 class AddShapeTool final : public IToolManager::ATool
 {
 public:
-    static constexpr IToolManager::ATool::ID ID    = 3;
+    static constexpr IToolManager::ATool::ID ID = 3;
 
     using Factory = std::function<std::unique_ptr<IDocument::TShape>(const Vec2F& size)>;
 
@@ -66,6 +66,12 @@ public:
 
     IToolManager::ATool::ID id() const override;
     bool                    processEvent(const IInputPump::Event& event) override;
+    /**
+     * Removes everything the tool has added on top of the document: the shape
+     * menu and an unfinished dragged shape. Called by the plugin when another
+     * tool becomes active.
+     */
+    void deactivate();
 
 private:
     static constexpr float MIN_DRAG_SIZE = 2.0F;
@@ -91,6 +97,7 @@ private:
     void cancelDrag();
 
     bool openShapeMenu(const Vec2F& global_pos);
+    void closeShapeMenu();
     void createShape(const Vec2F& center, const Vec2F& size);
     void applyPaletteColor(IDocument::TShape& shape) const;
 
@@ -102,6 +109,7 @@ private:
 
     IDocument::TShape* shape_    = nullptr;
     TObject::ID        shape_id_ = 0;
+    TObject::ID        menu_id_  = 0;
     Vec2F              anchor_;
     bool               dragging_ = false;
 }; // class AddShapeTool
@@ -117,6 +125,12 @@ inline AddShapeTool::AddShapeTool(IDocument& document, IPalette& palette, ICamer
 inline IToolManager::ATool::ID AddShapeTool::id() const
 {
     return ID;
+}
+
+inline void AddShapeTool::deactivate()
+{
+    closeShapeMenu();
+    cancelDrag();
 }
 
 inline bool AddShapeTool::processEvent(const IInputPump::Event& event)
@@ -232,8 +246,26 @@ inline bool AddShapeTool::openShapeMenu(const Vec2F& global_pos)
         menu->add(std::move(item));
     }
 
+    menu_id_ = menu->id();
     ApplicationCore::instance().pushModal(std::move(menu));
     return true;
+}
+
+inline void AddShapeTool::closeShapeMenu()
+{
+    if (menu_id_ == 0)
+    {
+        return;
+    }
+
+    /* The menu removes itself on an outside click, so the remembered id may
+       already be gone by the time the tool is deactivated. */
+    if (ApplicationCore::instance().findObject(menu_id_) != nullptr)
+    {
+        ApplicationCore::instance().removeObject(menu_id_);
+    }
+
+    menu_id_ = 0;
 }
 
 inline bool AddShapeTool::beginDrag(const Vec2F& global_pos)

@@ -41,6 +41,11 @@ public:
 
     IToolManager::ATool::ID id() const override;
     bool                    processEvent(const IInputPump::Event& event) override;
+    /**
+     * Drops a pan that was in progress, so a release lost while another tool
+     * was active cannot leave the camera attached to the cursor.
+     */
+    void deactivate();
 
 private:
     static constexpr float ZOOM_STEP       = 0.1F;
@@ -75,6 +80,11 @@ inline CameraTool::CameraTool(ICamera& camera) : camera_(camera)
 inline IToolManager::ATool::ID CameraTool::id() const
 {
     return ID;
+}
+
+inline void CameraTool::deactivate()
+{
+    pan_button_.reset();
 }
 
 inline bool CameraTool::processEvent(const IInputPump::Event& event)

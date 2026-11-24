@@ -50,6 +50,8 @@ private:
 class CToolBar final : public IToolBar
 {
 public:
+    friend class TToolBar;
+
     CToolBar(const CToolBar&)            = delete;
     CToolBar(CToolBar&&)                 = delete;
     CToolBar& operator=(const CToolBar&) = delete;
