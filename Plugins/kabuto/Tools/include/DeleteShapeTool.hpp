@@ -24,7 +24,9 @@ namespace Tools
 class DeleteShapeTool final : public IToolManager::ATool
 {
 public:
-    DeleteShapeTool(ID tool_id, IDocument& document);
+    static constexpr IToolManager::ATool::ID ID = 2;
+
+    DeleteShapeTool(IDocument& document);
     ~DeleteShapeTool() override = default;
 
     DeleteShapeTool(const DeleteShapeTool&)            = delete;
@@ -32,23 +34,22 @@ public:
     DeleteShapeTool& operator=(const DeleteShapeTool&) = delete;
     DeleteShapeTool& operator=(DeleteShapeTool&&)      = delete;
 
-    ID   id() const override;
-    bool processEvent(const IInputPump::Event& event) override;
+    IToolManager::ATool::ID id() const override;
+    bool                    processEvent(const IInputPump::Event& event) override;
 
 private:
-    ID         id_;
     IDocument& document_;
 }; // class DeleteShapeTool
 
 /* ====================== Implementation ====================== */
 
-inline DeleteShapeTool::DeleteShapeTool(ID tool_id, IDocument& document) : id_(tool_id), document_(document)
+inline DeleteShapeTool::DeleteShapeTool(IDocument& document) : document_(document)
 {
 }
 
 inline IToolManager::ATool::ID DeleteShapeTool::id() const
 {
-    return id_;
+    return ID;
 }
 
 inline bool DeleteShapeTool::processEvent(const IInputPump::Event& event)

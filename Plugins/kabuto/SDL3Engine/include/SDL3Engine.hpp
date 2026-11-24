@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../export/VertexRenderer.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
@@ -22,7 +23,7 @@ namespace Kabuto
 namespace Engine
 {
 
-class SDL3Engine final : public IRenderer, public IInputPump
+class SDL3Engine final : public IRenderer, public IInputPump, public IVertexRenderer
 {
 private:
     struct Font
@@ -77,6 +78,11 @@ public:
     void clear() override;
     void renderText(const Color& color, const BoxF& box, const std::string& text, const TextFormat& format,
                     float angle = 0) override;
+
+    /* from IVertexRenderer */
+
+    void renderVertex(const Color& color, const Vertex& vertex) override;
+    void renderVertexLine(const Color& color, const Vertex& vertex) override;
 
     /* from IInputPump */
 

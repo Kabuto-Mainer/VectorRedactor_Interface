@@ -17,7 +17,7 @@ $(TARGET): $(OBJS)
 
 %.o: %.c
 	@echo "[Compiling $<]"
-	clang -Ilibtess2/Include -g -Wall -Wextra -c $< -o $@
+	clang -Ilibtess2/Include -fpic -g -Wall -Wextra -c $< -o $@
 
 clean:
 	rm -f $(OBJS) $(TARGET)

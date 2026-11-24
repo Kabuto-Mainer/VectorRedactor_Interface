@@ -39,6 +39,13 @@ constexpr float VECTOR_ARROW_LENGTH = 10.0F;
 constexpr float VECTOR_ARROW_ANGLE  = 25.0F * std::numbers::pi_v<float> / 180.0F;
 constexpr float RAD_TO_DEG          = 180.0F / std::numbers::pi_v<float>;
 
+/*
+ * SDL3_gfx's ellipse primitive computes its scanlines with Sint32 and becomes
+ * wrong for radii above ~1024 (the overscan squares overflow). Large ellipses
+ * are therefore drawn as polygons instead.
+ */
+constexpr float MAX_ELLIPSE_PRIMITIVE_RADIUS = 512.0F;
+
 void logSdlError(const char* what)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "%s: %s", what, SDL_GetError());
@@ -993,10 +1000,13 @@ void SDL3Engine::renderEllipse(const Color& color, const BoxF& box, float angle)
 {
     assert(renderer_);
 
-    if (angle == 0.0F)
+    const Vec2F radius = box.size() / 2.0F;
+    const bool  fits_primitive = radius.x() <= MAX_ELLIPSE_PRIMITIVE_RADIUS &&
+                                radius.y() <= MAX_ELLIPSE_PRIMITIVE_RADIUS;
+
+    if (angle == 0.0F && fits_primitive)
     {
         const Vec2F center = box.center();
-        const Vec2F radius = box.size() / 2.0F;
 
         if (!filledEllipseRGBA(renderer_, center.x(), center.y(), radius.x(), radius.y(), color.r, color.g, color.b,
                                color.a))
@@ -1013,10 +1023,13 @@ void SDL3Engine::renderEllipseLines(const Color& color, const BoxF& box, float a
 {
     assert(renderer_);
 
-    if (angle == 0.0F)
+    const Vec2F radius = box.size() / 2.0F;
+    const bool  fits_primitive = radius.x() <= MAX_ELLIPSE_PRIMITIVE_RADIUS &&
+                                radius.y() <= MAX_ELLIPSE_PRIMITIVE_RADIUS;
+
+    if (angle == 0.0F && fits_primitive)
     {
         const Vec2F center = box.center();
-        const Vec2F radius = box.size() / 2.0F;
 
         if (!ellipseRGBA(renderer_, center.x(), center.y(), radius.x(), radius.y(), color.r, color.g, color.b, color.a))
         {
@@ -1065,6 +1078,30 @@ void SDL3Engine::renderPixel(const Color& color, const Vec2F& pos)
     if (!pixelRGBA(renderer_, pos.x(), pos.y(), color.r, color.g, color.b, color.a))
     {
         logSdlError("pixelRGBA failed");
+    }
+}
+
+/* from IVertexRenderer */
+
+void SDL3Engine::renderVertex(const Color& color, const Vertex& vertex)
+{
+    assert(renderer_);
+
+    if (!filledTrigonRGBA(renderer_, vertex.x0.x(), vertex.x0.y(), vertex.x1.x(), vertex.x1.y(), vertex.x2.x(),
+                          vertex.x2.y(), color.r, color.g, color.b, color.a))
+    {
+        logSdlError("filledTrigonRGBA failed");
+    }
+}
+
+void SDL3Engine::renderVertexLine(const Color& color, const Vertex& vertex)
+{
+    assert(renderer_);
+
+    if (!trigonRGBA(renderer_, vertex.x0.x(), vertex.x0.y(), vertex.x1.x(), vertex.x1.y(), vertex.x2.x(), vertex.x2.y(),
+                    color.r, color.g, color.b, color.a))
+    {
+        logSdlError("trigonRGBA failed");
     }
 }
 
@@ -1288,6 +1325,13 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     }
 
     if (ApplicationCore::instance().registerInterface(IID_INPUT_PUMP, static_cast<IInputPump*>(&engine)) !=
+        ApplicationCore::Error::SUCCESS)
+    {
+        return false;
+    }
+
+    if (ApplicationCore::instance().registerInterface(IID_VERTEX_RENDERER,
+                                                      static_cast<Kabuto::IVertexRenderer*>(&engine)) !=
         ApplicationCore::Error::SUCCESS)
     {
         return false;

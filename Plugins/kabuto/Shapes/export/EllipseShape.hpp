@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Interfaces/IDocument.hpp"
-#include "include/Components.hpp"
+#include "Components.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -16,11 +15,10 @@
 namespace Kabuto
 {
 
-namespace Document
+namespace Shapes
 {
 
-
-class EllipseShape final : public IDocument::TShape, public ColorComponent
+class EllipseShape final : public IDocument::TShape, public Document::ColorComponent
 {
 public:
     static constexpr IDocument::TShape::TypeID ELLIPSE_SHAPE_ID = 1;
@@ -28,7 +26,7 @@ public:
     EllipseShape();
     ~EllipseShape() override;
 
-    EllipseShape(Vec2F const& size);
+    explicit EllipseShape(Vec2F const& size);
 
     static std::unique_ptr<IDocument::TShape> loadFrom(std::istream& stream);
     void                                      saveTo(std::ostream& stream) const;
@@ -40,9 +38,10 @@ public:
     BoxF                      axesAlignedBoundingBox() const override;
     IDocument::TShape::TypeID tid() const override;
 
-    Error queryComponent(IDocument::AShapeComponent::ID coid, IDocument::AShapeComponent** component) override;
-    Error queryComponent(IDocument::AShapeComponent::ID     coid,
-                         IDocument::AShapeComponent const** component) const override;
+    IDocument::TShape::Error queryComponent(IDocument::AShapeComponent::ID coid,
+                                            IDocument::AShapeComponent**   component) override;
+    IDocument::TShape::Error queryComponent(IDocument::AShapeComponent::ID     coid,
+                                            IDocument::AShapeComponent const** component) const override;
 };
 
 /* ====================== Implementation ====================== */
@@ -110,14 +109,26 @@ inline bool EllipseShape::processEvent(IInputPump::Event const& /*event*/)
 inline void EllipseShape::render()
 {
     IRenderer* renderer{};
-    ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));
-    assert(renderer);
+    const ApplicationCore::Error error =
+        ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));
+
+    if (error != ApplicationCore::Error::SUCCESS || renderer == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "EllipseShape can't find the renderer\n");
+        return;
+    }
+
+    const Vec2F center = mapLocalToGlobal(Vec2F{});
+    const Vec2F x_axis = mapLocalToGlobal(Vec2F{1.0F, 0.0F}) - center;
+    const Vec2F y_axis = mapLocalToGlobal(Vec2F{0.0F, 1.0F}) - center;
 
     BoxF to_render{
-        Vec2F{std::abs(scaling().x()), std::abs(scaling().y())}
+        Vec2F{x_axis.len(), y_axis.len()}
     };
-    to_render.setCenter(translation());
-    renderer->renderEllipse(color(), to_render, rotation());
+    to_render.setCenter(center);
+    renderer->renderEllipse(color(), to_render, std::atan2(x_axis.y(), x_axis.x()));
+
+    assert(children().empty());
 }
 
 inline bool EllipseShape::hitTest(Vec2F const& pos) const
@@ -146,21 +157,21 @@ inline IDocument::TShape::Error EllipseShape::queryComponent(IDocument::AShapeCo
 {
     if (component == nullptr)
     {
-        return Error::INVALID_ARGS;
+        return IDocument::TShape::Error::INVALID_ARGS;
     }
 
     switch (coid)
     {
-        case ColorComponent::COID:
+        case Document::ColorComponent::COID:
         {
-            (*component) = static_cast<ColorComponent*>(this);
-            return Error::SUCCESS;
+            (*component) = static_cast<Document::ColorComponent*>(this);
+            return IDocument::TShape::Error::SUCCESS;
         }
         default:
             break;
     }
     (*component) = nullptr;
-    return Error::COMPONENT_NOT_FOUND;
+    return IDocument::TShape::Error::COMPONENT_NOT_FOUND;
 }
 
 inline IDocument::TShape::Error EllipseShape::queryComponent(IDocument::AShapeComponent::ID     coid,
@@ -168,23 +179,23 @@ inline IDocument::TShape::Error EllipseShape::queryComponent(IDocument::AShapeCo
 {
     if (component == nullptr)
     {
-        return Error::INVALID_ARGS;
+        return IDocument::TShape::Error::INVALID_ARGS;
     }
 
     switch (coid)
     {
-        case ColorComponent::COID:
+        case Document::ColorComponent::COID:
         {
-            (*component) = static_cast<const ColorComponent*>(this);
-            return Error::SUCCESS;
+            (*component) = static_cast<Document::ColorComponent const*>(this);
+            return IDocument::TShape::Error::SUCCESS;
         }
         default:
             break;
     }
     (*component) = nullptr;
-    return Error::COMPONENT_NOT_FOUND;
+    return IDocument::TShape::Error::COMPONENT_NOT_FOUND;
 }
 
-}; // namespace Document
+} // namespace Shapes
 
-}; // namespace Kabuto
+} // namespace Kabuto

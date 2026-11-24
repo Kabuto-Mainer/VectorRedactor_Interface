@@ -1,6 +1,6 @@
 #pragma once
 
-#include "include/Components.hpp"
+#include "Components.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -15,18 +15,18 @@
 namespace Kabuto
 {
 
-namespace Document
+namespace Shapes
 {
 
-class RectangleShape final : public IDocument::TShape, public ColorComponent
+class RectangleShape final : public IDocument::TShape, public Document::ColorComponent
 {
 public:
     static constexpr IDocument::TShape::TypeID RECTANGLE_SHAPE_ID = 0;
 
     RectangleShape();
-    ~RectangleShape();
+    ~RectangleShape() override;
 
-    RectangleShape(Vec2F const& size);
+    explicit RectangleShape(Vec2F const& size);
 
     static std::unique_ptr<IDocument::TShape> loadFrom(std::istream& stream);
     void                                      saveTo(std::ostream& stream) const;
@@ -34,14 +34,14 @@ public:
     bool processEvent(IInputPump::Event const& event) override;
     void render() override;
 
-    bool                              hitTest(Vec2F const& pos) const override;
-    virtual BoxF                      axesAlignedBoundingBox() const override;
-    virtual IDocument::TShape::TypeID tid() const override;
+    bool                      hitTest(Vec2F const& pos) const override;
+    BoxF                      axesAlignedBoundingBox() const override;
+    IDocument::TShape::TypeID tid() const override;
 
-    virtual IDocument::TShape::Error queryComponent(IDocument::AShapeComponent::ID coid,
-                                                    IDocument::AShapeComponent**   component) override;
-    virtual IDocument::TShape::Error queryComponent(IDocument::AShapeComponent::ID     coid,
-                                                    IDocument::AShapeComponent const** component) const override;
+    IDocument::TShape::Error queryComponent(IDocument::AShapeComponent::ID coid,
+                                            IDocument::AShapeComponent**   component) override;
+    IDocument::TShape::Error queryComponent(IDocument::AShapeComponent::ID     coid,
+                                            IDocument::AShapeComponent const** component) const override;
 };
 
 /* ====================== Implementation ====================== */
@@ -109,14 +109,24 @@ inline bool RectangleShape::processEvent(IInputPump::Event const& /*event*/)
 inline void RectangleShape::render()
 {
     IRenderer* renderer{};
-    ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));
-    assert(renderer);
+    const ApplicationCore::Error error =
+        ApplicationCore::instance().queryInterface(IID_RENDERER, reinterpret_cast<void**>(&renderer));
+
+    if (error != ApplicationCore::Error::SUCCESS || renderer == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "RectangleShape can't find the renderer\n");
+        return;
+    }
+
+    const Vec2F center = mapLocalToGlobal(Vec2F{});
+    const Vec2F x_axis = mapLocalToGlobal(Vec2F{1.0F, 0.0F}) - center;
+    const Vec2F y_axis = mapLocalToGlobal(Vec2F{0.0F, 1.0F}) - center;
 
     BoxF to_render{
-        Vec2F{std::abs(scaling().x()), std::abs(scaling().y())}
+        Vec2F{x_axis.len(), y_axis.len()}
     };
-    to_render.setCenter(translation());
-    renderer->renderRect(color(), to_render, rotation());
+    to_render.setCenter(center);
+    renderer->renderRect(color(), to_render, std::atan2(x_axis.y(), x_axis.x()));
 
     assert(children().empty());
 }
@@ -147,13 +157,16 @@ inline IDocument::TShape::TypeID RectangleShape::tid() const
 inline IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID coid,
                                                                IDocument::AShapeComponent**   component)
 {
-    assert(component);
+    if (component == nullptr)
+    {
+        return IDocument::TShape::Error::INVALID_ARGS;
+    }
 
     switch (coid)
     {
-        case ColorComponent::COID:
+        case Document::ColorComponent::COID:
         {
-            (*component) = static_cast<ColorComponent*>(this);
+            (*component) = static_cast<Document::ColorComponent*>(this);
             return IDocument::TShape::Error::SUCCESS;
         }
         default:
@@ -166,13 +179,16 @@ inline IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShape
 inline IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID     coid,
                                                                IDocument::AShapeComponent const** component) const
 {
-    assert(component);
+    if (component == nullptr)
+    {
+        return IDocument::TShape::Error::INVALID_ARGS;
+    }
 
     switch (coid)
     {
-        case ColorComponent::COID:
+        case Document::ColorComponent::COID:
         {
-            (*component) = static_cast<ColorComponent const*>(this);
+            (*component) = static_cast<Document::ColorComponent const*>(this);
             return IDocument::TShape::Error::SUCCESS;
         }
         default:
@@ -182,6 +198,6 @@ inline IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShape
     return IDocument::TShape::Error::COMPONENT_NOT_FOUND;
 }
 
-}; // namespace Document
+} // namespace Shapes
 
-}; // namespace Kabuto
+} // namespace Kabuto
