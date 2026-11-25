@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../export/VertexRenderer.hpp"
+#include "export/VertexRenderer.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
@@ -44,7 +44,7 @@ private:
     SDL3Engine();
     ~SDL3Engine() override;
 
-    void      openWindow(const Vec2F& size);
+    void      openWindow(const Vec2F& size, int logical_width, int logical_height);
     void      closeWindow();
     void      setRenderColor(const Color& color);
     void      drawPolygon(const std::vector<Vec2F>& points, const Color& color, bool filled);

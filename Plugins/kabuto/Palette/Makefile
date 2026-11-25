@@ -1,8 +1,19 @@
-all:
-	@echo [Building libkabuto_Palette.so]
-	clang++ -std=c++23 -fpic -shared -I../UIFW -Iinclude -I../../../SDK -I../../../ -I. -g -Wall -Wextra -o libkabuto_Palette.so src/Palette.cpp
+CXX      := clang++
+CXXFLAGS := -std=c++23 -fpic -g -Wall -Wextra
+INCLUDES := -I../../../SDK -I../../../Plugins/ -I.
+LDLIBS   := -ldl -lSDL3 -lSDL3_gfx -lSDL3_ttf -lSDL3_image -ljsoncpp
+
+SRC     := src/Palette.cpp
+HEADERS := $(wildcard export/*.hpp) $(wildcard include/*.hpp)
+LIB     := libkabuto_Palette.so
+
+all: $(LIB)
+
+$(LIB): $(SRC) $(HEADERS)
+	@echo [Building $(LIB)]
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -shared -o $@ $(SRC) $(LDLIBS)
 
 clean:
-	rm -rf *.so
+	rm -f $(LIB)
 
 .PHONY: all clean
