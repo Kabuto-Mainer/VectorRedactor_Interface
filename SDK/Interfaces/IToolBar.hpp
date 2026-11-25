@@ -6,8 +6,6 @@
 
 constexpr static IID IID_TOOLBAR = 2;
 
-constexpr static const IID IID_TOOL_BAR = 5;
-
 class IToolBar
 {
 public:
