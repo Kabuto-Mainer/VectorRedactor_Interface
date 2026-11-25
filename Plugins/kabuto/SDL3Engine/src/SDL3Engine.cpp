@@ -51,6 +51,39 @@ void logSdlError(const char* what)
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "%s: %s", what, SDL_GetError());
 }
 
+/*
+ * SDL3_gfx primitives set the renderer draw blend mode themselves (NONE for
+ * opaque colors, BLEND otherwise). Restore the previous state afterwards so
+ * the engine's rendering is not affected by an earlier gfx call.
+ */
+class RenderBlendModeGuard final
+{
+public:
+    explicit RenderBlendModeGuard(SDL_Renderer* renderer) : renderer_(renderer)
+    {
+        if (renderer_ == nullptr || !SDL_GetRenderDrawBlendMode(renderer_, &blend_mode_))
+        {
+            logSdlError("SDL_GetRenderDrawBlendMode failed");
+            renderer_ = nullptr;
+        }
+    }
+
+    ~RenderBlendModeGuard()
+    {
+        if (renderer_ != nullptr && !SDL_SetRenderDrawBlendMode(renderer_, blend_mode_))
+        {
+            logSdlError("SDL_SetRenderDrawBlendMode failed");
+        }
+    }
+
+    RenderBlendModeGuard(const RenderBlendModeGuard&)            = delete;
+    RenderBlendModeGuard& operator=(const RenderBlendModeGuard&) = delete;
+
+private:
+    SDL_Renderer* renderer_   = nullptr;
+    SDL_BlendMode blend_mode_ = SDL_BLENDMODE_NONE;
+};
+
 Vec2F rotate(const Vec2F& vec, float angle)
 {
     const float c = std::cos(angle);
@@ -848,6 +881,7 @@ void SDL3Engine::drawPolygon(const std::vector<Vec2F>& points, const Color& colo
     }
 
     const auto count = static_cast<int>(points.size());
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
     const bool ok = filled ?
                         filledPolygonRGBA(renderer_, xs.data(), ys.data(), count, color.r, color.g, color.b, color.a) :
                         polygonRGBA(renderer_, xs.data(), ys.data(), count, color.r, color.g, color.b, color.a);
@@ -1007,6 +1041,7 @@ void SDL3Engine::renderEllipse(const Color& color, const BoxF& box, float angle)
     if (angle == 0.0F && fits_primitive)
     {
         const Vec2F center = box.center();
+        const RenderBlendModeGuard restore_blend_mode(renderer_);
 
         if (!filledEllipseRGBA(renderer_, center.x(), center.y(), radius.x(), radius.y(), color.r, color.g, color.b,
                                color.a))
@@ -1030,6 +1065,7 @@ void SDL3Engine::renderEllipseLines(const Color& color, const BoxF& box, float a
     if (angle == 0.0F && fits_primitive)
     {
         const Vec2F center = box.center();
+        const RenderBlendModeGuard restore_blend_mode(renderer_);
 
         if (!ellipseRGBA(renderer_, center.x(), center.y(), radius.x(), radius.y(), color.r, color.g, color.b, color.a))
         {
@@ -1044,6 +1080,8 @@ void SDL3Engine::renderEllipseLines(const Color& color, const BoxF& box, float a
 void SDL3Engine::renderLine(const Color& color, const Vec2F& origin, const Vec2F& end)
 {
     assert(renderer_);
+
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
 
     if (!lineRGBA(renderer_, origin.x(), origin.y(), end.x(), end.y(), color.r, color.g, color.b, color.a))
     {
@@ -1075,6 +1113,8 @@ void SDL3Engine::renderPixel(const Color& color, const Vec2F& pos)
 {
     assert(renderer_);
 
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
+
     if (!pixelRGBA(renderer_, pos.x(), pos.y(), color.r, color.g, color.b, color.a))
     {
         logSdlError("pixelRGBA failed");
@@ -1087,6 +1127,8 @@ void SDL3Engine::renderVertex(const Color& color, const Vertex& vertex)
 {
     assert(renderer_);
 
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
+
     if (!filledTrigonRGBA(renderer_, vertex.x0.x(), vertex.x0.y(), vertex.x1.x(), vertex.x1.y(), vertex.x2.x(),
                           vertex.x2.y(), color.r, color.g, color.b, color.a))
     {
@@ -1097,6 +1139,8 @@ void SDL3Engine::renderVertex(const Color& color, const Vertex& vertex)
 void SDL3Engine::renderVertexLine(const Color& color, const Vertex& vertex)
 {
     assert(renderer_);
+
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
 
     if (!trigonRGBA(renderer_, vertex.x0.x(), vertex.x0.y(), vertex.x1.x(), vertex.x1.y(), vertex.x2.x(), vertex.x2.y(),
                     color.r, color.g, color.b, color.a))
