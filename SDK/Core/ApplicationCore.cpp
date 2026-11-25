@@ -51,11 +51,22 @@ Vec2F ApplicationCore::Root::mapLocalToGlobal(const Vec2F& pos) const
 
 void ApplicationCore::Root::pushModal(std::unique_ptr<TObject> object)
 {
+    if (object == nullptr)
+    {
+        return;
+    }
+
+    object->setParent(this);
     children().push_back(std::move(object));
 }
 
 void ApplicationCore::Root::popModal()
 {
+    if (children().empty())
+    {
+        return;
+    }
+
     children().pop_back();
 }
 

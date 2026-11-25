@@ -7,7 +7,7 @@
 namespace Kabuto
 {
 
-constexpr static const IID IID_PALETTE = 0x00'07;
+constexpr static const IID IID_PALETTE = 0x00'25125;
 
 class IPalette
 {

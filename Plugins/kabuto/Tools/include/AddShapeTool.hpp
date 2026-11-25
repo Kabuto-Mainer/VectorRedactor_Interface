@@ -1,13 +1,18 @@
 #pragma once
 
+#include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
+#include "Utils/ACommand.hpp"
+#include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
+#include "export/Components.hpp"
+#include "export/ICamera.hpp"
 #include "export/IPalette.hpp"
-#include "include/Components.hpp"
+#include "export/IUIFramework.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -29,13 +34,19 @@ namespace Tools
 /**
  * Creates a shape by dragging on the canvas.
  *
- * The shape type is chosen through a context menu. The first left click on the
- * canvas opens the menu; a right click opens it again so that the type can be
- * changed at any moment.
+ * The shape type is chosen through a modal context menu. The first left click
+ * on the canvas opens the menu; a right click opens it again so that the type
+ * can be changed at any moment. The menu closes itself on an outside click,
+ * and selection closes it through a deferred popModal().
+ *
+ * Cursor positions are converted with ICamera, so dragging works the same way
+ * on a shifted or zoomed view.
  */
 class AddShapeTool final : public IToolManager::ATool
 {
 public:
+    static constexpr IToolManager::ATool::ID ID = 3;
+
     using Factory = std::function<std::unique_ptr<IDocument::TShape>(const Vec2F& size)>;
 
     struct ShapeOption
@@ -45,17 +56,7 @@ public:
         Factory                             factory;
     }; // struct ShapeOption
 
-    using ChosenHandler = std::function<void(std::size_t index)>;
-
-    /**
-     * Shows the shape menu at the given global position. The handler must be
-     * called with the index of the chosen option. The menu may keep the handler
-     * alive after processEvent() returns.
-     */
-    using ShapeMenu =
-        std::function<void(const Vec2F& anchor, const std::vector<ShapeOption>& options, ChosenHandler on_chosen)>;
-
-    AddShapeTool(ID tool_id, IDocument& document, IPalette& palette, std::vector<ShapeOption> options, ShapeMenu menu);
+    AddShapeTool(IDocument& document, IPalette& palette, ICamera& camera, std::vector<ShapeOption> options);
     ~AddShapeTool() override = default;
 
     AddShapeTool(const AddShapeTool&)            = delete;
@@ -63,12 +64,32 @@ public:
     AddShapeTool& operator=(const AddShapeTool&) = delete;
     AddShapeTool& operator=(AddShapeTool&&)      = delete;
 
-    ID   id() const override;
-    bool processEvent(const IInputPump::Event& event) override;
+    IToolManager::ATool::ID id() const override;
+    bool                    processEvent(const IInputPump::Event& event) override;
+    /**
+     * Removes everything the tool has added on top of the document: the shape
+     * menu and an unfinished dragged shape. Called by the plugin when another
+     * tool becomes active.
+     */
+    void deactivate();
 
 private:
     static constexpr float MIN_DRAG_SIZE = 2.0F;
     static constexpr float CENTER_FACTOR = 0.5F;
+
+    static constexpr float MENU_ITEM_WIDTH  = 140.0F;
+    static constexpr float MENU_ITEM_HEIGHT = 28.0F;
+
+    class PopModalCommand final : public ACommand
+    {
+    public:
+        void execute() const override
+        {
+            ApplicationCore::instance().popModal();
+        }
+    }; // class PopModalCommand
+
+    static void popModalAfterEvent();
 
     bool beginDrag(const Vec2F& global_pos);
     bool updateDrag(const Vec2F& global_pos);
@@ -76,33 +97,40 @@ private:
     void cancelDrag();
 
     bool openShapeMenu(const Vec2F& global_pos);
+    void closeShapeMenu();
     void createShape(const Vec2F& center, const Vec2F& size);
     void applyPaletteColor(IDocument::TShape& shape) const;
 
-    ID                       id_;
     IDocument&               document_;
     IPalette&                palette_;
+    ICamera&                 camera_;
     std::vector<ShapeOption> options_;
-    ShapeMenu                menu_;
     Factory                  factory_;
 
     IDocument::TShape* shape_    = nullptr;
     TObject::ID        shape_id_ = 0;
+    TObject::ID        menu_id_  = 0;
     Vec2F              anchor_;
     bool               dragging_ = false;
 }; // class AddShapeTool
 
 /* ====================== Implementation ====================== */
 
-inline AddShapeTool::AddShapeTool(ID tool_id, IDocument& document, IPalette& palette, std::vector<ShapeOption> options,
-                                  ShapeMenu menu) :
-    id_(tool_id), document_(document), palette_(palette), options_(std::move(options)), menu_(std::move(menu))
+inline AddShapeTool::AddShapeTool(IDocument& document, IPalette& palette, ICamera& camera,
+                                  std::vector<ShapeOption> options) :
+    document_(document), palette_(palette), camera_(camera), options_(std::move(options))
 {
 }
 
 inline IToolManager::ATool::ID AddShapeTool::id() const
 {
-    return id_;
+    return ID;
+}
+
+inline void AddShapeTool::deactivate()
+{
+    closeShapeMenu();
+    cancelDrag();
 }
 
 inline bool AddShapeTool::processEvent(const IInputPump::Event& event)
@@ -155,23 +183,89 @@ inline bool AddShapeTool::processEvent(const IInputPump::Event& event)
     }
 }
 
+inline void AddShapeTool::popModalAfterEvent()
+{
+    ApplicationCore::instance().pushCommand(std::make_unique<PopModalCommand>());
+}
+
 inline bool AddShapeTool::openShapeMenu(const Vec2F& global_pos)
 {
-    if (!menu_ || options_.empty())
+    if (options_.empty())
     {
         return false;
     }
 
-    menu_(global_pos, options_,
-          [this](std::size_t index)
-          {
-              if (index < options_.size())
-              {
-                  factory_ = options_[index].factory;
-              }
-          });
+    IUIFramework* framework = nullptr;
+    if (ApplicationCore::instance().queryInterface(IID_IUIFramework, reinterpret_cast<void**>(&framework)) !=
+            ApplicationCore::Error::SUCCESS ||
+        framework == nullptr)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Add shape tool can't find the UI framework");
+        return false;
+    }
 
+    IUIFramework::ContextMenuDescription description;
+    description.min_point = global_pos;
+    description.direction = IUIFramework::Direction::VERTICAL;
+    description.role      = IUIFramework::Role::DEFAULT;
+
+    std::unique_ptr<IUIFramework::ContextMenu> menu = framework->create(description);
+    if (!menu)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Add shape tool can't create the shape menu");
+        return false;
+    }
+
+    for (std::size_t index = 0; index < options_.size(); ++index)
+    {
+        IUIFramework::ButtonDescription button;
+        button.box = BoxF{
+            Vec2F{MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT}
+        };
+        button.text = options_[index].label;
+        if (options_[index].icon.has_value())
+        {
+            button.icon = IUIFramework::Icon{*options_[index].icon};
+        }
+        button.role = IUIFramework::Role::DEFAULT;
+        button.on_press.callbacks.emplace_back(
+            [this, index]
+            {
+                factory_ = options_[index].factory;
+                popModalAfterEvent();
+            }
+        );
+
+        std::unique_ptr<IUIFramework::Button> item = framework->create(button);
+        if (!item)
+        {
+            ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "Add shape tool can't create a shape menu item");
+            continue;
+        }
+
+        menu->add(std::move(item));
+    }
+
+    menu_id_ = menu->id();
+    ApplicationCore::instance().pushModal(std::move(menu));
     return true;
+}
+
+inline void AddShapeTool::closeShapeMenu()
+{
+    if (menu_id_ == 0)
+    {
+        return;
+    }
+
+    /* The menu removes itself on an outside click, so the remembered id may
+       already be gone by the time the tool is deactivated. */
+    if (ApplicationCore::instance().findObject(menu_id_) != nullptr)
+    {
+        ApplicationCore::instance().removeObject(menu_id_);
+    }
+
+    menu_id_ = 0;
 }
 
 inline bool AddShapeTool::beginDrag(const Vec2F& global_pos)
@@ -191,19 +285,27 @@ inline bool AddShapeTool::updateDrag(const Vec2F& global_pos)
         return false;
     }
 
-    const Vec2F current = global_pos;
-    const Vec2F min{std::min(anchor_.x(), current.x()), std::min(anchor_.y(), current.y())};
-    const Vec2F max{std::max(anchor_.x(), current.x()), std::max(anchor_.y(), current.y())};
-    const Vec2F size = max - min;
+    const Vec2F min{std::min(anchor_.x(), global_pos.x()), std::min(anchor_.y(), global_pos.y())};
+    const Vec2F max{std::max(anchor_.x(), global_pos.x()), std::max(anchor_.y(), global_pos.y())};
 
+    /* The minimal drag size is checked on screen, before the zoom is applied. */
     if (shape_ == nullptr)
     {
-        if (size.x() < MIN_DRAG_SIZE || size.y() < MIN_DRAG_SIZE)
+        const Vec2F global_size = max - min;
+        if (global_size.x() < MIN_DRAG_SIZE || global_size.y() < MIN_DRAG_SIZE)
         {
             return true;
         }
+    }
 
-        createShape((min + max) * CENTER_FACTOR, size);
+    const Vec2F local_min = camera_.mapGlobalToLocal(min);
+    const Vec2F local_max = camera_.mapGlobalToLocal(max);
+    const Vec2F size      = local_max - local_min;
+    const Vec2F center    = (local_min + local_max) * CENTER_FACTOR;
+
+    if (shape_ == nullptr)
+    {
+        createShape(center, size);
         if (shape_ == nullptr)
         {
             dragging_ = false;
@@ -214,7 +316,7 @@ inline bool AddShapeTool::updateDrag(const Vec2F& global_pos)
     }
 
     shape_->setScaling(size);
-    shape_->setTranslation((min + max) * CENTER_FACTOR);
+    shape_->setTranslation(center);
 
     return true;
 }
@@ -234,8 +336,8 @@ inline bool AddShapeTool::endDrag(const Vec2F& global_pos)
         return true;
     }
 
-    const Vec2F size = shape_->scaling();
-    if (std::abs(size.x()) < MIN_DRAG_SIZE || std::abs(size.y()) < MIN_DRAG_SIZE)
+    const Vec2F global_size{std::abs(global_pos.x() - anchor_.x()), std::abs(global_pos.y() - anchor_.y())};
+    if (global_size.x() < MIN_DRAG_SIZE || global_size.y() < MIN_DRAG_SIZE)
     {
         cancelDrag();
         return true;

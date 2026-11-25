@@ -5,10 +5,12 @@
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
-#include "export/EllipseShape.hpp"
-#include "export/RectangleShape.hpp"
+#include "export/ICamera.hpp"
+// #include "export/EllipseShape.hpp"
+// #include "export/RectangleShape.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -19,6 +21,17 @@ namespace Kabuto
 
 namespace Document
 {
+
+namespace
+{
+
+Vec2F clampScaling(const Vec2F& scaling)
+{
+    return Vec2F{std::clamp(scaling.x(), ICamera::MIN_SCALE, ICamera::MAX_SCALE),
+                 std::clamp(scaling.y(), ICamera::MIN_SCALE, ICamera::MAX_SCALE)};
+}
+
+} // namespace
 
 /* TDocument */
 
@@ -91,7 +104,7 @@ Vec2F TDocument::mapLocalToGlobal(const Vec2F& pos) const
         return pos;
     }
 
-    return parent()->mapLocalToGlobal(pos);
+    return parent()->mapLocalToGlobal(transform().transformPoint(pos));
 }
 
 Vec2F TDocument::mapGlobalToLocal(const Vec2F& pos) const
@@ -100,8 +113,7 @@ Vec2F TDocument::mapGlobalToLocal(const Vec2F& pos) const
     {
         return pos;
     }
-
-    return parent()->mapGlobalToLocal(pos);
+    return transform().inverted().transformPoint(parent()->mapGlobalToLocal(pos));
 }
 
 /* CDocument */
@@ -169,6 +181,66 @@ void CDocument::accept(Visitor& visitor) const
     }
 }
 
+void CDocument::addScale(float scale)
+{
+    if (node() != nullptr)
+    {
+        auto past = node()->scaling();
+        node()->setScaling(clampScaling(past + Vec2F(1, 1) * scale));
+    }
+}
+
+void CDocument::addScaleAt(float scale, const Vec2F& anchor)
+{
+    if (node() == nullptr)
+    {
+        return;
+    }
+
+    const Vec2F past = node()->scaling();
+    const Vec2F next = clampScaling(past + Vec2F(1, 1) * scale);
+
+    const Vec2F translation = node()->translation();
+    node()->setScaling(next);
+
+    if (past.x() <= 0.0F)
+    {
+        return;
+    }
+
+    /* A content point l is rendered at t + s * l, so keeping the anchor p fixed
+       requires t' = p - (p - t) * s' / s */
+    node()->setTranslation(anchor - (anchor - translation) * (next.x() / past.x()));
+}
+
+void CDocument::addShift(const Vec2F& shift)
+{
+    if (node() != nullptr)
+    {
+        node()->translate(shift);
+    }
+}
+
+void CDocument::reset()
+{
+    if (node() != nullptr)
+    {
+        node()->setScaling(Vec2F(1, 1));
+        node()->setRotation(0.0F);
+        node()->setTranslation(Vec2F(0, 0));
+    }
+}
+
+Vec2F CDocument::mapGlobalToLocal(const Vec2F& pos) const
+{
+    if (node() == nullptr)
+    {
+        return pos;
+    }
+
+    return node()->mapGlobalToLocal(pos);
+}
+
 }; // namespace Document
 
 }; // namespace Kabuto
@@ -211,12 +283,16 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    const ApplicationCore::Error error =
+    const ApplicationCore::Error error_1 =
         core.registerInterface(IID_IDOCUMENT, static_cast<void*>(static_cast<IDocument*>(&document)));
-    if (error != ApplicationCore::Error::SUCCESS)
+
+    const ApplicationCore::Error error_2 =
+        core.registerInterface(Kabuto::IID_ICAMERA, static_cast<void*>(static_cast<Kabuto::ICamera*>(&document)));
+
+    if (error_1 != ApplicationCore::Error::SUCCESS || error_2 != ApplicationCore::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Failed to register IDocument: %s",
-                             ApplicationCore::strError(error));
+                             ApplicationCore::strError(error_1 != ApplicationCore::Error::SUCCESS ? error_1 : error_2));
 
         desktop->remove(document_node->id());
         document.unbindNode();
