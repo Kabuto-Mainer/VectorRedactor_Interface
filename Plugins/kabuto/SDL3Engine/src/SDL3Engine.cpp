@@ -1,4 +1,4 @@
-#include "SDL3Engine.hpp"
+#include "include/SDL3Engine.hpp"
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IID.hpp"
@@ -14,6 +14,10 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <dlfcn.h>
+#include <filesystem>
+#include <fstream>
+#include <json/json.h>
 #include <numbers>
 #include <optional>
 #include <string>
@@ -30,9 +34,8 @@ namespace Engine
 namespace
 {
 
-constexpr int   LOGICAL_WIDTH       = 1'920;
-constexpr int   LOGICAL_HEIGHT      = 1'080;
-constexpr float DESKTOP_USAGE       = 0.9F;
+constexpr const char* ENGINE_CONFIG_FILENAME = "config.json";
+
 constexpr int   FONT_PROBE_SIZE     = 16;
 constexpr int   ELLIPSE_SEGMENTS    = 72;
 constexpr float VECTOR_ARROW_LENGTH = 10.0F;
@@ -49,6 +52,88 @@ constexpr float MAX_ELLIPSE_PRIMITIVE_RADIUS = 512.0F;
 void logSdlError(const char* what)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "%s: %s", what, SDL_GetError());
+}
+
+struct EngineConfig
+{
+    int   logical_width  = 1'920;
+    int   logical_height = 1'080;
+    float desktop_usage  = 0.9F;
+};
+
+std::filesystem::path configFilePath()
+{
+    Dl_info info = {};
+
+    if (dladdr(reinterpret_cast<const void*>(&configFilePath), &info) != 0 && info.dli_fname != nullptr)
+    {
+        return std::filesystem::path(info.dli_fname).parent_path() / ENGINE_CONFIG_FILENAME;
+    }
+
+    std::error_code error;
+    return std::filesystem::current_path(error) / ENGINE_CONFIG_FILENAME;
+}
+
+void logInvalidConfigField(const std::filesystem::path& path, const char* field)
+{
+    ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Engine config '%s': invalid '%s', using default",
+                         path.string().c_str(), field);
+}
+
+EngineConfig loadEngineConfig(const std::filesystem::path& path)
+{
+    EngineConfig config;
+
+    std::ifstream file(path);
+    if (!file.is_open())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Engine config '%s' not found, using defaults",
+                             path.string().c_str());
+        return config;
+    }
+
+    Json::CharReaderBuilder builder;
+    Json::Value             root;
+    std::string             errors;
+
+    if (!Json::parseFromStream(builder, file, &root, &errors) || !root.isObject())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Engine config '%s' is invalid (%s), using defaults",
+                             path.string().c_str(), errors.empty() ? "root is not an object" : errors.c_str());
+        return config;
+    }
+
+    const Json::Value& logical_width = root["logical_width"];
+    if (logical_width.isInt() && logical_width.asInt() > 0)
+    {
+        config.logical_width = logical_width.asInt();
+    }
+    else if (!logical_width.isNull())
+    {
+        logInvalidConfigField(path, "logical_width");
+    }
+
+    const Json::Value& logical_height = root["logical_height"];
+    if (logical_height.isInt() && logical_height.asInt() > 0)
+    {
+        config.logical_height = logical_height.asInt();
+    }
+    else if (!logical_height.isNull())
+    {
+        logInvalidConfigField(path, "logical_height");
+    }
+
+    const Json::Value& desktop_usage = root["desktop_usage"];
+    if (desktop_usage.isNumeric() && desktop_usage.asFloat() > 0.0F && desktop_usage.asFloat() <= 1.0F)
+    {
+        config.desktop_usage = desktop_usage.asFloat();
+    }
+    else if (!desktop_usage.isNull())
+    {
+        logInvalidConfigField(path, "desktop_usage");
+    }
+
+    return config;
 }
 
 /*
@@ -131,22 +216,24 @@ SDL_FRect toSDLRect(const BoxF& box)
     return {box.left(), box.top(), box.size().x(), box.size().y()};
 }
 
-Vec2F initialWindowSize()
+Vec2F initialWindowSize(const EngineConfig& config)
 {
     SDL_Rect            usable  = {};
     const SDL_DisplayID display = SDL_GetPrimaryDisplay();
 
     if (display == 0 || !SDL_GetDisplayUsableBounds(display, &usable) || usable.w <= 0 || usable.h <= 0)
     {
-        return {static_cast<float>(LOGICAL_WIDTH), static_cast<float>(LOGICAL_HEIGHT)};
+        return {static_cast<float>(config.logical_width), static_cast<float>(config.logical_height)};
     }
 
-    const float width_scale  = static_cast<float>(usable.w) * DESKTOP_USAGE / static_cast<float>(LOGICAL_WIDTH);
-    const float height_scale = static_cast<float>(usable.h) * DESKTOP_USAGE / static_cast<float>(LOGICAL_HEIGHT);
-    const float scale        = std::min({width_scale, height_scale, 1.0F});
+    const float width_scale =
+        static_cast<float>(usable.w) * config.desktop_usage / static_cast<float>(config.logical_width);
+    const float height_scale =
+        static_cast<float>(usable.h) * config.desktop_usage / static_cast<float>(config.logical_height);
+    const float scale = std::min({width_scale, height_scale, 1.0F});
 
-    return {std::floor(static_cast<float>(LOGICAL_WIDTH) * scale),
-            std::floor(static_cast<float>(LOGICAL_HEIGHT) * scale)};
+    return {std::floor(static_cast<float>(config.logical_width) * scale),
+            std::floor(static_cast<float>(config.logical_height) * scale)};
 }
 
 /* ------------------ text helpers ------------------ */
@@ -772,6 +859,8 @@ std::optional<Event> convertEvent(const SDL_Event& sdl_event)
 
 SDL3Engine::SDL3Engine()
 {
+    const EngineConfig config = loadEngineConfig(configFilePath());
+
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
         logSdlError("SDL_Init failed");
@@ -786,7 +875,7 @@ SDL3Engine::SDL3Engine()
 
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "Renderer initialized successfully");
 
-    openWindow(initialWindowSize());
+    openWindow(initialWindowSize(config), config.logical_width, config.logical_height);
 
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "Input pump initialized successfully");
 }
@@ -813,7 +902,7 @@ SDL3Engine::~SDL3Engine()
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "Input pump deinitialized successfully");
 }
 
-void SDL3Engine::openWindow(const Vec2F& size)
+void SDL3Engine::openWindow(const Vec2F& size, int logical_width, int logical_height)
 {
     window_ = SDL_CreateWindow("GDInterface", static_cast<int>(size.x()), static_cast<int>(size.y()),
                                SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
@@ -830,7 +919,7 @@ void SDL3Engine::openWindow(const Vec2F& size)
         return;
     }
 
-    if (!SDL_SetRenderLogicalPresentation(renderer_, LOGICAL_WIDTH, LOGICAL_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX))
+    if (!SDL_SetRenderLogicalPresentation(renderer_, logical_width, logical_height, SDL_LOGICAL_PRESENTATION_LETTERBOX))
     {
         logSdlError("SDL_SetRenderLogicalPresentation failed");
     }

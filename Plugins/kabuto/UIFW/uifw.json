@@ -1,0 +1,52 @@
+{
+    "default_theme": "default",
+    "fonts": [
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/TTF/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/Adwaita/AdwaitaSans-Regular.ttf"
+    ],
+    "font": {
+        "size": 16,
+        "width_factor": 0.6
+    },
+    "layout": {
+        "padding": 4.0,
+        "header_height": 28.0,
+        "accent_line_height": 2.0,
+        "close_button_size": 20.0,
+        "menu_item_width": 120.0,
+        "menu_item_height": 28.0,
+        "pool_gap": 4.0,
+        "pool_drag_edge": 2.0
+    },
+    "palette": {
+        "lightness_threshold": 0.5,
+        "secondary_tint": 0.15,
+        "canvas_tint": 0.04,
+        "hover_mix": 0.08,
+        "pressed_mix": 0.16,
+        "border_mix": 0.2,
+        "dark_surface_lift": 0.08,
+        "light_surface_lift": 0.5
+    },
+    "themes": [
+        {
+            "name": "default",
+            "primary": "#3584e4",
+            "secondary": "#deddda",
+            "neutral": "#f6f5f4",
+            "accent": "#1c71d8",
+            "unical": "#e01b24"
+        },
+        {
+            "name": "dark",
+            "primary": "#3584e4",
+            "secondary": "#3d3d3d",
+            "neutral": "#242424",
+            "accent": "#62a0ea",
+            "unical": "#ff7b6b"
+        }
+    ]
+}
