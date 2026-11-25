@@ -3,7 +3,7 @@
 #include "IRenderer.hpp"
 #include "IToolManager.hpp"
 
-constexpr static const IID IID_TOOL_BAR = 5;
+constexpr static const IID IID_TOOL_BAR = 2;
 
 class IToolBar
 {

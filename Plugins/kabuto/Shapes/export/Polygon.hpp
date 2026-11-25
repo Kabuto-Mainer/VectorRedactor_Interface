@@ -169,7 +169,7 @@ inline BoxF PolygonShape::axesAlignedBoundingBox() const
 
     for (auto const& point : points())
     {
-        Vec2F const transformed_point = mapLocalToGlobal(point);
+        Vec2F const transformed_point = transform().transformPoint(point);
 
         min_x = std::min(min_x, transformed_point.x());
         max_x = std::max(max_x, transformed_point.x());
