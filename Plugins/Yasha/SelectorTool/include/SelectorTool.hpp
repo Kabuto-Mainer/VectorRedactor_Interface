@@ -4,7 +4,6 @@
 #include "SelectionOverlay.hpp"
 #include "ToolManager.hpp"
 
-#include <memory>
 #include <optional>
 
 namespace Yasha::Tools
@@ -16,7 +15,7 @@ class SelectorTool final : public IToolManager::ATool
 {
 public:
     SelectorTool(IDocument& document, ToolManager& manager, SelectionOverlay& overlay,
-                 std::shared_ptr<SelectionState> state);
+                 SelectionState& state);
 
     // clang-format off
     ID id() const override { return SELECTOR_TOOL_ID; }
@@ -40,7 +39,7 @@ private:
     IDocument&                      document_;
     ToolManager&                    manager_;
     SelectionOverlay&               overlay_;
-    std::shared_ptr<SelectionState> state_;
+    SelectionState&                 state_;
     std::uint64_t                   last_activation_revision_;
     std::optional<TObject::ID>      dragged_id_;
     Gesture                         gesture_ = Gesture::NONE;

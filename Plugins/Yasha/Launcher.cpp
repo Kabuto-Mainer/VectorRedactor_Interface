@@ -41,7 +41,7 @@ int main()
                              ApplicationCore::strError(error));
         return EXIT_FAILURE;
     }
-    error = initializeDocument();
+    error = Yasha::initializeDocument();
     if (error != ApplicationCore::Error::SUCCESS)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "Document initialization failed: %s",
@@ -63,6 +63,22 @@ int main()
         }
 
         ApplicationCore::log(ApplicationCore::LogLevel::OK, "'%s' loaded", plugin_file.c_str());
+    }
+
+    if (std::filesystem::exists("drawing.json"))
+    {
+        IDocument* document = nullptr;
+        auto& core = ApplicationCore::instance();
+        if (core.queryInterface(IID_IDOCUMENT, reinterpret_cast<void**>(&document)) != ApplicationCore::Error::SUCCESS ||
+            document == nullptr)
+        {
+            return EXIT_FAILURE;
+        }
+        auto* yasha_document = dynamic_cast<Yasha::Document*>(document);
+        if (yasha_document == nullptr || !yasha_document->load())
+        {
+            return EXIT_FAILURE;
+        }
     }
 
     error = ApplicationCore::instance().run();

@@ -4,7 +4,6 @@
 #include "ToolManager.hpp"
 #include "Utils/TWidget.hpp"
 
-#include <memory>
 #include <optional>
 
 namespace Yasha::Tools
@@ -19,7 +18,7 @@ class SelectionOverlay final : public TWidget
 {
 public:
     SelectionOverlay(IDocument& document, ToolManager& manager, IToolManager::ATool::ID tool_id,
-                     std::shared_ptr<SelectionState> state);
+                     SelectionState& state);
 
     bool processEvent(const IInputPump::Event& event) override;
     void render() override;
@@ -35,7 +34,7 @@ private:
     IDocument&                      document_;
     ToolManager&                    manager_;
     IToolManager::ATool::ID         tool_id_;
-    std::shared_ptr<SelectionState> state_;
+    SelectionState&                 state_;
 };
 
 } // namespace Yasha::Tools

@@ -4,6 +4,12 @@
 /ToolBar/*.so
 /ToolBar/src/*.o
 /ToolBar/src/*.d
+/UIFramework/*.so
+/UIFramework/*.o
+/UIFramework/*.d
+/Palette/*.so
+/Palette/src/*.o
+/Palette/src/*.d
 /Render/*.so
 /InputPump/*.so
 /RectangleTool/*.so
@@ -15,3 +21,6 @@
 /SelectorTool/*.so
 /SelectorTool/src/*.o
 /SelectorTool/src/*.d
+/MurugovSelectTool/*.so
+/MurugovSelectTool/src/*.o
+/MurugovSelectTool/src/*.d

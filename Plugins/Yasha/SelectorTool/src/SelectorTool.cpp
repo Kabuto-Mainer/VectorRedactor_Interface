@@ -4,15 +4,14 @@
 
 #include <cmath>
 #include <numbers>
-#include <utility>
 #include <variant>
 
 namespace Yasha::Tools
 {
 
 SelectorTool::SelectorTool(IDocument& document, ToolManager& manager, SelectionOverlay& overlay,
-                           std::shared_ptr<SelectionState> state) :
-    document_(document), manager_(manager), overlay_(overlay), state_(std::move(state)),
+                           SelectionState& state) :
+    document_(document), manager_(manager), overlay_(overlay), state_(state),
     last_activation_revision_(manager.activationRevision())
 {
 }
@@ -44,7 +43,7 @@ bool SelectorTool::processEvent(const IInputPump::Event& event)
             {
                 return cancel();
             }
-            state_->selected_shape_id.reset();
+            state_.selected_shape_id.reset();
             return true;
         }
         return false;
@@ -77,7 +76,7 @@ bool SelectorTool::press(const Vec2F& global_pos)
 
     if (overlay_.hitTestRotationHandle(global_pos))
     {
-        dragged_id_ = state_->selected_shape_id;
+        dragged_id_ = state_.selected_shape_id;
         if (dragged_id_)
         {
             if (auto* shape = findShape(document_, *dragged_id_))
@@ -92,7 +91,7 @@ bool SelectorTool::press(const Vec2F& global_pos)
     }
 
     dragged_id_               = document_.hitTest(global_pos);
-    state_->selected_shape_id = dragged_id_;
+    state_.selected_shape_id = dragged_id_;
     if (dragged_id_)
     {
         if (auto* shape = findShape(document_, *dragged_id_))

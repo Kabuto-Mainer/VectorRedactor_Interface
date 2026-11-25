@@ -3,6 +3,7 @@
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IInputPump.hpp"
+#include "../../Palette/IPalette.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Utils/BoxF.hpp"
@@ -26,6 +27,20 @@ namespace Tools
 {
 
 constexpr IToolManager::ATool::ID SELECT_TOOL_ID = 5;
+
+/* ====================== ColorComponent (COID = 4) ====================== */
+
+class SelectColorComponent : public IDocument::AShapeComponent
+{
+public:
+    constexpr static const ID COID = 4;
+
+    IRenderer::Color color() const { return color_; }
+    void             setColor(const IRenderer::Color& color) { color_ = color; }
+
+protected:
+    IRenderer::Color color_;
+};
 
 /* ====================== SelectTool ====================== */
 
@@ -77,6 +92,9 @@ private:
     void                            syncGroupFrame();
     void                            captureInitialStates(const std::vector<IDocument::TShape*>& shapes);
 
+    std::optional<IRenderer::Color> queryPaletteColor() const;
+    void                            applyColorToSelection(const IRenderer::Color& color);
+
     std::optional<BoxF>  groupBounds(const std::vector<IDocument::TShape*>& shapes) const;
     std::array<Vec2F, 8> selectionHandles(const std::vector<IDocument::TShape*>& shapes) const;
     Vec2F                rotateHandlePos(const std::vector<IDocument::TShape*>& shapes) const;
@@ -95,6 +113,7 @@ private:
     IRenderer& renderer_;
 
     std::unordered_set<TObject::ID> selected_ids_;
+    std::optional<IRenderer::Color> last_palette_color_;
     Mode                            mode_ = Mode::NONE;
 
     // For the selection marquee
@@ -193,6 +212,7 @@ inline void SelectTool::clearSelection()
 {
     selected_ids_.clear();
     initial_states_.clear();
+    last_palette_color_.reset();
     mode_                = Mode::NONE;
     active_handle_idx_   = -1;
     group_box_           = BoxF{};
@@ -225,6 +245,31 @@ inline void SelectTool::captureInitialStates(const std::vector<IDocument::TShape
             .scaling     = shape->scaling(),
             .rotation    = shape->rotation(),
         };
+    }
+}
+
+inline std::optional<IRenderer::Color> SelectTool::queryPaletteColor() const
+{
+    IPalette* palette = nullptr;
+    if (ApplicationCore::instance().queryInterface(IID_PALETTE, reinterpret_cast<void**>(&palette)) ==
+            ApplicationCore::Error::SUCCESS &&
+        palette != nullptr)
+    {
+        return palette->selectedColor();
+    }
+    return std::nullopt;
+}
+
+inline void SelectTool::applyColorToSelection(const IRenderer::Color& color)
+{
+    for (IDocument::TShape* shape : selectedShapes())
+    {
+        IDocument::AShapeComponent* raw_comp = nullptr;
+        if (shape->queryComponent(SelectColorComponent::COID, &raw_comp) == IDocument::TShape::Error::SUCCESS &&
+            raw_comp != nullptr)
+        {
+            static_cast<SelectColorComponent*>(raw_comp)->setColor(color);
+        }
     }
 }
 
@@ -456,6 +501,7 @@ inline bool SelectTool::onMouseDown(const Vec2F& global_pos)
             selected_ids_.clear();
             selected_ids_.insert(*hit);
             syncGroupFrame();
+            last_palette_color_ = queryPaletteColor();
         }
 
         prev_mouse_local_ = local_pos;
@@ -684,6 +730,7 @@ inline bool SelectTool::onMouseUp()
         }
 
         syncGroupFrame();
+        last_palette_color_ = queryPaletteColor();
     }
 
     mode_              = Mode::NONE;
@@ -719,6 +766,21 @@ inline void SelectTool::render()
     if (shapes.empty())
     {
         return;
+    }
+
+    // Apply newly selected palette color to active selection
+    if (const auto curr_color = queryPaletteColor(); curr_color.has_value())
+    {
+        if (!last_palette_color_.has_value())
+        {
+            last_palette_color_ = curr_color;
+        }
+        else if (curr_color->r != last_palette_color_->r || curr_color->g != last_palette_color_->g ||
+                 curr_color->b != last_palette_color_->b || curr_color->a != last_palette_color_->a)
+        {
+            applyColorToSelection(*curr_color);
+            last_palette_color_ = curr_color;
+        }
     }
 
     // 2. Overall selection frame, 8 handles, and a rotation handle

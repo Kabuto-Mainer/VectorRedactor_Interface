@@ -5,6 +5,7 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
+#include "../../Palette/IPalette.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
@@ -78,8 +79,9 @@ public:
     void render();
 
 private:
-    Vec2F toDocLocal(const Vec2F& global_pos) const;
-    Vec2F toDocGlobal(const Vec2F& local_pos) const;
+    Vec2F            toDocLocal(const Vec2F& global_pos) const;
+    Vec2F            toDocGlobal(const Vec2F& local_pos) const;
+    IRenderer::Color currentColor() const;
 
     static constexpr float MIN_POINT_DIST = 3.0F;
 
@@ -283,6 +285,18 @@ inline Vec2F PenTool::toDocGlobal(const Vec2F& local_pos) const
     return local_pos;
 }
 
+inline IRenderer::Color PenTool::currentColor() const
+{
+    IPalette* palette = nullptr;
+    if (ApplicationCore::instance().queryInterface(IID_PALETTE, reinterpret_cast<void**>(&palette)) ==
+            ApplicationCore::Error::SUCCESS &&
+        palette != nullptr)
+    {
+        return palette->selectedColor();
+    }
+    return IRenderer::Color::WHITE;
+}
+
 inline bool PenTool::processEvent(const IInputPump::Event& event)
 {
     const auto* mouse = std::get_if<IInputPump::EventMouse>(&event);
@@ -325,7 +339,7 @@ inline bool PenTool::processEvent(const IInputPump::Event& event)
             is_drawing_ = false;
             if (!current_points_.empty())
             {
-                auto shape = std::make_unique<PenStrokeShape>(current_points_, IRenderer::Color::WHITE);
+                auto shape = std::make_unique<PenStrokeShape>(current_points_, currentColor());
                 document_.addShape(std::move(shape));
                 current_points_.clear();
             }
@@ -347,13 +361,13 @@ inline void PenTool::render()
     if (current_points_.size() == 1)
     {
         const Vec2F p = toDocGlobal(current_points_.front());
-        renderer_.renderEllipse(IRenderer::Color::WHITE, BoxF{p.x() - 2.0F, p.y() - 2.0F, p.x() + 2.0F, p.y() + 2.0F});
+        renderer_.renderEllipse(currentColor(), BoxF{p.x() - 2.0F, p.y() - 2.0F, p.x() + 2.0F, p.y() + 2.0F});
         return;
     }
 
     for (std::size_t i = 1; i < current_points_.size(); ++i)
     {
-        renderer_.renderLine(IRenderer::Color::WHITE, toDocGlobal(current_points_[i - 1]),
+        renderer_.renderLine(currentColor(), toDocGlobal(current_points_[i - 1]),
             toDocGlobal(current_points_[i]));
     }
 }

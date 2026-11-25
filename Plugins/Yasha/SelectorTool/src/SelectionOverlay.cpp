@@ -5,14 +5,13 @@
 #include "ShapeLookup.hpp"
 
 #include <array>
-#include <utility>
 
 namespace Yasha::Tools
 {
 
 SelectionOverlay::SelectionOverlay(IDocument& document, ToolManager& manager, IToolManager::ATool::ID tool_id,
-                                   std::shared_ptr<SelectionState> state) :
-    document_(document), manager_(manager), tool_id_(tool_id), state_(std::move(state))
+                                   SelectionState& state) :
+    document_(document), manager_(manager), tool_id_(tool_id), state_(state)
 {
 }
 
@@ -23,11 +22,11 @@ bool SelectionOverlay::processEvent(const IInputPump::Event& /*event*/)
 
 std::optional<Vec2F> SelectionOverlay::rotationHandlePosition() const
 {
-    if (manager_.activeToolId() != tool_id_ || !state_->selected_shape_id)
+    if (manager_.activeToolId() != tool_id_ || !state_.selected_shape_id)
     {
         return std::nullopt;
     }
-    const auto* shape = findShape(static_cast<const IDocument&>(document_), *state_->selected_shape_id);
+    const auto* shape = findShape(static_cast<const IDocument&>(document_), *state_.selected_shape_id);
     if (shape == nullptr)
     {
         return std::nullopt;
@@ -50,11 +49,11 @@ bool SelectionOverlay::hitTestRotationHandle(const Vec2F& global_pos) const
 
 void SelectionOverlay::render()
 {
-    if (manager_.activeToolId() != tool_id_ || !state_->selected_shape_id)
+    if (manager_.activeToolId() != tool_id_ || !state_.selected_shape_id)
     {
         return;
     }
-    const auto* shape = findShape(static_cast<const IDocument&>(document_), *state_->selected_shape_id);
+    const auto* shape = findShape(static_cast<const IDocument&>(document_), *state_.selected_shape_id);
     if (shape == nullptr)
     {
         return;

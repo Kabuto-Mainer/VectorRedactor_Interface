@@ -5,6 +5,7 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
+#include "../../Palette/IPalette.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
@@ -131,8 +132,9 @@ private:
     static constexpr float CLOSE_SNAP_RADIUS = 8.0F;
     static constexpr float NODE_HALF_SIZE    = 4.0F;
 
-    Vec2F toDocLocal(const Vec2F& global_pos) const;
-    Vec2F toDocGlobal(const Vec2F& local_pos) const;
+    Vec2F            toDocLocal(const Vec2F& global_pos) const;
+    Vec2F            toDocGlobal(const Vec2F& local_pos) const;
+    IRenderer::Color currentColor() const;
 
     void commitCurve(bool closed);
     void cancelCurve();
@@ -339,11 +341,23 @@ inline Vec2F BezierTool::toDocGlobal(const Vec2F& local_pos) const
     return local_pos;
 }
 
+inline IRenderer::Color BezierTool::currentColor() const
+{
+    IPalette* palette = nullptr;
+    if (ApplicationCore::instance().queryInterface(IID_PALETTE, reinterpret_cast<void**>(&palette)) ==
+            ApplicationCore::Error::SUCCESS &&
+        palette != nullptr)
+    {
+        return palette->selectedColor();
+    }
+    return IRenderer::Color::WHITE;
+}
+
 inline void BezierTool::commitCurve(bool closed)
 {
     if (nodes_.size() >= 2)
     {
-        auto shape = std::make_unique<BezierCurveShape>(nodes_, closed, IRenderer::Color::WHITE);
+        auto shape = std::make_unique<BezierCurveShape>(nodes_, closed, currentColor());
         document_.addShape(std::move(shape));
     }
     cancelCurve();
@@ -383,7 +397,6 @@ inline bool BezierTool::processEvent(const IInputPump::Event& event)
     {
         case LEFT_BUTTON_PRESSING:
         {
-            // Клик по первому узлу замыкает кривую
             if (nodes_.size() >= 3 && (pos - nodes_.front().anchor).len() <= CLOSE_SNAP_RADIUS)
             {
                 commitCurve(true);
@@ -440,7 +453,7 @@ inline void BezierTool::render()
         return;
     }
 
-    const IRenderer::Color curve_col  = IRenderer::Color::WHITE;
+    const IRenderer::Color curve_col  = currentColor();
     const IRenderer::Color guide_col  = IRenderer::Color::BLUE;
     const IRenderer::Color handle_col = IRenderer::Color::WHITE;
 

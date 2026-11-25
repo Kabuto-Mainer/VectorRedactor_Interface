@@ -1,9 +1,12 @@
 #include "RectangleTool.hpp"
-
+#include "Palette.hpp"
+#include "QueryInterface.hpp"
 #include "RectangleShape.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
+#include <utility>
 #include <variant>
 
 namespace Yasha::Tools
@@ -115,7 +118,7 @@ void RectangleTool::cancelDrag()
 {
     if (preview_ != nullptr)
     {
-        document_.removeShape(preview_);
+        document_.removeShape(preview_->id());
     }
     preview_  = nullptr;
     dragging_ = false;
@@ -123,17 +126,12 @@ void RectangleTool::cancelDrag()
 
 void RectangleTool::createShape(const Vec2F& center, const Vec2F& size)
 {
-    auto* shape = new RectangleShape(size);
+    auto palette = queryInterface<IPalette>(IID_PALETTE);
+    auto shape = std::make_unique<RectangleShape>(size);
     shape->setTranslation(center);
-    document_.addShape(shape);
-    if (shape->parent() != nullptr)
-    {
-        preview_ = shape;
-    }
-    else
-    {
-        delete shape;
-    }
+    shape->setColor(palette->selectedColor());
+    preview_ = shape.get();
+    document_.addShape(std::move(shape));
 }
 
 } // namespace Yasha::Tools
