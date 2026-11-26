@@ -11,9 +11,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <iterator>
+#include <json/json.h>
+#include <limits>
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 
 namespace Kabuto
@@ -25,13 +30,109 @@ namespace Document
 namespace
 {
 
-Vec2F clampScaling(const Vec2F& scaling)
+constexpr const char* DOCUMENT_CONFIG_FILENAME = "Document.json";
+
+struct DocumentConfig
 {
-    return Vec2F{std::clamp(scaling.x(), ICamera::MIN_SCALE, ICamera::MAX_SCALE),
-                 std::clamp(scaling.y(), ICamera::MIN_SCALE, ICamera::MAX_SCALE)};
+    float min_scale = ICamera::MIN_SCALE;
+    float max_scale = ICamera::MAX_SCALE;
+};
+
+std::filesystem::path executableDirectory()
+{
+    std::error_code             error;
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    if (!error && !self.empty())
+    {
+        return self.parent_path();
+    }
+
+    return std::filesystem::current_path(error);
+}
+
+std::filesystem::path configFilePath()
+{
+    return executableDirectory() / "config" / DOCUMENT_CONFIG_FILENAME;
+}
+
+float readFloat(const Json::Value& root, const char* field, float fallback, const std::filesystem::path& path)
+{
+    const Json::Value& value = root[field];
+
+    if (value.isNull())
+    {
+        return fallback;
+    }
+
+    constexpr double FLOAT_MAX = static_cast<double>(std::numeric_limits<float>::max());
+
+    if (!value.isNumeric())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Document config '%s': invalid '%s', using default",
+                             path.string().c_str(), field);
+        return fallback;
+    }
+
+    const double number = value.asDouble();
+    if (!std::isfinite(number) || number > FLOAT_MAX || number < -FLOAT_MAX)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Document config '%s': invalid '%s', using default",
+                             path.string().c_str(), field);
+        return fallback;
+    }
+
+    return static_cast<float>(number);
+}
+
+DocumentConfig loadDocumentConfig(const std::filesystem::path& path)
+{
+    DocumentConfig config;
+
+    std::ifstream file(path);
+    if (!file.is_open())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Document config '%s' not found, using defaults",
+                             path.string().c_str());
+        return config;
+    }
+
+    Json::CharReaderBuilder builder;
+    Json::Value             root;
+    std::string             errors;
+
+    if (!Json::parseFromStream(builder, file, &root, &errors) || !root.isObject())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Document config '%s' is invalid (%s), using defaults",
+                             path.string().c_str(), errors.empty() ? "root is not an object" : errors.c_str());
+        return config;
+    }
+
+    config.min_scale = readFloat(root, "min_scale", config.min_scale, path);
+    config.max_scale = readFloat(root, "max_scale", config.max_scale, path);
+
+    if (config.min_scale <= 0.0F || config.max_scale <= config.min_scale)
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING,
+                             "Document config '%s': invalid scale limits, using defaults", path.string().c_str());
+        return DocumentConfig{};
+    }
+
+    return config;
+}
+
+Vec2F clampScaling(const Vec2F& scaling, float min_scale, float max_scale)
+{
+    return Vec2F{std::clamp(scaling.x(), min_scale, max_scale), std::clamp(scaling.y(), min_scale, max_scale)};
 }
 
 } // namespace
+
+CDocument::CDocument()
+{
+    const DocumentConfig config = loadDocumentConfig(configFilePath());
+    min_scale_                  = config.min_scale;
+    max_scale_                  = config.max_scale;
+}
 
 /* TDocument */
 
@@ -186,7 +287,7 @@ void CDocument::addScale(float scale)
     if (node() != nullptr)
     {
         auto past = node()->scaling();
-        node()->setScaling(clampScaling(past + Vec2F(1, 1) * scale));
+        node()->setScaling(clampScaling(past + Vec2F(1, 1) * scale, min_scale_, max_scale_));
     }
 }
 
@@ -198,7 +299,7 @@ void CDocument::addScaleAt(float scale, const Vec2F& anchor)
     }
 
     const Vec2F past = node()->scaling();
-    const Vec2F next = clampScaling(past + Vec2F(1, 1) * scale);
+    const Vec2F next = clampScaling(past + Vec2F(1, 1) * scale, min_scale_, max_scale_);
 
     const Vec2F translation = node()->translation();
     node()->setScaling(next);

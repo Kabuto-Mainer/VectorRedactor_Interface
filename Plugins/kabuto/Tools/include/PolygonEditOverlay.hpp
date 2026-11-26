@@ -3,6 +3,7 @@
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "ShapeLookup.hpp"
+#include "ToolsConfig.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 #include "export/EllipseShape.hpp"
@@ -33,7 +34,7 @@ namespace Tools
 class PolygonEditOverlay final : public TObject
 {
 public:
-    PolygonEditOverlay(IDocument& document, TObject::ID shape_id);
+    PolygonEditOverlay(IDocument& document, TObject::ID shape_id, OverlaySettings settings = {});
     ~PolygonEditOverlay() override = default;
 
     PolygonEditOverlay(const PolygonEditOverlay&)            = delete;
@@ -50,24 +51,21 @@ public:
     TObject::ID shapeId() const;
 
 private:
-    static constexpr float HANDLE_RADIUS = 5.0F;
-    static constexpr float MIN_SCALE     = 1e-6F;
-
-    static constexpr IRenderer::Color HANDLE_COLOR{42U, 202U, 236U, 255U};
-    static constexpr IRenderer::Color SELECTED_COLOR{255U, 145U, 0U, 255U};
+    static constexpr float MIN_SCALE = 1e-6F;
 
     void rebuildHandles(std::size_t count);
 
     IDocument&                         document_;
     TObject::ID                        shape_id_;
+    OverlaySettings                    settings_;
     std::optional<std::size_t>         selected_vertex_;
     std::vector<Shapes::EllipseShape*> handles_;
 }; // class PolygonEditOverlay
 
 /* ====================== Implementation ====================== */
 
-inline PolygonEditOverlay::PolygonEditOverlay(IDocument& document, TObject::ID shape_id) :
-    document_(document), shape_id_(shape_id)
+inline PolygonEditOverlay::PolygonEditOverlay(IDocument& document, TObject::ID shape_id, OverlaySettings settings) :
+    document_(document), shape_id_(shape_id), settings_(settings)
 {
 }
 
@@ -111,7 +109,7 @@ inline void PolygonEditOverlay::render()
         return;
     }
 
-    const Vec2F handle_scaling{2.0F * HANDLE_RADIUS / scale_x, 2.0F * HANDLE_RADIUS / scale_y};
+    const Vec2F handle_scaling{2.0F * settings_.handle_radius / scale_x, 2.0F * settings_.handle_radius / scale_y};
 
     std::size_t index = 0;
     for (const Vec2F& point : points)
@@ -120,7 +118,8 @@ inline void PolygonEditOverlay::render()
 
         handle->setTranslation(shape->transform().transformPoint(point));
         handle->setScaling(handle_scaling);
-        handle->setColor(selected_vertex_.has_value() && *selected_vertex_ == index ? SELECTED_COLOR : HANDLE_COLOR);
+        handle->setColor(selected_vertex_.has_value() && *selected_vertex_ == index ? settings_.selected_color :
+                                                                                      settings_.handle_color);
 
         ++index;
     }
@@ -157,7 +156,7 @@ inline void PolygonEditOverlay::rebuildHandles(std::size_t count)
     for (std::size_t index = 0; index < count; ++index)
     {
         auto handle = std::make_unique<Shapes::EllipseShape>();
-        handle->setColor(HANDLE_COLOR);
+        handle->setColor(settings_.handle_color);
 
         Shapes::EllipseShape* raw = handle.get();
         addChild(std::move(handle));

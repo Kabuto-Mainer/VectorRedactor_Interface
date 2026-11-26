@@ -11,7 +11,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <json/json.h>
@@ -37,7 +36,7 @@ namespace
 constexpr uint8_t OPAQUE_ALPHA      = 255;
 constexpr float   CHANNEL_MAX       = 255.0F;
 constexpr float   NO_ANGLE          = 0.0F;
-constexpr char    CONFIG_FILENAME[] = "uifw.json";
+constexpr char    CONFIG_FILENAME[] = "UIFW.json";
 
 constexpr char DEFAULT_THEME_NAME[] = "default";
 
@@ -329,32 +328,21 @@ private:
 namespace
 {
 
-std::optional<std::filesystem::path> moduleDirectory(const void* symbol)
+std::filesystem::path executableDirectory()
 {
-    Dl_info info{};
-    if (dladdr(symbol, &info) == 0 || info.dli_fname == nullptr)
+    std::error_code             error;
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    if (!error && !self.empty())
     {
-        return std::nullopt;
+        return self.parent_path();
     }
 
-    std::error_code             error;
-    const std::filesystem::path module = std::filesystem::absolute(info.dli_fname, error);
-    if (error)
-    {
-        return std::nullopt;
-    }
-    return module.parent_path();
+    return std::filesystem::current_path(error);
 }
 
-std::optional<std::filesystem::path> configFilePath()
+std::filesystem::path configFilePath()
 {
-    const std::optional<std::filesystem::path> directory =
-        moduleDirectory(reinterpret_cast<const void*>(&configFilePath));
-    if (!directory)
-    {
-        return std::nullopt;
-    }
-    return *directory / CONFIG_FILENAME;
+    return executableDirectory() / "config" / CONFIG_FILENAME;
 }
 
 void logInvalidConfigField(const std::filesystem::path& path, const char* field)
@@ -609,21 +597,15 @@ void readFontsConfig(const Json::Value& root, const std::filesystem::path& path,
     fonts = std::move(parsed);
 }
 
-Settings loadSettings(const std::optional<std::filesystem::path>& path)
+Settings loadSettings(const std::filesystem::path& path)
 {
     Settings settings = defaultSettings();
 
-    if (!path)
-    {
-        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config location is not resolved, using defaults");
-        return settings;
-    }
-
-    std::ifstream file(*path);
+    std::ifstream file(path);
     if (!file.is_open())
     {
         ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config '%s' not found, using defaults",
-                             path->string().c_str());
+                             path.string().c_str());
         return settings;
     }
 
@@ -634,7 +616,7 @@ Settings loadSettings(const std::optional<std::filesystem::path>& path)
     if (!Json::parseFromStream(builder, file, &root, &errors) || !root.isObject())
     {
         ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config '%s' is invalid (%s), using defaults",
-                             path->string().c_str(), errors.empty() ? "root is not an object" : errors.c_str());
+                             path.string().c_str(), errors.empty() ? "root is not an object" : errors.c_str());
         return settings;
     }
 
@@ -645,14 +627,14 @@ Settings loadSettings(const std::optional<std::filesystem::path>& path)
     }
     else if (!default_theme.isNull())
     {
-        logInvalidConfigField(*path, "default_theme");
+        logInvalidConfigField(path, "default_theme");
     }
 
-    readFontsConfig(root, *path, settings.fonts);
-    readThemesConfig(root, *path, settings.themes);
-    readFontConfig(root, *path, settings.style);
-    readLayoutConfig(root, *path, settings.style);
-    readPaletteConfig(root, *path, settings.style.palette);
+    readFontsConfig(root, path, settings.fonts);
+    readThemesConfig(root, path, settings.themes);
+    readFontConfig(root, path, settings.style);
+    readLayoutConfig(root, path, settings.style);
+    readPaletteConfig(root, path, settings.style.palette);
 
     return settings;
 }

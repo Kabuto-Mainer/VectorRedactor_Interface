@@ -9,7 +9,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <json/json.h>
@@ -32,7 +31,7 @@ namespace
 
 constexpr uint8_t OPAQUE_ALPHA = 255;
 
-constexpr const char* PALETTE_CONFIG_FILENAME = "config.json";
+constexpr const char* PALETTE_CONFIG_FILENAME = "Palette.json";
 
 constexpr std::size_t COLOR_CHANNEL_COUNT = 3;
 constexpr std::size_t HEX_COLOR_LENGTH    = 1 + 2 * COLOR_CHANNEL_COUNT;
@@ -90,17 +89,21 @@ std::optional<IRenderer::Color> parseColor(std::string_view text)
     return IRenderer::Color{channels[0], channels[1], channels[2], OPAQUE_ALPHA};
 }
 
-std::filesystem::path configFilePath()
+std::filesystem::path executableDirectory()
 {
-    Dl_info info = {};
-
-    if (dladdr(reinterpret_cast<const void*>(&configFilePath), &info) != 0 && info.dli_fname != nullptr)
+    std::error_code             error;
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    if (!error && !self.empty())
     {
-        return std::filesystem::path(info.dli_fname).parent_path() / PALETTE_CONFIG_FILENAME;
+        return self.parent_path();
     }
 
-    std::error_code error;
-    return std::filesystem::current_path(error) / PALETTE_CONFIG_FILENAME;
+    return std::filesystem::current_path(error);
+}
+
+std::filesystem::path configFilePath()
+{
+    return executableDirectory() / "config" / PALETTE_CONFIG_FILENAME;
 }
 
 void logInvalidConfigField(const std::filesystem::path& path, const char* field)

@@ -6,6 +6,7 @@
 #include "Interfaces/IToolManager.hpp"
 #include "PolygonEditOverlay.hpp"
 #include "ShapeLookup.hpp"
+#include "ToolsConfig.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 #include "export/PolygonComponent.hpp"
@@ -40,7 +41,8 @@ class EditPolygonTool final : public IToolManager::ATool
 public:
     static constexpr IToolManager::ATool::ID ID = 1'325;
 
-    explicit EditPolygonTool(IDocument& document);
+    explicit EditPolygonTool(IDocument& document, EditPolygonSettings settings = {},
+                             OverlaySettings overlay_settings = {});
     ~EditPolygonTool() override = default;
 
     EditPolygonTool(const EditPolygonTool&)            = delete;
@@ -60,12 +62,8 @@ public:
 private:
     using Clock = std::chrono::steady_clock;
 
-    static constexpr std::size_t MIN_POINTS            = 3;
-    static constexpr float       VERTEX_PICK_RADIUS    = 10.0F;
-    static constexpr float       EDGE_PICK_RADIUS      = 8.0F;
-    static constexpr float       DOUBLE_CLICK_DISTANCE = 8.0F;
-    static constexpr float       DOUBLE_CLICK_SECONDS  = 0.35F;
-    static constexpr float       EDGE_EPSILON          = 1e-6F;
+    static constexpr std::size_t MIN_POINTS   = 3;
+    static constexpr float       EDGE_EPSILON = 1e-6F;
 
     bool processMouse(const IInputPump::EventMouse& mouse);
     bool processKeyboard(const IInputPump::EventKeyboard& keyboard);
@@ -90,7 +88,9 @@ private:
     bool insertVertex(IDocument::TShape& shape, Shapes::PolygonComponent& polygon, const Vec2F& global_pos);
     bool deleteSelectedVertex();
 
-    IDocument& document_;
+    IDocument&          document_;
+    EditPolygonSettings settings_;
+    OverlaySettings     overlay_settings_;
 
     std::optional<TObject::ID> selected_id_;
     std::optional<std::size_t> selected_vertex_;
@@ -104,7 +104,9 @@ private:
 
 /* ====================== Implementation ====================== */
 
-inline EditPolygonTool::EditPolygonTool(IDocument& document) : document_(document)
+inline EditPolygonTool::EditPolygonTool(IDocument& document, EditPolygonSettings settings,
+                                        OverlaySettings overlay_settings) :
+    document_(document), settings_(settings), overlay_settings_(overlay_settings)
 {
 }
 
@@ -188,10 +190,11 @@ inline bool EditPolygonTool::press(const Vec2F& global_pos)
 {
     const Clock::time_point now = Clock::now();
 
-    const bool double_click = last_press_time_.has_value() &&
-                              last_press_pos_.has_value() &&
-                              std::chrono::duration<float>(now - *last_press_time_).count() <= DOUBLE_CLICK_SECONDS &&
-                              (global_pos - *last_press_pos_).len2() <= DOUBLE_CLICK_DISTANCE * DOUBLE_CLICK_DISTANCE;
+    const bool double_click =
+        last_press_time_.has_value() &&
+        last_press_pos_.has_value() &&
+        std::chrono::duration<float>(now - *last_press_time_).count() <= settings_.double_click_seconds &&
+        (global_pos - *last_press_pos_).len2() <= settings_.double_click_distance * settings_.double_click_distance;
 
     last_press_time_ = now;
     last_press_pos_  = global_pos;
@@ -394,7 +397,7 @@ inline void EditPolygonTool::showOverlay(IDocument::TShape& shape)
         return;
     }
 
-    auto overlay = std::make_unique<PolygonEditOverlay>(document_, shape.id());
+    auto overlay = std::make_unique<PolygonEditOverlay>(document_, shape.id(), overlay_settings_);
     overlay->setSelectedVertex(selected_vertex_);
 
     PolygonEditOverlay* raw = overlay.get();
@@ -442,7 +445,7 @@ inline std::optional<std::size_t> EditPolygonTool::nearestVertex(IDocument::TSha
                                                                  const Vec2F&                    global_pos) const
 {
     std::optional<std::size_t> nearest;
-    float                      best_distance2 = VERTEX_PICK_RADIUS * VERTEX_PICK_RADIUS;
+    float                      best_distance2 = settings_.vertex_pick_radius * settings_.vertex_pick_radius;
 
     std::size_t index = 0;
     for (const Vec2F& point : polygon.points())
@@ -501,7 +504,7 @@ inline bool EditPolygonTool::insertVertex(IDocument::TShape& shape, Shapes::Poly
         global_points.push_back(shape.mapLocalToGlobal(point));
     }
 
-    float       best_distance2 = EDGE_PICK_RADIUS * EDGE_PICK_RADIUS;
+    float       best_distance2 = settings_.edge_pick_radius * settings_.edge_pick_radius;
     std::size_t best_after     = 0;
     Vec2F       insert_local{};
     bool        found = false;

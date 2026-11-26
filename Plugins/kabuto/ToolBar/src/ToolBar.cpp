@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <json/json.h>
@@ -29,24 +28,28 @@ namespace ToolBar
 namespace
 {
 
-constexpr const char* TOOL_BAR_CONFIG_FILENAME = "config.json";
+constexpr const char* TOOL_BAR_CONFIG_FILENAME = "ToolBar.json";
 
 BoxF toolBarBox(const ToolBarConfig& config)
 {
     return BoxF(config.left, config.top, config.left + config.width, config.top + config.height);
 }
 
-std::filesystem::path configFilePath()
+std::filesystem::path executableDirectory()
 {
-    Dl_info info = {};
-
-    if (dladdr(reinterpret_cast<const void*>(&configFilePath), &info) != 0 && info.dli_fname != nullptr)
+    std::error_code             error;
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    if (!error && !self.empty())
     {
-        return std::filesystem::path(info.dli_fname).parent_path() / TOOL_BAR_CONFIG_FILENAME;
+        return self.parent_path();
     }
 
-    std::error_code error;
-    return std::filesystem::current_path(error) / TOOL_BAR_CONFIG_FILENAME;
+    return std::filesystem::current_path(error);
+}
+
+std::filesystem::path configFilePath()
+{
+    return executableDirectory() / "config" / TOOL_BAR_CONFIG_FILENAME;
 }
 
 void logInvalidConfigField(const std::filesystem::path& path, const char* field)

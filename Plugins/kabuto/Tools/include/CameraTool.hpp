@@ -2,6 +2,7 @@
 
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IToolManager.hpp"
+#include "ToolsConfig.hpp"
 #include "Utils/Vec2F.hpp"
 #include "export/ICamera.hpp"
 
@@ -31,7 +32,7 @@ class CameraTool final : public IToolManager::ATool
 public:
     static constexpr IToolManager::ATool::ID ID = 1'323;
 
-    CameraTool(ICamera& camera);
+    CameraTool(ICamera& camera, CameraSettings settings = {});
     ~CameraTool() override = default;
 
     CameraTool(const CameraTool&)            = delete;
@@ -48,10 +49,6 @@ public:
     void deactivate();
 
 private:
-    static constexpr float ZOOM_STEP       = 0.1F;
-    static constexpr float PAN_STEP        = 50.0F;
-    static constexpr float FAST_PAN_FACTOR = 4.0F;
-
     bool processMouse(const IInputPump::EventMouse& mouse);
     bool processKeyboard(IInputPump::EventKeyboard keyboard);
 
@@ -66,6 +63,7 @@ private:
     Vec2F zoomAnchor() const;
 
     ICamera&                                    camera_;
+    CameraSettings                              settings_;
     std::optional<Vec2F>                        last_cursor_;
     std::optional<IInputPump::EventMouse::Type> pan_button_;
     Vec2F                                       pan_anchor_;
@@ -73,7 +71,7 @@ private:
 
 /* ====================== Implementation ====================== */
 
-inline CameraTool::CameraTool(ICamera& camera) : camera_(camera)
+inline CameraTool::CameraTool(ICamera& camera, CameraSettings settings) : camera_(camera), settings_(settings)
 {
 }
 
@@ -111,11 +109,11 @@ inline bool CameraTool::processMouse(const IInputPump::EventMouse& mouse)
     switch (mouse.type())
     {
         case WHEEL_FORWARD:
-            camera_.addScaleAt(ZOOM_STEP, mouse.cursorPos());
+            camera_.addScaleAt(settings_.zoom_step, mouse.cursorPos());
             return true;
 
         case WHEEL_BACKWARD:
-            camera_.addScaleAt(-ZOOM_STEP, mouse.cursorPos());
+            camera_.addScaleAt(-settings_.zoom_step, mouse.cursorPos());
             return true;
 
         case MIDDLE_BUTTON_PRESSING:
@@ -149,16 +147,16 @@ inline bool CameraTool::processKeyboard(IInputPump::EventKeyboard keyboard)
     using enum IInputPump::EventKeyboard::Modifier;
 
     const bool  fast_pan = keyboard.hasModifiers(LEFT_SHIFT) || keyboard.hasModifiers(RIGHT_SHIFT);
-    const float pan_step = fast_pan ? PAN_STEP * FAST_PAN_FACTOR : PAN_STEP;
+    const float pan_step = fast_pan ? settings_.pan_step * settings_.fast_pan_factor : settings_.pan_step;
 
     switch (keyboard.key())
     {
         case EQUALS:
-            camera_.addScaleAt(ZOOM_STEP, zoomAnchor());
+            camera_.addScaleAt(settings_.zoom_step, zoomAnchor());
             return true;
 
         case MINUS:
-            camera_.addScaleAt(-ZOOM_STEP, zoomAnchor());
+            camera_.addScaleAt(-settings_.zoom_step, zoomAnchor());
             return true;
 
         case NUM_0:

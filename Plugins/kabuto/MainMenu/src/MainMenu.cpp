@@ -8,7 +8,6 @@
 #include "kabuto/UIFW/export/IUIFramework.hpp"
 
 #include <cmath>
-#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <json/json.h>
@@ -39,7 +38,7 @@ namespace MainMenu
 namespace
 {
 
-constexpr const char* MAIN_MENU_CONFIG_FILENAME = "config.json";
+constexpr const char* MAIN_MENU_CONFIG_FILENAME = "MainMenu.json";
 
 struct MainMenuConfig
 {
@@ -51,17 +50,21 @@ struct MainMenuConfig
     float button_height = 30.0F;
 };
 
-std::filesystem::path configFilePath()
+std::filesystem::path executableDirectory()
 {
-    Dl_info info = {};
-
-    if (dladdr(reinterpret_cast<const void*>(&configFilePath), &info) != 0 && info.dli_fname != nullptr)
+    std::error_code             error;
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    if (!error && !self.empty())
     {
-        return std::filesystem::path(info.dli_fname).parent_path() / MAIN_MENU_CONFIG_FILENAME;
+        return self.parent_path();
     }
 
-    std::error_code error;
-    return std::filesystem::current_path(error) / MAIN_MENU_CONFIG_FILENAME;
+    return std::filesystem::current_path(error);
+}
+
+std::filesystem::path configFilePath()
+{
+    return executableDirectory() / "config" / MAIN_MENU_CONFIG_FILENAME;
 }
 
 void logInvalidConfigField(const std::filesystem::path& path, const char* field)

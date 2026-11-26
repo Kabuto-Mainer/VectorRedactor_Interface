@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <json/json.h>
@@ -34,7 +33,7 @@ namespace Engine
 namespace
 {
 
-constexpr const char* ENGINE_CONFIG_FILENAME = "config.json";
+constexpr const char* ENGINE_CONFIG_FILENAME = "SDL3Engine.json";
 
 constexpr int   FONT_PROBE_SIZE     = 16;
 constexpr int   ELLIPSE_SEGMENTS    = 72;
@@ -61,17 +60,21 @@ struct EngineConfig
     float desktop_usage  = 0.9F;
 };
 
-std::filesystem::path configFilePath()
+std::filesystem::path executableDirectory()
 {
-    Dl_info info = {};
-
-    if (dladdr(reinterpret_cast<const void*>(&configFilePath), &info) != 0 && info.dli_fname != nullptr)
+    std::error_code             error;
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    if (!error && !self.empty())
     {
-        return std::filesystem::path(info.dli_fname).parent_path() / ENGINE_CONFIG_FILENAME;
+        return self.parent_path();
     }
 
-    std::error_code error;
-    return std::filesystem::current_path(error) / ENGINE_CONFIG_FILENAME;
+    return std::filesystem::current_path(error);
+}
+
+std::filesystem::path configFilePath()
+{
+    return executableDirectory() / "config" / ENGINE_CONFIG_FILENAME;
 }
 
 void logInvalidConfigField(const std::filesystem::path& path, const char* field)

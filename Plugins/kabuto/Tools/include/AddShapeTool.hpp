@@ -5,6 +5,7 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
+#include "ToolsConfig.hpp"
 #include "Utils/ACommand.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
@@ -56,7 +57,8 @@ public:
         Factory                             factory;
     }; // struct ShapeOption
 
-    AddShapeTool(IDocument& document, IPalette& palette, ICamera& camera, std::vector<ShapeOption> options);
+    AddShapeTool(IDocument& document, IPalette& palette, ICamera& camera, std::vector<ShapeOption> options,
+                 AddShapeSettings settings = {});
     ~AddShapeTool() override = default;
 
     AddShapeTool(const AddShapeTool&)            = delete;
@@ -74,11 +76,7 @@ public:
     void deactivate();
 
 private:
-    static constexpr float MIN_DRAG_SIZE = 2.0F;
     static constexpr float CENTER_FACTOR = 0.5F;
-
-    static constexpr float MENU_ITEM_WIDTH  = 140.0F;
-    static constexpr float MENU_ITEM_HEIGHT = 28.0F;
 
     class PopModalCommand final : public ACommand
     {
@@ -105,6 +103,7 @@ private:
     IPalette&                palette_;
     ICamera&                 camera_;
     std::vector<ShapeOption> options_;
+    AddShapeSettings         settings_;
     Factory                  factory_;
 
     IDocument::TShape* shape_    = nullptr;
@@ -117,8 +116,8 @@ private:
 /* ====================== Implementation ====================== */
 
 inline AddShapeTool::AddShapeTool(IDocument& document, IPalette& palette, ICamera& camera,
-                                  std::vector<ShapeOption> options) :
-    document_(document), palette_(palette), camera_(camera), options_(std::move(options))
+                                  std::vector<ShapeOption> options, AddShapeSettings settings) :
+    document_(document), palette_(palette), camera_(camera), options_(std::move(options)), settings_(settings)
 {
 }
 
@@ -220,7 +219,7 @@ inline bool AddShapeTool::openShapeMenu(const Vec2F& global_pos)
     {
         IUIFramework::ButtonDescription button;
         button.box = BoxF{
-            Vec2F{MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT}
+            Vec2F{settings_.menu_item_width, settings_.menu_item_height}
         };
         button.text = options_[index].label;
         if (options_[index].icon.has_value())
@@ -292,7 +291,7 @@ inline bool AddShapeTool::updateDrag(const Vec2F& global_pos)
     if (shape_ == nullptr)
     {
         const Vec2F global_size = max - min;
-        if (global_size.x() < MIN_DRAG_SIZE || global_size.y() < MIN_DRAG_SIZE)
+        if (global_size.x() < settings_.min_drag_size || global_size.y() < settings_.min_drag_size)
         {
             return true;
         }
@@ -337,7 +336,7 @@ inline bool AddShapeTool::endDrag(const Vec2F& global_pos)
     }
 
     const Vec2F global_size{std::abs(global_pos.x() - anchor_.x()), std::abs(global_pos.y() - anchor_.y())};
-    if (global_size.x() < MIN_DRAG_SIZE || global_size.y() < MIN_DRAG_SIZE)
+    if (global_size.x() < settings_.min_drag_size || global_size.y() < settings_.min_drag_size)
     {
         cancelDrag();
         return true;

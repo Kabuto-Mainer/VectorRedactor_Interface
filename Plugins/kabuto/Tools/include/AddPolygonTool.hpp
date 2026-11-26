@@ -4,6 +4,7 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "ShapeLookup.hpp"
+#include "ToolsConfig.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
 #include "export/Components.hpp"
@@ -45,7 +46,7 @@ class AddPolygonTool final : public IToolManager::ATool
 public:
     static constexpr IToolManager::ATool::ID ID = 1'324;
 
-    AddPolygonTool(IDocument& document, IPalette& palette, ICamera& camera);
+    AddPolygonTool(IDocument& document, IPalette& palette, ICamera& camera, AddPolygonSettings settings = {});
     ~AddPolygonTool() override = default;
 
     AddPolygonTool(const AddPolygonTool&)            = delete;
@@ -64,11 +65,7 @@ public:
 private:
     using Clock = std::chrono::steady_clock;
 
-    static constexpr std::size_t MIN_POINTS            = 3;
-    static constexpr float       CLOSE_DISTANCE        = 12.0F;
-    static constexpr float       DUPLICATE_DISTANCE    = 1.0F;
-    static constexpr float       DOUBLE_CLICK_DISTANCE = 8.0F;
-    static constexpr float       DOUBLE_CLICK_SECONDS  = 0.35F;
+    static constexpr std::size_t MIN_POINTS = 3;
 
     bool processMouse(const IInputPump::EventMouse& mouse);
     bool processKeyboard(const IInputPump::EventKeyboard& keyboard);
@@ -84,9 +81,10 @@ private:
     Vec2F              pointsCenter() const;
     bool               isNearFirstPoint(const Vec2F& global_pos);
 
-    IDocument& document_;
-    IPalette&  palette_;
-    ICamera&   camera_;
+    IDocument&         document_;
+    IPalette&          palette_;
+    ICamera&           camera_;
+    AddPolygonSettings settings_;
 
     std::vector<Vec2F> points_;
 
@@ -99,8 +97,9 @@ private:
 
 /* ====================== Implementation ====================== */
 
-inline AddPolygonTool::AddPolygonTool(IDocument& document, IPalette& palette, ICamera& camera) :
-    document_(document), palette_(palette), camera_(camera)
+inline AddPolygonTool::AddPolygonTool(IDocument& document, IPalette& palette, ICamera& camera,
+                                      AddPolygonSettings settings) :
+    document_(document), palette_(palette), camera_(camera), settings_(settings)
 {
 }
 
@@ -209,11 +208,12 @@ inline bool AddPolygonTool::addPoint(const Vec2F& global_pos)
 {
     const Clock::time_point now = Clock::now();
 
-    const bool double_click = points_.size() >= MIN_POINTS &&
-                              last_click_time_.has_value() &&
-                              last_click_pos_.has_value() &&
-                              std::chrono::duration<float>(now - *last_click_time_).count() <= DOUBLE_CLICK_SECONDS &&
-                              (global_pos - *last_click_pos_).len2() <= DOUBLE_CLICK_DISTANCE * DOUBLE_CLICK_DISTANCE;
+    const bool double_click =
+        points_.size() >= MIN_POINTS &&
+        last_click_time_.has_value() &&
+        last_click_pos_.has_value() &&
+        std::chrono::duration<float>(now - *last_click_time_).count() <= settings_.double_click_seconds &&
+        (global_pos - *last_click_pos_).len2() <= settings_.double_click_distance * settings_.double_click_distance;
 
     last_click_time_ = now;
     last_click_pos_  = global_pos;
@@ -230,7 +230,7 @@ inline bool AddPolygonTool::addPoint(const Vec2F& global_pos)
 
     /* A repeated click in the same place must not create a zero-length edge. */
     if (last_added_global_.has_value() &&
-        (global_pos - *last_added_global_).len2() <= DUPLICATE_DISTANCE * DUPLICATE_DISTANCE)
+        (global_pos - *last_added_global_).len2() <= settings_.duplicate_distance * settings_.duplicate_distance)
     {
         return true;
     }
@@ -386,7 +386,7 @@ inline bool AddPolygonTool::isNearFirstPoint(const Vec2F& global_pos)
 
     const Vec2F first_global = draft->mapLocalToGlobal(points_.front() - pointsCenter());
 
-    return (first_global - global_pos).len2() <= CLOSE_DISTANCE * CLOSE_DISTANCE;
+    return (first_global - global_pos).len2() <= settings_.close_distance * settings_.close_distance;
 }
 
 }; // namespace Tools

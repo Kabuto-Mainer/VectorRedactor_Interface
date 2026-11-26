@@ -66,13 +66,15 @@ public:
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
 
 private:
-    CDocument()           = default;
+    CDocument();
     ~CDocument() override = default;
 
     TDocument* node() const;
 
     TDocument*  document_node_ = nullptr;
     TObject::ID document_id_;
+    float       min_scale_ = ICamera::MIN_SCALE;
+    float       max_scale_ = ICamera::MAX_SCALE;
 }; // class CDocument
 
 }; // namespace Document
