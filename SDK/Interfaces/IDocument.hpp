@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/ApplicationCore.hpp"
+#include "Interfaces/IInputPump.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Transformable.hpp"

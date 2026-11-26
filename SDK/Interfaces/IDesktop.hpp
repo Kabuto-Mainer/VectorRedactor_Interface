@@ -5,7 +5,7 @@
 
 #include <memory>
 
-constexpr static IID IID_DESKTOP = 4;
+constexpr static const IID IID_DESKTOP = 4;
 
 class IDesktop
 {
