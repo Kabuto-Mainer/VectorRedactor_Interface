@@ -92,7 +92,7 @@ private:
             return;
         }
 
-        auto texture = renderer->loadTexture("../../murugov/Tools/EllipseTool/assets/ellipse.png");
+        auto texture = renderer->loadTexture("../Plugins/murugov/Tools/EllipseTool/assets/ellipse.png");
         if (!texture.has_value())
         {
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "EllipseTool failed to load icon texture");

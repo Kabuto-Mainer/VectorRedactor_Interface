@@ -92,7 +92,7 @@ private:
             return;
         }
 
-        auto texture = renderer->loadTexture("../../murugov/Tools/BezierTool/assets/bezier.png");
+        auto texture = renderer->loadTexture("../Plugins/murugov/Tools/BezierTool/assets/bezier.png");
         if (!texture.has_value())
         {
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "BezierTool failed to load icon texture");

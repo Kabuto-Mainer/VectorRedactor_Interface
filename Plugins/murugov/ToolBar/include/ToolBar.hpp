@@ -42,6 +42,14 @@ private:
     ToolBar();
     ~ToolBar() override;
 
+    struct Config
+    {
+        float anchor_x = 16.0F;
+        float anchor_y = 40.0F;
+    };
+
+    static Config loadConfig(const std::string& filepath);
+
 public:
     ToolBar(const ToolBar&)            = delete;
     ToolBar(ToolBar&&)                 = delete;

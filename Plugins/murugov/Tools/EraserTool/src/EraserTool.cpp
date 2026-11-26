@@ -100,7 +100,7 @@ private:
             return;
         }
 
-        auto texture = renderer->loadTexture("../../murugov/Tools/EraserTool/assets/eraser.png");
+        auto texture = renderer->loadTexture("../Plugins/murugov/Tools/EraserTool/assets/eraser.png");
         if (!texture.has_value())
         {
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "EraserTool failed to load icon texture");

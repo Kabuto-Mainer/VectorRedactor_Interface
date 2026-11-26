@@ -92,7 +92,7 @@ private:
             return;
         }
 
-        auto texture = renderer->loadTexture("../../murugov/Tools/RectTool/assets/rect.png");
+        auto texture = renderer->loadTexture("../Plugins/murugov/Tools/RectTool/assets/rect.png");
         if (!texture.has_value())
         {
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "RectTool failed to load icon texture");

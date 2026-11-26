@@ -1,6 +1,6 @@
 CXX       := clang++
 CXXFLAGS  := -std=c++23 -fPIC -g -Wall -Wextra
-INCLUDES  := -Iinclude -I../../../../SDK -I../../../kabuto/Document/include -I.
+INCLUDES  := -Iinclude -I../../../../SDK -I../../../kabuto/Document -I.
 SRCS      := src/RectTool.cpp
 BASE_NAME := libmurugov_RectTool
 

@@ -3,7 +3,7 @@
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IInputPump.hpp"
-#include "../../Palette/IPalette.hpp"
+#include "../../Palette/IMurugovPalette.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Utils/BoxF.hpp"
@@ -251,7 +251,7 @@ inline void SelectTool::captureInitialStates(const std::vector<IDocument::TShape
 inline std::optional<IRenderer::Color> SelectTool::queryPaletteColor() const
 {
     IPalette* palette = nullptr;
-    if (ApplicationCore::instance().queryInterface(IID_PALETTE, reinterpret_cast<void**>(&palette)) ==
+    if (ApplicationCore::instance().queryInterface(Murugov::IID_PALETTE, reinterpret_cast<void**>(&palette)) ==
             ApplicationCore::Error::SUCCESS &&
         palette != nullptr)
     {

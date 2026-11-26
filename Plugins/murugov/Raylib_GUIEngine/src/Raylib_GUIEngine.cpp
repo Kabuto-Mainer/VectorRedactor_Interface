@@ -349,8 +349,9 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    return ApplicationCore::instance().registerInterface(IID_RENDERER, static_cast<IRenderer*>(&engine)) ==
+    auto& core = ApplicationCore::instance();
+    return core.registerInterface(IID_RENDERER, static_cast<IRenderer*>(&engine)) ==
                ApplicationCore::Error::SUCCESS &&
-           ApplicationCore::instance().registerInterface(IID_INPUT_PUMP, static_cast<IInputPump*>(&engine)) ==
+           core.registerInterface(IID_INPUT_PUMP, static_cast<IInputPump*>(&engine)) ==
                ApplicationCore::Error::SUCCESS;
 }

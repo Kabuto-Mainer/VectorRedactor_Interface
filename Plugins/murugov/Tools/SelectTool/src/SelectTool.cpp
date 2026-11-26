@@ -92,7 +92,7 @@ private:
             return;
         }
 
-        auto texture = renderer->loadTexture("../../murugov/Tools/SelectTool/assets/select.png");
+        auto texture = renderer->loadTexture("../Plugins/murugov/Tools/SelectTool/assets/select.png");
         if (!texture.has_value())
         {
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "SelectTool failed to load icon texture");

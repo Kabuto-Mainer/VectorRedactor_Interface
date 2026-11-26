@@ -96,14 +96,14 @@ private:
             return;
         }
 
-        if (core.queryInterface(IID_TOOLBAR, reinterpret_cast<void**>(&tool_bar)) != ApplicationCore::Error::SUCCESS ||
+        if (core.queryInterface(IID_TOOL_BAR, reinterpret_cast<void**>(&tool_bar)) != ApplicationCore::Error::SUCCESS ||
             tool_bar == nullptr)
         {
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "TextTool requires ToolBar");
             return;
         }
 
-        auto texture = renderer->loadTexture("../../murugov/Tools/TextTool/assets/text.png");
+        auto texture = renderer->loadTexture("../Plugins/murugov/Tools/TextTool/assets/text.png");
         if (!texture.has_value())
         {
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "TextTool failed to load icon texture");
@@ -151,7 +151,7 @@ private:
         auto& core = ApplicationCore::instance();
 
         IToolBar* tool_bar = nullptr;
-        if (core.queryInterface(IID_TOOLBAR, reinterpret_cast<void**>(&tool_bar)) == ApplicationCore::Error::SUCCESS &&
+        if (core.queryInterface(IID_TOOL_BAR, reinterpret_cast<void**>(&tool_bar)) == ApplicationCore::Error::SUCCESS &&
             tool_bar != nullptr)
         {
             tool_bar->removeTool(Tools::TEXT_TOOL_ID);

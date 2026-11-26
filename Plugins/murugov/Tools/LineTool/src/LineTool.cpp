@@ -92,7 +92,7 @@ private:
             return;
         }
 
-        auto texture = renderer->loadTexture("../../murugov/Tools/LineTool/assets/line.png");
+        auto texture = renderer->loadTexture("../Plugins/murugov/Tools/LineTool/assets/line.png");
         if (!texture.has_value())
         {
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "LineTool failed to load icon texture");

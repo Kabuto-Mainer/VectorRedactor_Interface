@@ -4,9 +4,15 @@
 #include "Interfaces/IDesktop.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Utils/ACommand.hpp"
+#include "../StatusBar/IMurugovStatusBar.hpp"
 
 #include <utility>
 #include <variant>
+#include <fstream>
+#include <regex>
+#include <sstream>
+#include <dlfcn.h>
+#include <filesystem>
 
 namespace Murugov
 {
@@ -35,6 +41,15 @@ public:
     {
         manager_.setActiveTool(tool_id_);
         ToolBar::instance().setActiveToolId(tool_id_);
+
+        IStatusBar* status_bar = nullptr;
+        if (ApplicationCore::instance().queryInterface(IID_STATUS_BAR, reinterpret_cast<void**>(&status_bar)) ==
+                ApplicationCore::Error::SUCCESS &&
+            status_bar != nullptr)
+        {
+            status_bar->setActiveToolName("#" + std::to_string(tool_id_));
+            status_bar->setStatusText("Selected tool #" + std::to_string(tool_id_));
+        }
     }
 
     bool isActive() const
@@ -136,14 +151,19 @@ ToolBar::ToolBar()
         return;
     }
 
-    static ExitCommand exit_command;
-
-    auto toolbar = std::make_unique<TToolBar>(Vec2F{16.0F, 16.0F}, UI::ButtonPoolDirection::VERTICAL);
-    toolbar->addButton(std::make_unique<UI::ButtonText>(Vec2F{}, Vec2F{UI::BUTTON_SIZE}, "Exit", exit_command, 0,
-                                                        IRenderer::Color::DARK_GRAY));
-
-    tool_bar_   = toolbar.get();
-    toolbar_id_ = toolbar->id();
+    std::filesystem::path config_path = "tool_bar.json";
+    
+    Dl_info info;
+    if (dladdr(reinterpret_cast<void*>(&ToolBar::instance), &info) != 0 && info.dli_fname != nullptr)
+    {
+        config_path = std::filesystem::path(info.dli_fname).parent_path() / "tool_bar.json";
+    }
+    
+    const Config cfg = loadConfig(config_path.string());
+    
+    auto toolbar = std::make_unique<TToolBar>(Vec2F{cfg.anchor_x, cfg.anchor_y}, UI::ButtonPoolDirection::VERTICAL);        
+    tool_bar_    = toolbar.get();
+    toolbar_id_  = toolbar->id();
 
     if (desktop->add(std::move(toolbar)) != IDesktop::Error::SUCCESS)
     {
@@ -169,6 +189,45 @@ ToolBar::~ToolBar()
     {
         desktop->remove(toolbar_id_);
     }
+}
+
+ToolBar::Config ToolBar::loadConfig(const std::string& filepath)
+{
+    Config cfg;
+    std::ifstream file(filepath);
+    if (!file.is_open())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "tool_bar.json not found, using default position");
+        return cfg;
+    }
+
+    
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    const std::string content = buffer.str();
+
+    auto extractFloat = [&content](const std::string& key, float default_val) -> float
+    {
+        const std::regex pattern("\"" + key + "\"\\s*:\\s*([-+]?[0-9]*\\.?[0-9]+)");
+        std::smatch match;
+        if (std::regex_search(content, match, pattern) && match.size() > 1)
+        {
+            try
+            {
+                return std::stof(match[1].str());
+            }
+            catch (...)
+            {
+                ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Invalid number format in tool_bar.json");
+            }
+        }
+        return default_val;
+    };
+
+    cfg.anchor_x = extractFloat("anchor_x", cfg.anchor_x);
+    cfg.anchor_y = extractFloat("anchor_y", cfg.anchor_y);
+
+    return cfg;
 }
 
 ToolBar& ToolBar::instance()

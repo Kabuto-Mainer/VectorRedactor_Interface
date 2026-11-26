@@ -3,10 +3,10 @@
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IID.hpp"
 
-constexpr static const IID IID_PALETTE = 6;
-
 namespace Murugov
 {
+    
+constexpr static const IID IID_PALETTE = 6;
 
 class IPalette
 {

@@ -4,6 +4,12 @@
 
 #include <memory>
 #include <variant>
+#include <fstream>
+#include <regex>
+#include <sstream>
+#include <string>
+#include <dlfcn.h>
+#include <filesystem>
 
 namespace Murugov
 {
@@ -119,7 +125,17 @@ Palette::Palette()
         return;
     }
 
-    auto widget = std::make_unique<TPaletteWidget>(Vec2F{1600.0F - 16.0F, 16.0F}, *renderer);
+    std::filesystem::path config_path = "palette.json";
+    
+    Dl_info info;
+    if (dladdr(reinterpret_cast<void*>(&Palette::instance), &info) != 0 && info.dli_fname != nullptr)
+    {
+        config_path = std::filesystem::path(info.dli_fname).parent_path() / "palette.json";
+    }
+    
+    const Config cfg = loadConfig(config_path.string());
+    
+    auto widget = std::make_unique<TPaletteWidget>(Vec2F{cfg.anchor_x, cfg.anchor_y}, *renderer);
     widget_     = widget.get();
     widget_id_  = widget->id();
 
@@ -149,6 +165,45 @@ Palette::~Palette()
     }
 }
 
+Palette::Config Palette::loadConfig(const std::string& filepath)
+{
+    Config cfg;
+    std::ifstream file(filepath);
+    if (!file.is_open())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "palette.json not found, using default position");
+        return cfg;
+    }
+
+    
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    const std::string content = buffer.str();
+
+    auto extractFloat = [&content](const std::string& key, float default_val) -> float
+    {
+        const std::regex pattern("\"" + key + "\"\\s*:\\s*([-+]?[0-9]*\\.?[0-9]+)");
+        std::smatch match;
+        if (std::regex_search(content, match, pattern) && match.size() > 1)
+        {
+            try
+            {
+                return std::stof(match[1].str());
+            }
+            catch (...)
+            {
+                ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Invalid number format in palette.json");
+            }
+        }
+        return default_val;
+    };
+
+    cfg.anchor_x = extractFloat("anchor_x", cfg.anchor_x);
+    cfg.anchor_y = extractFloat("anchor_y", cfg.anchor_y);
+
+    return cfg;
+}
+
 Palette& Palette::instance()
 {
     static Palette inst;
@@ -174,6 +229,6 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    return ApplicationCore::instance().registerInterface(IID_PALETTE, static_cast<Murugov::IPalette*>(&palette)) ==
+    return ApplicationCore::instance().registerInterface(Murugov::IID_PALETTE, static_cast<Murugov::IPalette*>(&palette)) ==
            ApplicationCore::Error::SUCCESS;
 }

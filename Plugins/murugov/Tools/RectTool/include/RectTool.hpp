@@ -5,8 +5,8 @@
 #include "Interfaces/IInputPump.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
-#include "../../Palette/IPalette.hpp"
-#include "RectangleShape.hpp"
+#include "../../Palette/IMurugovPalette.hpp"
+#include "export/RectangleShape.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
@@ -85,7 +85,7 @@ inline Vec2F RectTool::toDocGlobal(const Vec2F& local_pos) const
 inline IRenderer::Color RectTool::currentColor() const
 {
     IPalette* palette = nullptr;
-    if (ApplicationCore::instance().queryInterface(IID_PALETTE, reinterpret_cast<void**>(&palette)) ==
+    if (ApplicationCore::instance().queryInterface(Murugov::IID_PALETTE, reinterpret_cast<void**>(&palette)) ==
             ApplicationCore::Error::SUCCESS &&
         palette != nullptr)
     {

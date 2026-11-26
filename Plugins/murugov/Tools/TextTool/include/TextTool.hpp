@@ -3,7 +3,7 @@
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDocument.hpp"
 #include "Interfaces/IInputPump.hpp"
-#include "../../Palette/IPalette.hpp"
+#include "../../Palette/IMurugovPalette.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/IToolManager.hpp"
 #include "Utils/BoxF.hpp"
@@ -315,7 +315,7 @@ inline Vec2F TextTool::toDocGlobal(const Vec2F& local_pos) const
 inline IRenderer::Color TextTool::currentColor() const
 {
     IPalette* palette = nullptr;
-    if (ApplicationCore::instance().queryInterface(IID_PALETTE, reinterpret_cast<void**>(&palette)) ==
+    if (ApplicationCore::instance().queryInterface(Murugov::IID_PALETTE, reinterpret_cast<void**>(&palette)) ==
             ApplicationCore::Error::SUCCESS &&
         palette != nullptr)
     {

@@ -92,7 +92,7 @@ private:
             return;
         }
 
-        auto texture = renderer->loadTexture("../../murugov/Tools/PenTool/assets/pen.png");
+        auto texture = renderer->loadTexture("../Plugins/murugov/Tools/PenTool/assets/pen.png");
         if (!texture.has_value())
         {
             ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL, "PenTool failed to load icon texture");

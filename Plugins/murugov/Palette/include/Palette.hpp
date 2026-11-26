@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/ApplicationCore.hpp"
-#include "IPalette.hpp"
+#include "IMurugovPalette.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
 #include "Utils/BoxF.hpp"
@@ -9,6 +9,7 @@
 #include "Utils/Vec2F.hpp"
 
 #include <array>
+#include <string>
 #include <cstddef>
 
 extern "C" InitPackageFunc INIT_PACKAGE_FUNC_NAME;
@@ -33,7 +34,7 @@ public:
     static constexpr float SWATCH_SIZE = 32.0F;
     static constexpr float GAP         = 6.0F;
     static constexpr float PADDING     = 8.0F;
-    static constexpr int   COLUMNS     = 2;
+    static constexpr int   COLUMNS     = 1;
 
     TPaletteWidget(const Vec2F& top_right_anchor, IRenderer& renderer);
 
@@ -58,6 +59,14 @@ private:
 
     Palette();
     ~Palette() override;
+
+    struct Config
+    {
+        float anchor_x = 1600.0F - 16.0F;
+        float anchor_y = 40.0F;
+    };
+
+    static Config loadConfig(const std::string& filepath);
 
 public:
     Palette(const Palette&)            = delete;
