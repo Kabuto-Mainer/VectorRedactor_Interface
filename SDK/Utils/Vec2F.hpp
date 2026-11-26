@@ -97,6 +97,11 @@ inline Vec2F Vec2F::ortogonal() const
     return {y_, -x_};
 }
 
+inline Vec2F Vec2F::operator+() const
+{
+    return *this;
+}
+
 inline Vec2F Vec2F::operator+(const Vec2F& vec) const
 {
     return {x_ + vec.x_, y_ + vec.y_};
@@ -115,6 +120,11 @@ inline Vec2F Vec2F::operator-() const
 inline Vec2F Vec2F::operator*(float scalar) const
 {
     return {x_ * scalar, y_ * scalar};
+}
+
+inline Vec2F operator*(float scalar, const Vec2F& vec)
+{
+    return vec * scalar;
 }
 
 inline Vec2F Vec2F::operator/(float scalar) const
