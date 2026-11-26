@@ -31,12 +31,12 @@ void RectangleShape::render()
     }
 
     const Vec2F half_size{std::abs(scaling().x()), std::abs(scaling().y())};
-    const Vec2F size  = half_size * 2.0F;
+    const Vec2F size = half_size * 2.0F;
     const float angle = rotation();
     const Vec2F rotated_half{std::cos(angle) * half_size.x() - std::sin(angle) * half_size.y(),
                              std::sin(angle) * half_size.x() + std::cos(angle) * half_size.y()};
     const Vec2F top_left = mapLocalToGlobal(Vec2F{}) - rotated_half;
-    const BoxF  box{top_left, top_left + size};
+    const BoxF box{top_left, top_left + size};
     const float degrees = angle * (180.0F / std::numbers::pi_v<float>);
     renderer->renderRect(color(), box, degrees);
     renderer->renderRectLines(IRenderer::Color::BLACK, box, degrees);
@@ -59,15 +59,15 @@ BoxF RectangleShape::axesAlignedBoundingBox() const
         transform().transformPoint(Vec2F{1.0F, -1.0F}),
         transform().transformPoint(Vec2F{1.0F, 1.0F}),
     };
-    float left   = corners[0].x();
-    float right  = corners[0].x();
-    float top    = corners[0].y();
+    float left = corners[0].x();
+    float right = corners[0].x();
+    float top = corners[0].y();
     float bottom = corners[0].y();
     for (const Vec2F& corner : corners)
     {
-        left   = std::min(left, corner.x());
-        right  = std::max(right, corner.x());
-        top    = std::min(top, corner.y());
+        left = std::min(left, corner.x());
+        right = std::max(right, corner.x());
+        top = std::min(top, corner.y());
         bottom = std::max(bottom, corner.y());
     }
     return BoxF{left, top, right, bottom};
@@ -79,7 +79,7 @@ IDocument::TShape::TypeID RectangleShape::tid() const
 }
 
 IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID coid,
-                                                        IDocument::AShapeComponent**   component)
+                                                          IDocument::AShapeComponent** component)
 {
     if (component == nullptr)
     {
@@ -94,8 +94,8 @@ IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShapeCompone
     return Error::COMPONENT_NOT_FOUND;
 }
 
-IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID     coid,
-                                                        const IDocument::AShapeComponent** component) const
+IDocument::TShape::Error RectangleShape::queryComponent(IDocument::AShapeComponent::ID coid,
+                                                          const IDocument::AShapeComponent** component) const
 {
     if (component == nullptr)
     {

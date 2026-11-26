@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <optional>
 
-constexpr static IID IID_RENDERER = 0;
+constexpr static const IID IID_RENDERER = 0;
 
 class IRenderer
 {

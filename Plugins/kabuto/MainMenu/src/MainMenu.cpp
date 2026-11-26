@@ -1,9 +1,8 @@
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IDesktop.hpp"
-#include "Interfaces/IDocument.hpp"
 #include "Interfaces/IRenderer.hpp"
 #include "Interfaces/Package.hpp"
-#include "Plugins/kabuto/Serialize/export/ISerialize.hpp"
+#include "Plugins/kabuto/ShapeFactory/export/IShapeFactory.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/Vec2F.hpp"
 #include "export/IUIFramework.hpp"
@@ -53,27 +52,11 @@ std::unique_ptr<IUIFramework::ButtonPool> createMainMenu(IUIFramework& framework
     return pool;
 }
 
-void add(IUIFramework& framework, IUIFramework::ButtonPool& pool, ISerialize& serialize)
+void add(IUIFramework& framework, IUIFramework::ButtonPool& pool, IShapeFactory& shape_factory)
 {
     IUIFramework::ButtonDescription load;
     load.text = "LOAD";
-    load.on_press.callbacks.emplace_back(
-        [&serialize]
-        {
-            auto shapes = serialize.loadFrom("example.json");
-
-            IDocument* document = queryInterface<IDocument>(IID_IDOCUMENT);
-            if (!document)
-            {
-                return;
-            }
-
-            for (auto& shape : shapes)
-            {
-                document->addShape(std::move(shape));
-            }
-        }
-    );
+    load.on_press.callbacks.emplace_back([&shape_factory] { shape_factory.loadFrom("example.json"); });
     load.box = BoxF(0, 0, 80, 30);
 
     std::unique_ptr<IUIFramework::Button> load_b = framework.create(load);
@@ -86,7 +69,7 @@ void add(IUIFramework& framework, IUIFramework::ButtonPool& pool, ISerialize& se
 
     IUIFramework::ButtonDescription save;
     save.text = "SAVE";
-    save.on_press.callbacks.emplace_back([&serialize] { serialize.saveToJSON("example.json"); });
+    save.on_press.callbacks.emplace_back([&shape_factory] { shape_factory.saveTo("example.json"); });
     save.box = BoxF(0, 0, 80, 30);
 
     std::unique_ptr<IUIFramework::Button> save_b = framework.create(save);
@@ -106,18 +89,16 @@ void add(IUIFramework& framework, IUIFramework::ButtonPool& pool, ISerialize& se
 
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
-    IDocument*            document  = queryInterface<IDocument>(IID_IDOCUMENT);
     Kabuto::IUIFramework* framework = queryInterface<Kabuto::IUIFramework>(Kabuto::IID_IUIFramework);
     IRenderer*            renderer  = queryInterface<IRenderer>(IID_RENDERER);
     IDesktop*             desktop   = queryInterface<IDesktop>(IID_DESKTOP);
 
+    Kabuto::IShapeFactory* shape_factory = queryInterface<Kabuto::IShapeFactory>(Kabuto::IID_ISHAPE_FACTORY);
 
-    Kabuto::ISerialize* serialize = queryInterface<Kabuto::ISerialize>(Kabuto::IID_SERIALIZE);
-
-    if (framework == nullptr || renderer == nullptr || desktop == nullptr)
+    if (framework == nullptr || renderer == nullptr || desktop == nullptr || shape_factory == nullptr)
     {
         ApplicationCore::log(ApplicationCore::LogLevel::CRITICAL,
-                             "Tools can't find the framework, the desktop or the renderer");
+                             "MainMenu can't find the framework, the desktop, the renderer or the shape factory");
         return false;
     }
 
@@ -127,10 +108,7 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    if (document && serialize)
-    {
-        Kabuto::MainMenu::add(*framework, *pool.get(), *serialize);
-    }
+    Kabuto::MainMenu::add(*framework, *pool.get(), *shape_factory);
 
     if (desktop->add(std::move(pool)) != IDesktop::Error::SUCCESS)
     {

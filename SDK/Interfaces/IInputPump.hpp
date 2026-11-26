@@ -7,7 +7,7 @@
 #include <optional>
 #include <variant>
 
-constexpr static IID IID_INPUT_PUMP = 1;
+constexpr static const IID IID_INPUT_PUMP = 1;
 
 /* IInputPump */
 

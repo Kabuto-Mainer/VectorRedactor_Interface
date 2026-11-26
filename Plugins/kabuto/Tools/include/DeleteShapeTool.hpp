@@ -18,13 +18,13 @@ namespace Tools
 /**
  * Removes the topmost shape under the left-clicked cursor position.
  *
- * A click on empty canvas is still consumed: the tool is the owner of canvas
- * clicks while it is active, so no other lower object can react to them.
+ * A click on an empty canvas is still consumed: while the tool is active it
+ * owns canvas clicks, so no lower object reacts to them.
  */
 class DeleteShapeTool final : public IToolManager::ATool
 {
 public:
-    DeleteShapeTool(ID id, IDocument& document);
+    DeleteShapeTool(ID tool_id, IDocument& document);
     ~DeleteShapeTool() override = default;
 
     DeleteShapeTool(const DeleteShapeTool&)            = delete;
@@ -42,7 +42,7 @@ private:
 
 /* ====================== Implementation ====================== */
 
-inline DeleteShapeTool::DeleteShapeTool(ID id, IDocument& document) : id_(id), document_(document)
+inline DeleteShapeTool::DeleteShapeTool(ID tool_id, IDocument& document) : id_(tool_id), document_(document)
 {
 }
 
@@ -59,8 +59,7 @@ inline bool DeleteShapeTool::processEvent(const IInputPump::Event& event)
         return false;
     }
 
-    const Vec2F                      position = mouse->cursorPos();
-    const std::optional<TObject::ID> shape_id = document_.hitTest(position);
+    const std::optional<TObject::ID> shape_id = document_.hitTest(mouse->cursorPos());
     if (shape_id.has_value())
     {
         document_.removeShape(*shape_id);

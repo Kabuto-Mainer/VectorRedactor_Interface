@@ -27,10 +27,7 @@ public:
         }
     }
 
-    void setManager(IToolManager* manager)
-    {
-        manager_ = manager;
-    }
+    void setManager(IToolManager* manager) { manager_ = manager; }
 
 private:
     IToolManager* manager_ = nullptr;
@@ -47,8 +44,8 @@ ToolRegistration& registration()
 extern "C" bool INIT_PACKAGE_FUNC_NAME()
 {
     auto* document = queryInterface<IDocument>(IID_IDOCUMENT);
-    auto* manager  = queryInterface<IToolManager>(IID_TOOL_MANAGER);
-    auto* toolbar  = queryInterface<IToolBar>(IID_TOOL_BAR);
+    auto* manager = queryInterface<IToolManager>(IID_TOOL_MANAGER);
+    auto* toolbar = queryInterface<IToolBar>(IID_TOOL_BAR);
     auto* renderer = queryInterface<IRenderer>(IID_RENDERER);
 
     auto* yasha_document = dynamic_cast<Yasha::Document*>(document);
