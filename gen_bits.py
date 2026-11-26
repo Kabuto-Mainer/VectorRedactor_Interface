@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Генерация числа заданной битовой длины с заданным битовым префиксом.
+"""Генерация числа заданной битовой длины с заданным префиксом.
 
-Старшие биты числа фиксируются префиксом. Следующие биты — это тег
-пользователя, вычисленный из логина, имени хоста и machine-id. Младшие биты
-заполняются случайно.
+Префикс можно задавать двоичным ('1010', '0b1010') или шестнадцатеричным
+('0x1f', 'ff'). Старшие биты числа фиксируются префиксом. Следующие биты —
+это тег пользователя, вычисленный из логина, имени хоста и machine-id.
+Младшие биты заполняются случайно.
 
 Тег занимает отдельные биты сразу после префикса, поэтому пользователи с
 разными тегами гарантированно получают разные числа. Совпадение возможно
@@ -13,6 +14,7 @@
 Примеры:
     ./gen_bits.py 8 --prefix 101
     ./gen_bits.py 16 --prefix 0b1010 -n 5 --format hex
+    ./gen_bits.py 16 --prefix 0x1f -n 5 --format bin
     ./gen_bits.py 32 --prefix 111 --seed 42 --format bin
     ./gen_bits.py 32 --prefix 111 --identity alice
 """
@@ -31,20 +33,55 @@ from pathlib import Path
 
 MACHINE_ID_PATHS = ("/etc/machine-id", "/var/lib/dbus/machine-id")
 UINT64_MASK = (1 << 64) - 1
+HEX_DIGITS = "0123456789abcdef"
 
 
 def parse_prefix(value: str) -> str:
-    """Принимает '1010' или '0b1010'; возвращает строку из '0' и '1'."""
+    """Принимает '1010', '0b1010', '0x1f' или 'ff'; возвращает биты.
+
+    Строка только из '0' и '1' без префикса считается двоичной, строка
+    с другими hex-цифрами — шестнадцатеричной. Чтобы задать hex-префикс
+    из одних нулей и единиц, используйте '0x' (например, '0x10').
+
+    Каждая hex-цифра занимает 4 бита, поэтому ведущие нули значимы:
+    '0xf' — это 4 бита '1111', а '0x0f' — 8 бит '00001111'.
+    """
     value = value.strip().replace("_", "")
-    if value[:2].lower() == "0b":
-        value = value[2:]
+    lowered = value.lower()
+
+    if lowered.startswith("0b"):
+        digits = value[2:]
+        if not digits:
+            raise argparse.ArgumentTypeError("префикс не может быть пустым")
+        if any(ch not in "01" for ch in digits):
+            raise argparse.ArgumentTypeError(
+                "двоичный префикс должен состоять только из символов '0' и '1'"
+            )
+        return digits
+
+    if lowered.startswith("0x"):
+        digits = value[2:]
+        if not digits:
+            raise argparse.ArgumentTypeError("hex-префикс не может быть пустым")
+        if any(ch not in HEX_DIGITS for ch in digits.lower()):
+            raise argparse.ArgumentTypeError(
+                "hex-префикс должен состоять только из символов 0-9, a-f"
+            )
+        return format(int(digits, 16), f"0{4 * len(digits)}b")
+
     if not value:
         raise argparse.ArgumentTypeError("префикс не может быть пустым")
-    if any(ch not in "01" for ch in value):
-        raise argparse.ArgumentTypeError(
-            "префикс должен состоять только из символов '0' и '1'"
-        )
-    return value
+
+    if all(ch in "01" for ch in value):
+        return value
+
+    if all(ch in HEX_DIGITS for ch in lowered):
+        return format(int(value, 16), f"0{4 * len(value)}b")
+
+    raise argparse.ArgumentTypeError(
+        "префикс должен быть двоичным (например, 1010 или 0b1010) "
+        "или шестнадцатеричным (например, 0x1f или ff)"
+    )
 
 
 def read_machine_id() -> str:
@@ -139,7 +176,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Сгенерировать число заданного количества битов "
-            "с заданным битовым префиксом."
+            "с заданным двоичным или hex-префиксом."
         ),
         epilog=(
             "Формат числа: <префикс> | <тег пользователя> | <случайные биты>. "
@@ -152,7 +189,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--prefix",
         type=parse_prefix,
         default=None,
-        help="битовый префикс, например 1010 или 0b1010 (по умолчанию пустой)",
+        help=(
+            "префикс: двоичный (1010 или 0b1010) или hex (0x1f, ff); "
+            "по умолчанию пустой"
+        ),
     )
     parser.add_argument(
         "-n",

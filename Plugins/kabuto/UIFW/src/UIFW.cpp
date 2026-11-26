@@ -11,10 +11,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
-#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
+#include <json/json.h>
 #include <list>
 #include <memory>
 #include <optional>
@@ -34,30 +33,99 @@ namespace UI
 namespace
 {
 
-constexpr uint8_t OPAQUE_ALPHA         = 255;
-constexpr float   CHANNEL_MAX          = 255.0F;
-constexpr float   NO_ANGLE             = 0.0F;
-constexpr float   PADDING              = 4.0F;
-constexpr float   HEADER_HEIGHT        = 28.0F;
-constexpr float   ACCENT_LINE_HEIGHT   = 2.0F;
-constexpr float   CLOSE_BUTTON_SIZE    = 20.0F;
-constexpr float   MENU_ITEM_WIDTH      = 120.0F;
-constexpr float   MENU_ITEM_HEIGHT     = 28.0F;
-constexpr float   POOL_GAP             = 4.0F;
-constexpr float   POOL_DRAG_EDGE       = 2.0F;
-constexpr float   TEXT_WIDTH_FACTOR    = 0.6F;
-constexpr int     FONT_SIZE            = 16;
-constexpr char    DEFAULT_THEME_NAME[] = "default";
-constexpr char    DARK_THEME_NAME[]    = "dark";
+constexpr uint8_t OPAQUE_ALPHA      = 255;
+constexpr float   CHANNEL_MAX       = 255.0F;
+constexpr float   NO_ANGLE          = 0.0F;
+constexpr char    CONFIG_FILENAME[] = "UIFW.json";
 
-constexpr float LIGHTNESS_THRESHOLD = 0.5F;
-constexpr float SECONDARY_TINT      = 0.15F;
-constexpr float CANVAS_TINT         = 0.04F;
-constexpr float HOVER_MIX           = 0.08F;
-constexpr float PRESSED_MIX         = 0.16F;
-constexpr float BORDER_MIX          = 0.20F;
-constexpr float DARK_SURFACE_LIFT   = 0.08F;
-constexpr float LIGHT_SURFACE_LIFT  = 0.50F;
+constexpr char DEFAULT_THEME_NAME[] = "default";
+
+struct PaletteStyle
+{
+    float lightness_threshold = 0.5F;
+    float secondary_tint      = 0.15F;
+    float canvas_tint         = 0.04F;
+    float hover_mix           = 0.08F;
+    float pressed_mix         = 0.16F;
+    float border_mix          = 0.20F;
+    float dark_surface_lift   = 0.08F;
+    float light_surface_lift  = 0.50F;
+};
+
+struct Style
+{
+    int          font_size          = 16;
+    float        text_width_factor  = 0.6F;
+    float        padding            = 4.0F;
+    float        header_height      = 28.0F;
+    float        accent_line_height = 2.0F;
+    float        close_button_size  = 20.0F;
+    float        menu_item_width    = 120.0F;
+    float        menu_item_height   = 28.0F;
+    float        pool_gap           = 4.0F;
+    float        pool_drag_edge     = 2.0F;
+    PaletteStyle palette;
+};
+
+struct ThemeDescription
+{
+    std::string      name;
+    IRenderer::Color primary;
+    IRenderer::Color secondary;
+    IRenderer::Color neutral;
+    IRenderer::Color accent;
+    IRenderer::Color unical;
+};
+
+struct Settings
+{
+    Style                         style;
+    std::string                   default_theme = DEFAULT_THEME_NAME;
+    std::vector<ThemeDescription> themes;
+    std::vector<std::string>      fonts;
+};
+
+IRenderer::Color makeColor(uint8_t r, uint8_t g, uint8_t b)
+{
+    return IRenderer::Color{r, g, b, OPAQUE_ALPHA};
+}
+
+std::vector<ThemeDescription> defaultThemes()
+{
+    return {
+        {DEFAULT_THEME_NAME,
+         makeColor(53, 132, 228),
+         makeColor(222, 221, 218),
+         makeColor(246, 245, 244),
+         makeColor(28, 113, 216),
+         makeColor(224, 27, 36)},
+        {"dark",
+         makeColor(53, 132, 228),
+         makeColor(61, 61, 61),
+         makeColor(36, 36, 36),
+         makeColor(98, 160, 234),
+         makeColor(255, 123, 107)},
+    };
+}
+
+std::vector<std::string> defaultFonts()
+{
+    return {
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/TTF/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/Adwaita/AdwaitaSans-Regular.ttf",
+    };
+}
+
+Settings defaultSettings()
+{
+    Settings settings;
+    settings.themes = defaultThemes();
+    settings.fonts  = defaultFonts();
+    return settings;
+}
 
 struct Palette
 {
@@ -86,27 +154,28 @@ float luminance(const IRenderer::Color& color)
     return (0.2126F * color.r + 0.7152F * color.g + 0.0722F * color.b) / CHANNEL_MAX;
 }
 
-IRenderer::Color contrastOf(const IRenderer::Color& color)
+IRenderer::Color contrastOf(const IRenderer::Color& color, float lightness_threshold)
 {
-    if (luminance(color) < LIGHTNESS_THRESHOLD)
+    if (luminance(color) < lightness_threshold)
     {
         return IRenderer::Color{255, 255, 255, OPAQUE_ALPHA};
     }
     return IRenderer::Color{0, 0, 0, OPAQUE_ALPHA};
 }
 
-Palette derive(const IRenderer::Color& base, const IRenderer::Color& surface, const IRenderer::Color& canvas)
+Palette derive(const IRenderer::Color& base, const IRenderer::Color& surface, const IRenderer::Color& canvas,
+               const PaletteStyle& style)
 {
-    const IRenderer::Color text   = contrastOf(base);
-    const IRenderer::Color panel  = mix(surface, base, SECONDARY_TINT);
-    const IRenderer::Color tinted = mix(canvas, base, CANVAS_TINT);
+    const IRenderer::Color text   = contrastOf(base, style.lightness_threshold);
+    const IRenderer::Color panel  = mix(surface, base, style.secondary_tint);
+    const IRenderer::Color tinted = mix(canvas, base, style.canvas_tint);
     return Palette{base,
-                   mix(base, text, HOVER_MIX),
-                   mix(base, text, PRESSED_MIX),
+                   mix(base, text, style.hover_mix),
+                   mix(base, text, style.pressed_mix),
                    text,
-                   mix(base, text, BORDER_MIX),
+                   mix(base, text, style.border_mix),
                    panel,
-                   contrastOf(panel),
+                   contrastOf(panel, style.lightness_threshold),
                    tinted};
 }
 
@@ -125,29 +194,30 @@ inline Palette Theme::palette(IUIFramework::Role role) const
     return palettes[static_cast<std::size_t>(role)];
 }
 
-Theme makeTheme(const IRenderer::Color& primary, const IRenderer::Color& secondary, const IRenderer::Color& neutral,
-                const IRenderer::Color& accent, const IRenderer::Color& unical)
+Theme makeTheme(const ThemeDescription& description, const PaletteStyle& style)
 {
-    const bool             dark = luminance(neutral) < LIGHTNESS_THRESHOLD;
+    const bool dark = luminance(description.neutral) < style.lightness_threshold;
     const IRenderer::Color white{255, 255, 255, OPAQUE_ALPHA};
-    const IRenderer::Color surface = mix(neutral, white, dark ? DARK_SURFACE_LIFT : LIGHT_SURFACE_LIFT);
-    const IRenderer::Color button  = mix(neutral, secondary, SECONDARY_TINT);
+    const IRenderer::Color surface = mix(description.neutral, white,
+                                         dark ? style.dark_surface_lift : style.light_surface_lift);
+    const IRenderer::Color button = mix(description.neutral, description.secondary, style.secondary_tint);
 
-    const std::array<IRenderer::Color, static_cast<std::size_t>(IUIFramework::Role::MAX)> role_bases{button, primary,
-                                                                                                     unical};
+    const std::array<IRenderer::Color, static_cast<std::size_t>(IUIFramework::Role::MAX)> role_bases{
+        button, description.primary, description.unical};
 
     std::array<Palette, static_cast<std::size_t>(IUIFramework::Role::MAX)> palettes{};
     for (std::size_t index = 0; index < role_bases.size(); ++index)
     {
-        palettes[index] = derive(role_bases[index], surface, neutral);
+        palettes[index] = derive(role_bases[index], surface, description.neutral, style);
     }
 
-    return Theme{neutral, surface, accent, palettes};
+    return Theme{description.neutral, surface, description.accent, palettes};
 }
 
 struct RenderContext
 {
-    const Theme*                     theme = nullptr;
+    const Theme*                     theme   = nullptr;
+    const Style*                     style   = nullptr;
     std::optional<IRenderer::FontID> font;
     mutable IRenderer*               renderer = nullptr;
 };
@@ -163,7 +233,7 @@ struct TextMetrics
     float height;
 };
 
-TextMetrics measureText(const std::string& text)
+TextMetrics measureText(const std::string& text, const Style& style)
 {
     std::size_t max_line = 0;
     std::size_t line     = 0;
@@ -186,8 +256,8 @@ TextMetrics measureText(const std::string& text)
     }
     max_line = std::max(max_line, line);
 
-    return TextMetrics{static_cast<float>(max_line) * static_cast<float>(FONT_SIZE) * TEXT_WIDTH_FACTOR,
-                       static_cast<float>(lines) * static_cast<float>(FONT_SIZE)};
+    return TextMetrics{static_cast<float>(max_line) * static_cast<float>(style.font_size) * style.text_width_factor,
+                       static_cast<float>(lines) * static_cast<float>(style.font_size)};
 }
 
 BoxF ensureMinSize(const BoxF& box, float min_width, float min_height)
@@ -197,26 +267,26 @@ BoxF ensureMinSize(const BoxF& box, float min_width, float min_height)
     return makeBox(origin, Vec2F(std::max(size.x(), min_width), std::max(size.y(), min_height)));
 }
 
-BoxF fitToText(const BoxF& box, const std::optional<std::string>& text, bool has_icon)
+BoxF fitToText(const BoxF& box, const std::optional<std::string>& text, bool has_icon, const Style& style)
 {
     if (!text || text->empty())
     {
         return box;
     }
 
-    const TextMetrics metrics    = measureText(*text);
-    const float       icon_width = has_icon ? static_cast<float>(FONT_SIZE) + PADDING : 0.0F;
-    const float       min_width  = metrics.width + 2.0F * PADDING + icon_width;
-    const float       min_height = metrics.height + 2.0F * PADDING;
+    const TextMetrics metrics    = measureText(*text, style);
+    const float       icon_width = has_icon ? static_cast<float>(style.font_size) + style.padding : 0.0F;
+    const float       min_width  = metrics.width + 2.0F * style.padding + icon_width;
+    const float       min_height = metrics.height + 2.0F * style.padding;
     return ensureMinSize(box, min_width, min_height);
 }
 
-BoxF fitWindowBox(const BoxF& box, const std::optional<std::string>& label, float close_width)
+BoxF fitWindowBox(const BoxF& box, const std::optional<std::string>& label, float close_width, const Style& style)
 {
-    const TextMetrics metrics   = (label && !label->empty()) ? measureText(*label) : TextMetrics{0.0F, 0.0F};
-    const float       reserved  = close_width > 0.0F ? close_width + 2.0F * PADDING : 0.0F;
-    const float       min_width = metrics.width + 2.0F * PADDING + reserved;
-    return ensureMinSize(box, min_width, HEADER_HEIGHT);
+    const TextMetrics metrics = (label && !label->empty()) ? measureText(*label, style) : TextMetrics{0.0F, 0.0F};
+    const float       reserved  = close_width > 0.0F ? close_width + 2.0F * style.padding : 0.0F;
+    const float       min_width = metrics.width + 2.0F * style.padding + reserved;
+    return ensureMinSize(box, min_width, style.header_height);
 }
 
 } // namespace
@@ -250,6 +320,7 @@ private:
 
     void loadFonts();
 
+    Settings                               settings_;
     RenderContext                          context_;
     std::unordered_map<std::string, Theme> themes_;
 };
@@ -257,76 +328,315 @@ private:
 namespace
 {
 
-constexpr char FONT_LIST_ENV_NAME[] = "GDINTERFACE_UIFW_ASSETS";
-constexpr char FONT_LIST_FILENAME[] = "font_list.txt";
-constexpr char ASSETS_DIRECTORY[]   = "assets";
-constexpr char TRIM_CHARACTERS[]    = " \t\r\n";
-
-std::optional<std::filesystem::path> moduleDirectory(const void* symbol)
+std::filesystem::path executableDirectory()
 {
-    Dl_info info{};
-    if (dladdr(symbol, &info) == 0 || info.dli_fname == nullptr)
-    {
-        return std::nullopt;
-    }
-
     std::error_code             error;
-    const std::filesystem::path module = std::filesystem::absolute(info.dli_fname, error);
-    if (error)
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    if (!error && !self.empty())
+    {
+        return self.parent_path();
+    }
+
+    return std::filesystem::current_path(error);
+}
+
+std::filesystem::path configFilePath()
+{
+    return executableDirectory() / "config" / CONFIG_FILENAME;
+}
+
+void logInvalidConfigField(const std::filesystem::path& path, const char* field)
+{
+    ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config '%s': invalid '%s', using default",
+                         path.string().c_str(), field);
+}
+
+int hexDigit(char value)
+{
+    if (value >= '0' && value <= '9')
+    {
+        return value - '0';
+    }
+    if (value >= 'a' && value <= 'f')
+    {
+        return value - 'a' + 10;
+    }
+    if (value >= 'A' && value <= 'F')
+    {
+        return value - 'A' + 10;
+    }
+    return -1;
+}
+
+std::optional<uint8_t> parseByte(const std::string& text, std::size_t index)
+{
+    const int high = hexDigit(text[index]);
+    const int low  = hexDigit(text[index + 1]);
+    if (high < 0 || low < 0)
     {
         return std::nullopt;
     }
-    return module.parent_path();
+    return static_cast<uint8_t>(high * 16 + low);
 }
 
-std::optional<std::filesystem::path> fontListPath()
+std::optional<IRenderer::Color> parseColor(const Json::Value& value)
 {
-    if (const char* configured = std::getenv(FONT_LIST_ENV_NAME); configured != nullptr && configured[0] != '\0')
-    {
-        std::error_code             error;
-        const std::filesystem::path path = configured;
-        if (std::filesystem::is_directory(path, error))
-        {
-            return path / FONT_LIST_FILENAME;
-        }
-        return path;
-    }
-
-    const std::optional<std::filesystem::path> directory =
-        moduleDirectory(reinterpret_cast<const void*>(&fontListPath));
-    if (!directory)
+    if (!value.isString())
     {
         return std::nullopt;
     }
-    return *directory / ASSETS_DIRECTORY / FONT_LIST_FILENAME;
+
+    const std::string text = value.asString();
+    if ((text.size() != 7 && text.size() != 9) || text.front() != '#')
+    {
+        return std::nullopt;
+    }
+
+    const std::optional<uint8_t> red   = parseByte(text, 1);
+    const std::optional<uint8_t> green = parseByte(text, 3);
+    const std::optional<uint8_t> blue  = parseByte(text, 5);
+    if (!red || !green || !blue)
+    {
+        return std::nullopt;
+    }
+
+    uint8_t alpha = OPAQUE_ALPHA;
+    if (text.size() == 9)
+    {
+        const std::optional<uint8_t> parsed = parseByte(text, 7);
+        if (!parsed)
+        {
+            return std::nullopt;
+        }
+        alpha = *parsed;
+    }
+
+    return IRenderer::Color{*red, *green, *blue, alpha};
 }
 
-std::vector<std::string> readFontList(const std::filesystem::path& path)
+void readIntField(const Json::Value& object, const char* field, int& target, const std::filesystem::path& path,
+                  int minimum)
 {
-    std::vector<std::string> fonts;
-    std::ifstream            list(path);
-    if (!list.is_open())
+    const Json::Value& value = object[field];
+    if (value.isNull())
     {
-        return fonts;
+        return;
+    }
+    if (value.isInt() && value.asInt() >= minimum)
+    {
+        target = value.asInt();
+        return;
+    }
+    logInvalidConfigField(path, field);
+}
+
+void readFloatField(const Json::Value& object, const char* field, float& target, const std::filesystem::path& path,
+                    float minimum, float maximum)
+{
+    const Json::Value& value = object[field];
+    if (value.isNull())
+    {
+        return;
+    }
+    if (value.isNumeric())
+    {
+        const float parsed = value.asFloat();
+        if (parsed >= minimum && parsed <= maximum)
+        {
+            target = parsed;
+            return;
+        }
+    }
+    logInvalidConfigField(path, field);
+}
+
+const Json::Value* objectField(const Json::Value& root, const char* field, const std::filesystem::path& path)
+{
+    const Json::Value& value = root[field];
+    if (value.isNull())
+    {
+        return nullptr;
+    }
+    if (!value.isObject())
+    {
+        logInvalidConfigField(path, field);
+        return nullptr;
+    }
+    return &value;
+}
+
+void readFontConfig(const Json::Value& root, const std::filesystem::path& path, Style& style)
+{
+    const Json::Value* font = objectField(root, "font", path);
+    if (font == nullptr)
+    {
+        return;
+    }
+    readIntField(*font, "size", style.font_size, path, 1);
+    readFloatField(*font, "width_factor", style.text_width_factor, path, 0.0F, 10.0F);
+}
+
+void readLayoutConfig(const Json::Value& root, const std::filesystem::path& path, Style& style)
+{
+    const Json::Value* layout = objectField(root, "layout", path);
+    if (layout == nullptr)
+    {
+        return;
+    }
+    readFloatField(*layout, "padding", style.padding, path, 0.0F, 10'000.0F);
+    readFloatField(*layout, "header_height", style.header_height, path, 0.0F, 10'000.0F);
+    readFloatField(*layout, "accent_line_height", style.accent_line_height, path, 0.0F, 10'000.0F);
+    readFloatField(*layout, "close_button_size", style.close_button_size, path, 0.0F, 10'000.0F);
+    readFloatField(*layout, "menu_item_width", style.menu_item_width, path, 0.0F, 10'000.0F);
+    readFloatField(*layout, "menu_item_height", style.menu_item_height, path, 0.0F, 10'000.0F);
+    readFloatField(*layout, "pool_gap", style.pool_gap, path, 0.0F, 10'000.0F);
+    readFloatField(*layout, "pool_drag_edge", style.pool_drag_edge, path, 0.0F, 10'000.0F);
+}
+
+void readPaletteConfig(const Json::Value& root, const std::filesystem::path& path, PaletteStyle& palette)
+{
+    const Json::Value* value = objectField(root, "palette", path);
+    if (value == nullptr)
+    {
+        return;
+    }
+    readFloatField(*value, "lightness_threshold", palette.lightness_threshold, path, 0.0F, 1.0F);
+    readFloatField(*value, "secondary_tint", palette.secondary_tint, path, 0.0F, 1.0F);
+    readFloatField(*value, "canvas_tint", palette.canvas_tint, path, 0.0F, 1.0F);
+    readFloatField(*value, "hover_mix", palette.hover_mix, path, 0.0F, 1.0F);
+    readFloatField(*value, "pressed_mix", palette.pressed_mix, path, 0.0F, 1.0F);
+    readFloatField(*value, "border_mix", palette.border_mix, path, 0.0F, 1.0F);
+    readFloatField(*value, "dark_surface_lift", palette.dark_surface_lift, path, 0.0F, 1.0F);
+    readFloatField(*value, "light_surface_lift", palette.light_surface_lift, path, 0.0F, 1.0F);
+}
+
+void readThemesConfig(const Json::Value& root, const std::filesystem::path& path,
+                      std::vector<ThemeDescription>& themes)
+{
+    const Json::Value& value = root["themes"];
+    if (value.isNull())
+    {
+        return;
+    }
+    if (!value.isArray())
+    {
+        logInvalidConfigField(path, "themes");
+        return;
     }
 
-    std::string line;
-    while (std::getline(list, line))
+    std::vector<ThemeDescription> parsed;
+    for (const Json::Value& item : value)
     {
-        const std::size_t first = line.find_first_not_of(TRIM_CHARACTERS);
-        if (first == std::string::npos)
+        if (!item.isObject() || !item["name"].isString() || item["name"].asString().empty())
         {
+            ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config '%s': invalid theme entry, skipped",
+                                 path.string().c_str());
             continue;
         }
-        const std::size_t last = line.find_last_not_of(TRIM_CHARACTERS);
-        std::string       font = line.substr(first, last - first + 1);
-        if (font.front() == '#')
+
+        const std::string name = item["name"].asString();
+
+        const std::optional<IRenderer::Color> primary   = parseColor(item["primary"]);
+        const std::optional<IRenderer::Color> secondary = parseColor(item["secondary"]);
+        const std::optional<IRenderer::Color> neutral   = parseColor(item["neutral"]);
+        const std::optional<IRenderer::Color> accent    = parseColor(item["accent"]);
+        const std::optional<IRenderer::Color> unical    = parseColor(item["unical"]);
+        if (!primary || !secondary || !neutral || !accent || !unical)
         {
+            ApplicationCore::log(ApplicationCore::LogLevel::WARNING,
+                                 "UI config '%s': theme '%s' has invalid colors, skipped", path.string().c_str(),
+                                 name.c_str());
             continue;
         }
-        fonts.push_back(std::move(font));
+
+        parsed.push_back(ThemeDescription{name, *primary, *secondary, *neutral, *accent, *unical});
     }
-    return fonts;
+
+    if (parsed.empty())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config '%s': no valid themes, using defaults",
+                             path.string().c_str());
+        return;
+    }
+
+    themes = std::move(parsed);
+}
+
+void readFontsConfig(const Json::Value& root, const std::filesystem::path& path, std::vector<std::string>& fonts)
+{
+    const Json::Value& value = root["fonts"];
+    if (value.isNull())
+    {
+        return;
+    }
+    if (!value.isArray())
+    {
+        logInvalidConfigField(path, "fonts");
+        return;
+    }
+
+    std::vector<std::string> parsed;
+    for (const Json::Value& item : value)
+    {
+        if (!item.isString() || item.asString().empty())
+        {
+            ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config '%s': invalid font entry, skipped",
+                                 path.string().c_str());
+            continue;
+        }
+        parsed.push_back(item.asString());
+    }
+
+    if (parsed.empty())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config '%s': no valid fonts, using defaults",
+                             path.string().c_str());
+        return;
+    }
+
+    fonts = std::move(parsed);
+}
+
+Settings loadSettings(const std::filesystem::path& path)
+{
+    Settings settings = defaultSettings();
+
+    std::ifstream file(path);
+    if (!file.is_open())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config '%s' not found, using defaults",
+                             path.string().c_str());
+        return settings;
+    }
+
+    Json::CharReaderBuilder builder;
+    Json::Value             root;
+    std::string             errors;
+
+    if (!Json::parseFromStream(builder, file, &root, &errors) || !root.isObject())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config '%s' is invalid (%s), using defaults",
+                             path.string().c_str(), errors.empty() ? "root is not an object" : errors.c_str());
+        return settings;
+    }
+
+    const Json::Value& default_theme = root["default_theme"];
+    if (default_theme.isString() && !default_theme.asString().empty())
+    {
+        settings.default_theme = default_theme.asString();
+    }
+    else if (!default_theme.isNull())
+    {
+        logInvalidConfigField(path, "default_theme");
+    }
+
+    readFontsConfig(root, path, settings.fonts);
+    readThemesConfig(root, path, settings.themes);
+    readFontConfig(root, path, settings.style);
+    readLayoutConfig(root, path, settings.style);
+    readPaletteConfig(root, path, settings.style.palette);
+
+    return settings;
 }
 
 IRenderer* queryRenderer()
@@ -389,11 +699,11 @@ void drawText(IRenderer* renderer, const RenderContext& context, const std::stri
     }
     renderer->renderText(color, box, text,
                          IRenderer::TextFormat{.font            = *context.font,
-                                               .font_size       = FONT_SIZE,
+                                               .font_size       = context.style->font_size,
                                                .overflow_action = IRenderer::TextOverflowAction::TAILREPLACE,
                                                .h_align         = IRenderer::TextHAlign::LEFT,
                                                .w_align         = IRenderer::TextWAlign::CENTER,
-                                               .padding         = PADDING,
+                                               .padding         = context.style->padding,
                                                .line_spacing    = 0.0F,
                                                .wrap            = false});
 }
@@ -418,10 +728,11 @@ BoxF leftSquareBox(const BoxF& box)
     return makeBox(Vec2F(box.left(), top), Vec2F(side, side));
 }
 
-float contentPadding(const BoxF& box)
+float contentPadding(const BoxF& box, const Style& style)
 {
     const float side = std::min(box.size().x(), box.size().y());
-    return std::min(PADDING, std::max(0.0F, (side - static_cast<float>(FONT_SIZE) - PADDING) / 2.0F));
+    return std::min(style.padding,
+                    std::max(0.0F, (side - static_cast<float>(style.font_size) - style.padding) / 2.0F));
 }
 
 void drawControlText(IRenderer* renderer, const RenderContext& context, const std::string& text,
@@ -433,11 +744,11 @@ void drawControlText(IRenderer* renderer, const RenderContext& context, const st
     }
     renderer->renderText(color, box, text,
                          IRenderer::TextFormat{.font            = *context.font,
-                                               .font_size       = FONT_SIZE,
+                                               .font_size       = context.style->font_size,
                                                .overflow_action = IRenderer::TextOverflowAction::TAILREPLACE,
                                                .h_align         = IRenderer::TextHAlign::CENTER,
                                                .w_align         = IRenderer::TextWAlign::CENTER,
-                                               .padding         = contentPadding(box),
+                                               .padding         = contentPadding(box, *context.style),
                                                .line_spacing    = 0.0F,
                                                .wrap            = false});
 }
@@ -446,7 +757,7 @@ void drawControlContent(IRenderer* renderer, const RenderContext& context,
                         const std::optional<IRenderer::TextureID>& icon, const std::optional<std::string>& text,
                         const IRenderer::Color& color, const BoxF& box)
 {
-    const BoxF inner = insetBox(box, contentPadding(box));
+    const BoxF inner = insetBox(box, contentPadding(box, *context.style));
 
     if (icon && text)
     {
@@ -471,7 +782,8 @@ void drawControlContent(IRenderer* renderer, const RenderContext& context,
     }
 }
 
-BoxF layoutPool(std::list<std::unique_ptr<TObject>>& children, const BoxF& bounds, IUIFramework::Direction direction)
+BoxF layoutPool(std::list<std::unique_ptr<TObject>>& children, const BoxF& bounds, IUIFramework::Direction direction,
+                float gap)
 {
     /* Children keep their current main-axis size and are stretched across the
      * pool. When they do not fit, the pool grows forward along its direction. */
@@ -496,7 +808,7 @@ BoxF layoutPool(std::list<std::unique_ptr<TObject>>& children, const BoxF& bound
 
     if (!main_sizes.empty())
     {
-        total += POOL_GAP * static_cast<float>(main_sizes.size() - 1);
+        total += gap * static_cast<float>(main_sizes.size() - 1);
     }
 
     const float cross = std::max(vertical ? current.x() : current.y(), max_cross);
@@ -520,7 +832,7 @@ BoxF layoutPool(std::list<std::unique_ptr<TObject>>& children, const BoxF& bound
         const Vec2F position   = vertical ? Vec2F(0.0F, offset) : Vec2F(offset, 0.0F);
         const Vec2F child_size = vertical ? Vec2F(cross, main) : Vec2F(main, cross);
         static_cast<TWidget&>(*child).setBox(makeBox(position, child_size));
-        offset += main + POOL_GAP;
+        offset += main + gap;
     }
 
     return makeBox(origin, size);
@@ -755,7 +1067,7 @@ inline ButtonObject::ButtonObject(const RenderContext& context, const BoxF& boun
                                   IUIFramework::Action on_press) :
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_press_(std::move(on_press))
 {
-    setBox(fitToText(bounds, text_, icon_.has_value()));
+    setBox(fitToText(bounds, text_, icon_.has_value(), *context_.style));
     parent_ = parent();
 }
 
@@ -849,7 +1161,7 @@ inline SwitcherObject::SwitcherObject(const RenderContext& context, const BoxF& 
     context_(context), text_(std::move(text)), icon_(icon), role_(role), on_active_(std::move(on_active)),
     on_deactive_(std::move(on_deactive))
 {
-    setBox(fitToText(bounds, text_, icon_.has_value()));
+    setBox(fitToText(bounds, text_, icon_.has_value(), *context_.style));
     parent_ = parent();
 }
 
@@ -941,7 +1253,7 @@ inline void SwitcherPoolObject::add(std::unique_ptr<IUIFramework::Switcher> swit
 
 inline void SwitcherPoolObject::relayout()
 {
-    setBox(layoutPool(children(), box(), direction_));
+    setBox(layoutPool(children(), box(), direction_, context_.style->pool_gap));
 }
 
 inline bool SwitcherPoolObject::processEvent(const IInputPump::Event& event)
@@ -954,7 +1266,7 @@ inline bool SwitcherPoolObject::processEvent(const IInputPump::Event& event)
     relayout();
 
     const BoxF bounds = globalBounds(*this);
-    if (startDrag(*this, drag_, event, bounds, POOL_DRAG_EDGE))
+    if (startDrag(*this, drag_, event, bounds, context_.style->pool_drag_edge))
     {
         return true;
     }
@@ -1036,7 +1348,7 @@ inline void ButtonPoolObject::add(std::unique_ptr<IUIFramework::Button> button)
 
 inline void ButtonPoolObject::relayout()
 {
-    setBox(layoutPool(children(), box(), direction_));
+    setBox(layoutPool(children(), box(), direction_, context_.style->pool_gap));
 }
 
 inline bool ButtonPoolObject::processEvent(const IInputPump::Event& event)
@@ -1049,7 +1361,7 @@ inline bool ButtonPoolObject::processEvent(const IInputPump::Event& event)
     relayout();
 
     const BoxF bounds = globalBounds(*this);
-    if (startDrag(*this, drag_, event, bounds, POOL_DRAG_EDGE))
+    if (startDrag(*this, drag_, event, bounds, context_.style->pool_drag_edge))
     {
         return true;
     }
@@ -1162,8 +1474,8 @@ inline void ContextMenuObject::relayout()
 
     /* Use the largest child as the uniform item size, but keep the default menu
      * metrics as the lower bound so small items do not shrink the menu. */
-    float item_width  = MENU_ITEM_WIDTH;
-    float item_height = MENU_ITEM_HEIGHT;
+    float item_width  = context_.style->menu_item_width;
+    float item_height = context_.style->menu_item_height;
     for (const auto& child : children())
     {
         const Vec2F child_size = static_cast<const TWidget&>(*child).box().size();
@@ -1261,7 +1573,7 @@ private:
     IUIFramework::Role                        role_;
     std::optional<IUIFramework::EventHandler> on_event_;
     ButtonObject*                             close_button_ = nullptr;
-    Vec2F                                     close_size_   = Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE);
+    Vec2F                                     close_size_;
     DragState                                 drag_;
 };
 
@@ -1279,16 +1591,17 @@ inline WindowMenuObject::WindowMenuObject(const RenderContext& context, const Bo
         const TObject::ID    window_id    = id();
         close_action.callbacks.emplace_back([window_id]() { destroyAfterEvent(window_id); });
 
-        auto close    = std::make_unique<ButtonObject>(context_, BoxF(Vec2F(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)),
-                                                       std::optional<std::string>("X"), std::nullopt, role_,
-                                                       std::move(close_action));
+        const float close_side = context_.style->close_button_size;
+        auto        close      = std::make_unique<ButtonObject>(context_, BoxF(Vec2F(close_side, close_side)),
+                                                                std::optional<std::string>("X"), std::nullopt, role_,
+                                                                std::move(close_action));
         close_size_   = close->box().size();
         close_button_ = close.get();
         addChild(std::move(close));
     }
 
     const float close_width = close_button_ != nullptr ? close_size_.x() : 0.0F;
-    setBox(fitWindowBox(bounds, label_, close_width));
+    setBox(fitWindowBox(bounds, label_, close_width, *context_.style));
     relayout();
 }
 
@@ -1300,7 +1613,8 @@ inline void WindowMenuObject::relayout()
     }
 
     const Vec2F size      = box().size();
-    const Vec2F close_pos = Vec2F(size.x() - close_size_.x() - PADDING, (HEADER_HEIGHT - close_size_.y()) / 2.0F);
+    const Vec2F close_pos = Vec2F(size.x() - close_size_.x() - context_.style->padding,
+                                  (context_.style->header_height - close_size_.y()) / 2.0F);
     close_button_->setBox(makeBox(close_pos, close_size_));
 }
 
@@ -1349,7 +1663,7 @@ inline bool WindowMenuObject::processEvent(const IInputPump::Event& event)
     }
 
     const BoxF window = globalBounds(*this);
-    const BoxF header = makeBox(window.topLeft(), Vec2F(window.size().x(), HEADER_HEIGHT));
+    const BoxF header = makeBox(window.topLeft(), Vec2F(window.size().x(), context_.style->header_height));
     return startDrag(*this, drag_, event, header);
 }
 
@@ -1363,22 +1677,23 @@ inline void WindowMenuObject::render()
         return;
     }
 
-    const Palette palette    = context_.theme->palette(role_);
-    const BoxF    bounds     = globalBounds(*this);
-    const Vec2F   origin     = bounds.topLeft();
-    const BoxF    header_box = makeBox(origin, Vec2F(bounds.size().x(), HEADER_HEIGHT));
+    const Palette palette = context_.theme->palette(role_);
+    const BoxF    bounds  = globalBounds(*this);
+    const Vec2F   origin  = bounds.topLeft();
+    const float   header_height = context_.style->header_height;
+    const BoxF    header_box    = makeBox(origin, Vec2F(bounds.size().x(), header_height));
 
     drawPanel(renderer, palette.canvas, palette.border, bounds);
     drawPanel(renderer, palette.base, palette.border, header_box);
     renderer->renderRect(context_.theme->accent,
-                         makeBox(Vec2F(origin.x(), origin.y() + HEADER_HEIGHT - ACCENT_LINE_HEIGHT),
-                                 Vec2F(bounds.size().x(), ACCENT_LINE_HEIGHT)),
+                         makeBox(Vec2F(origin.x(), origin.y() + header_height - context_.style->accent_line_height),
+                                 Vec2F(bounds.size().x(), context_.style->accent_line_height)),
                          NO_ANGLE);
 
     if (label_)
     {
-        const float reserved  = close_button_ != nullptr ? close_size_.x() + 2.0F * PADDING : 0.0F;
-        const BoxF  label_box = makeBox(header_box.topLeft(), Vec2F(header_box.size().x() - reserved, HEADER_HEIGHT));
+        const float reserved  = close_button_ != nullptr ? close_size_.x() + 2.0F * context_.style->padding : 0.0F;
+        const BoxF  label_box = makeBox(header_box.topLeft(), Vec2F(header_box.size().x() - reserved, header_height));
         drawText(renderer, context_, *label_, palette.text, label_box);
     }
 
@@ -1395,13 +1710,24 @@ inline UIWi& UIWi::instance()
 
 inline UIWi::UIWi()
 {
-    registryTheme(DEFAULT_THEME_NAME, IRenderer::Color{53, 132, 228, OPAQUE_ALPHA},
-                  IRenderer::Color{222, 221, 218, OPAQUE_ALPHA}, IRenderer::Color{246, 245, 244, OPAQUE_ALPHA},
-                  IRenderer::Color{28, 113, 216, OPAQUE_ALPHA}, IRenderer::Color{224, 27, 36, OPAQUE_ALPHA});
-    registryTheme(DARK_THEME_NAME, IRenderer::Color{53, 132, 228, OPAQUE_ALPHA},
-                  IRenderer::Color{61, 61, 61, OPAQUE_ALPHA}, IRenderer::Color{36, 36, 36, OPAQUE_ALPHA},
-                  IRenderer::Color{98, 160, 234, OPAQUE_ALPHA}, IRenderer::Color{255, 123, 107, OPAQUE_ALPHA});
-    setTheme(DEFAULT_THEME_NAME);
+    settings_      = loadSettings(configFilePath());
+    context_.style = &settings_.style;
+
+    for (const ThemeDescription& theme : settings_.themes)
+    {
+        registryTheme(theme.name, theme.primary, theme.secondary, theme.neutral, theme.accent, theme.unical);
+    }
+
+    if (!setTheme(settings_.default_theme))
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI config: theme '%s' is not registered",
+                             settings_.default_theme.c_str());
+        if (!settings_.themes.empty())
+        {
+            setTheme(settings_.themes.front().name);
+        }
+    }
+
     loadFonts();
 }
 
@@ -1447,7 +1773,8 @@ inline void UIWi::registryTheme(const std::string& name, const IRenderer::Color&
                                 const IRenderer::Color& secondary, const IRenderer::Color& neutral,
                                 const IRenderer::Color& accent, const IRenderer::Color& unical)
 {
-    themes_.insert_or_assign(std::move(name), makeTheme(primary, secondary, neutral, accent, unical));
+    const ThemeDescription description{name, primary, secondary, neutral, accent, unical};
+    themes_.insert_or_assign(name, makeTheme(description, settings_.style.palette));
 }
 
 inline bool UIWi::setTheme(const std::string& name)
@@ -1471,14 +1798,7 @@ inline void UIWi::loadFonts()
         return;
     }
 
-    const std::optional<std::filesystem::path> list_path = fontListPath();
-    if (!list_path)
-    {
-        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "UI font list location is not resolved");
-        return;
-    }
-
-    for (const std::string& font : readFontList(*list_path))
+    for (const std::string& font : settings_.fonts)
     {
         const std::optional<IRenderer::FontID> loaded = renderer->loadFont(font);
         if (loaded)
@@ -1489,8 +1809,7 @@ inline void UIWi::loadFonts()
         }
     }
 
-    ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "No UI font from '%s' is loaded",
-                         list_path->string().c_str());
+    ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "No UI font from the UI config is loaded");
 }
 
 inline bool UIWi::setFont(const std::string& path)

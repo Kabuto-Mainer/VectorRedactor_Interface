@@ -2,6 +2,9 @@
 
 #include "Interfaces/IDocument.hpp"
 #include "Utils/TObject.hpp"
+#include "Utils/Transformable.hpp"
+#include "Utils/Vec2F.hpp"
+#include "export/ICamera.hpp"
 
 #include <memory>
 #include <optional>
@@ -12,7 +15,7 @@ namespace Kabuto
 namespace Document
 {
 
-class TDocument final : public TObject
+class TDocument final : public TObject, public Transformable
 {
 public:
     TDocument()           = default;
@@ -36,7 +39,7 @@ public:
     Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
 }; // class TDocument
 
-class CDocument final : public IDocument
+class CDocument final : public IDocument, public ICamera
 {
 public:
     CDocument(const CDocument&)            = delete;
@@ -55,14 +58,23 @@ public:
     std::optional<TObject::ID> hitTest(const Vec2F& pos) override;
     void                       accept(Visitor& visitor) const override;
 
+    void addScale(float scale) override;
+    void addScaleAt(float scale, const Vec2F& anchor) override;
+    void addShift(const Vec2F& shift) override;
+    void reset() override;
+
+    Vec2F mapGlobalToLocal(const Vec2F& pos) const override;
+
 private:
-    CDocument()           = default;
+    CDocument();
     ~CDocument() override = default;
 
     TDocument* node() const;
 
     TDocument*  document_node_ = nullptr;
     TObject::ID document_id_;
+    float       min_scale_ = ICamera::MIN_SCALE;
+    float       max_scale_ = ICamera::MAX_SCALE;
 }; // class CDocument
 
 }; // namespace Document

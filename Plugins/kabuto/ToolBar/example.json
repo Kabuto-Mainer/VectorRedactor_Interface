@@ -1,0 +1,11 @@
+{
+    "left": 312,
+    "top": 24,
+    "width": 40,
+    "height": 256,
+    "header_height": 28,
+    "padding": 8,
+    "row_height": 32,
+    "icon_size": 30,
+    "label": "Tools"
+}

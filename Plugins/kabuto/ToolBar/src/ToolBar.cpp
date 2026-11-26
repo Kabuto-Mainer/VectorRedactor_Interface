@@ -8,6 +8,11 @@
 #include "Utils/Vec2F.hpp"
 
 #include <algorithm>
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <json/json.h>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -23,19 +28,117 @@ namespace ToolBar
 namespace
 {
 
-constexpr float TOOL_BAR_LEFT   = 312.0F;
-constexpr float TOOL_BAR_TOP    = 24.0F;
-constexpr float TOOL_BAR_RIGHT  = 352.0F;
-constexpr float TOOL_BAR_BOTTOM = 228.0F;
+constexpr const char* TOOL_BAR_CONFIG_FILENAME = "ToolBar.json";
 
-constexpr float HEADER_HEIGHT = 28.0F;
-constexpr float PADDING       = 8.0F;
-constexpr float PADDING_SUM   = 2.0F * PADDING;
-constexpr float ROW_HEIGHT    = 32.0F;
-
-BoxF toolBarBox()
+BoxF toolBarBox(const ToolBarConfig& config)
 {
-    return BoxF(TOOL_BAR_LEFT, TOOL_BAR_TOP, TOOL_BAR_RIGHT, TOOL_BAR_BOTTOM);
+    return BoxF(config.left, config.top, config.left + config.width, config.top + config.height);
+}
+
+std::filesystem::path executableDirectory()
+{
+    std::error_code             error;
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    if (!error && !self.empty())
+    {
+        return self.parent_path();
+    }
+
+    return std::filesystem::current_path(error);
+}
+
+std::filesystem::path configFilePath()
+{
+    return executableDirectory() / "config" / TOOL_BAR_CONFIG_FILENAME;
+}
+
+void logInvalidConfigField(const std::filesystem::path& path, const char* field)
+{
+    ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "ToolBar config '%s': invalid '%s', using default",
+                         path.string().c_str(), field);
+}
+
+float readFloat(const Json::Value& root, const char* field, float fallback, bool positive_only,
+                const std::filesystem::path& path)
+{
+    const Json::Value& value = root[field];
+
+    if (value.isNull())
+    {
+        return fallback;
+    }
+
+    if (!value.isNumeric())
+    {
+        logInvalidConfigField(path, field);
+        return fallback;
+    }
+
+    constexpr double FLOAT_MAX = static_cast<double>(std::numeric_limits<float>::max());
+
+    const double number = value.asDouble();
+    if (!std::isfinite(number) || number > FLOAT_MAX || number < -FLOAT_MAX || (positive_only && number <= 0.0))
+    {
+        logInvalidConfigField(path, field);
+        return fallback;
+    }
+
+    return static_cast<float>(number);
+}
+
+std::string readString(const Json::Value& root, const char* field, const std::string& fallback,
+                       const std::filesystem::path& path)
+{
+    const Json::Value& value = root[field];
+
+    if (value.isNull())
+    {
+        return fallback;
+    }
+
+    if (!value.isString() || value.asString().empty())
+    {
+        logInvalidConfigField(path, field);
+        return fallback;
+    }
+
+    return value.asString();
+}
+
+ToolBarConfig loadToolBarConfig(const std::filesystem::path& path)
+{
+    ToolBarConfig config;
+
+    std::ifstream file(path);
+    if (!file.is_open())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "ToolBar config '%s' not found, using defaults",
+                             path.string().c_str());
+        return config;
+    }
+
+    Json::CharReaderBuilder builder;
+    Json::Value             root;
+    std::string             errors;
+
+    if (!Json::parseFromStream(builder, file, &root, &errors) || !root.isObject())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "ToolBar config '%s' is invalid (%s), using defaults",
+                             path.string().c_str(), errors.empty() ? "root is not an object" : errors.c_str());
+        return config;
+    }
+
+    config.left          = readFloat(root, "left", config.left, false, path);
+    config.top           = readFloat(root, "top", config.top, false, path);
+    config.width         = readFloat(root, "width", config.width, true, path);
+    config.height        = readFloat(root, "height", config.height, true, path);
+    config.header_height = readFloat(root, "header_height", config.header_height, true, path);
+    config.padding       = readFloat(root, "padding", config.padding, true, path);
+    config.row_height    = readFloat(root, "row_height", config.row_height, true, path);
+    config.icon_size     = readFloat(root, "icon_size", config.icon_size, true, path);
+    config.label         = readString(root, "label", config.label, path);
+
+    return config;
 }
 
 template<typename T>
@@ -101,7 +204,7 @@ bool TToolBar::processEvent(const IInputPump::Event& event)
     const auto* mouse = std::get_if<IInputPump::EventMouse>(&event);
     return mouse != nullptr &&
            mouse->type() == IInputPump::EventMouse::Type::LEFT_BUTTON_PRESSING &&
-           toolBarBox().contains(mouse->cursorPos());
+           toolBarBox(config_).contains(mouse->cursorPos());
 }
 
 void TToolBar::render()
@@ -142,9 +245,9 @@ void TToolBar::rebuild()
         return;
     }
 
-    const BoxF  box        = toolBarBox();
-    const float rows       = ROW_HEIGHT * static_cast<float>(entries_.size());
-    const float free_space = box.size().y() - HEADER_HEIGHT - PADDING_SUM;
+    const BoxF  box        = toolBarBox(config_);
+    const float rows       = config_.row_height * static_cast<float>(entries_.size());
+    const float free_space = box.size().y() - config_.header_height - 2.0F * config_.padding;
     const float pool_size  = std::min(rows, free_space);
 
     if (pool_size <= 0.0F)
@@ -155,7 +258,7 @@ void TToolBar::rebuild()
 
     IUIFramework::WindowMenuDescription window_description;
     window_description.box   = box;
-    window_description.label = std::string("Tools");
+    window_description.label = config_.label;
     window_description.role  = IUIFramework::Role::DEFAULT;
 
     std::unique_ptr<IUIFramework::WindowMenu> window = framework->create(window_description);
@@ -166,8 +269,8 @@ void TToolBar::rebuild()
     }
 
     IUIFramework::SwitcherPoolDescription pool_description;
-    pool_description.min_point = Vec2F(PADDING, HEADER_HEIGHT + PADDING);
-    pool_description.size      = Vec2F(box.size().x() - PADDING_SUM, pool_size);
+    pool_description.min_point = Vec2F(config_.padding, config_.header_height + config_.padding);
+    pool_description.size      = Vec2F(box.size().x() - 2.0F * config_.padding, pool_size);
     pool_description.direction = IUIFramework::Direction::VERTICAL;
     pool_description.role      = IUIFramework::Role::DEFAULT;
 
@@ -183,7 +286,7 @@ void TToolBar::rebuild()
         IUIFramework::SwitcherDescription switcher_description;
         switcher_description.icon = IUIFramework::Icon{entry.texture_id};
         switcher_description.role = IUIFramework::Role::DEFAULT;
-        switcher_description.box  = BoxF{0, 0, 30, 30};
+        switcher_description.box  = BoxF{0, 0, config_.icon_size, config_.icon_size};
         switcher_description.on_active.callbacks.emplace_back(
             [tool_manager, tool_id = entry.tool_id]
             {
@@ -290,7 +393,9 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
         return false;
     }
 
-    auto  toolbar_node = std::make_unique<Kabuto::ToolBar::TToolBar>();
+    const Kabuto::ToolBar::ToolBarConfig config = Kabuto::ToolBar::loadToolBarConfig(Kabuto::ToolBar::configFilePath());
+
+    auto  toolbar_node = std::make_unique<Kabuto::ToolBar::TToolBar>(config);
     auto* node_ptr     = toolbar_node.get();
 
     Kabuto::ToolBar::CToolBar& toolbar = Kabuto::ToolBar::CToolBar::instance();

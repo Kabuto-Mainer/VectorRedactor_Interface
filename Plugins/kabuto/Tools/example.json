@@ -1,0 +1,59 @@
+{
+    "active_tool": "add_shape",
+    "icons": {
+        "rectangle": "assets/rectangle.png",
+        "ellipse": "assets/ellipse.png",
+        "polygon": "assets/polygon.png",
+        "edit_polygon": "assets/edit_polygon.png",
+        "delete": "assets/clean.png",
+        "color": "assets/fill.png",
+        "camera": "assets/camera.png"
+    },
+    "toolbar": [
+        "add_shape",
+        "add_polygon",
+        "edit_polygon",
+        "delete_shape",
+        "set_color",
+        "camera"
+    ],
+    "add_shape": {
+        "min_drag_size": 2.0,
+        "menu_item_width": 140.0,
+        "menu_item_height": 28.0,
+        "shapes": [
+            {
+                "type": "rectangle",
+                "label": "Rectangle",
+                "icon": "rectangle"
+            },
+            {
+                "type": "ellipse",
+                "label": "Ellipse",
+                "icon": "ellipse"
+            }
+        ]
+    },
+    "add_polygon": {
+        "close_distance": 12.0,
+        "duplicate_distance": 1.0,
+        "double_click_distance": 8.0,
+        "double_click_seconds": 0.35
+    },
+    "edit_polygon": {
+        "vertex_pick_radius": 10.0,
+        "edge_pick_radius": 8.0,
+        "double_click_distance": 8.0,
+        "double_click_seconds": 0.35
+    },
+    "camera": {
+        "zoom_step": 0.1,
+        "pan_step": 50.0,
+        "fast_pan_factor": 4.0
+    },
+    "overlay": {
+        "handle_radius": 5.0,
+        "handle_color": "#2ACAEC",
+        "selected_color": "#FF9100"
+    }
+}

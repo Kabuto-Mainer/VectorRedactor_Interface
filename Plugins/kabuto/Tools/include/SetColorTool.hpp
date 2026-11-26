@@ -6,8 +6,8 @@
 #include "Interfaces/IToolManager.hpp"
 #include "Utils/TObject.hpp"
 #include "Utils/Vec2F.hpp"
+#include "export/Components.hpp"
 #include "export/IPalette.hpp"
-#include "include/Components.hpp"
 
 #include <optional>
 #include <variant>
@@ -27,7 +27,9 @@ namespace Tools
 class SetColorTool final : public IToolManager::ATool
 {
 public:
-    SetColorTool(ID tool_id, IDocument& document, IPalette& palette);
+    static constexpr IToolManager::ATool::ID ID    = 1;
+
+    SetColorTool(IDocument& document, IPalette& palette);
     ~SetColorTool() override = default;
 
     SetColorTool(const SetColorTool&)            = delete;
@@ -35,13 +37,12 @@ public:
     SetColorTool& operator=(const SetColorTool&) = delete;
     SetColorTool& operator=(SetColorTool&&)      = delete;
 
-    ID   id() const override;
-    bool processEvent(const IInputPump::Event& event) override;
+    IToolManager::ATool::ID id() const override;
+    bool                    processEvent(const IInputPump::Event& event) override;
 
 private:
     bool paintShape(const Vec2F& global_pos);
 
-    ID         id_;
     IDocument& document_;
     IPalette&  palette_;
 }; // class SetColorTool
@@ -75,14 +76,14 @@ private:
 
 /* ====================== Implementation ====================== */
 
-inline SetColorTool::SetColorTool(ID tool_id, IDocument& document, IPalette& palette) :
-    id_(tool_id), document_(document), palette_(palette)
+inline SetColorTool::SetColorTool(IDocument& document, IPalette& palette) :
+    document_(document), palette_(palette)
 {
 }
 
 inline IToolManager::ATool::ID SetColorTool::id() const
 {
-    return id_;
+    return ID;
 }
 
 inline bool SetColorTool::processEvent(const IInputPump::Event& event)

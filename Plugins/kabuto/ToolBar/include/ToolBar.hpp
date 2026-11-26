@@ -6,6 +6,7 @@
 #include "Plugins/kabuto/UIFW/export/IUIFramework.hpp"
 #include "Utils/TObject.hpp"
 
+#include <string>
 #include <vector>
 
 extern "C" InitPackageFunc INIT_PACKAGE_FUNC_NAME;
@@ -16,10 +17,26 @@ namespace Kabuto
 namespace ToolBar
 {
 
+struct ToolBarConfig
+{
+    float       left          = 312.0F;
+    float       top           = 24.0F;
+    float       width         = 40.0F;
+    float       height        = 256.0F;
+    float       header_height = 28.0F;
+    float       padding       = 8.0F;
+    float       row_height    = 32.0F;
+    float       icon_size     = 30.0F;
+    std::string label         = "Tools";
+};
+
 class TToolBar final : public TObject
 {
 public:
-    TToolBar()           = default;
+    explicit TToolBar(const ToolBarConfig& config = {}) : config_(config)
+    {
+    }
+
     ~TToolBar() override = default;
 
     TToolBar(const TToolBar&)            = delete;
@@ -44,12 +61,15 @@ private:
 
     void rebuild();
 
+    ToolBarConfig      config_;
     std::vector<Entry> entries_;
 }; // class TToolBar
 
 class CToolBar final : public IToolBar
 {
 public:
+    friend class TToolBar;
+
     CToolBar(const CToolBar&)            = delete;
     CToolBar(CToolBar&&)                 = delete;
     CToolBar& operator=(const CToolBar&) = delete;

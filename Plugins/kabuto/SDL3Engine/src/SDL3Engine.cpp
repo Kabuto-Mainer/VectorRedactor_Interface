@@ -1,4 +1,4 @@
-#include "SDL3Engine.hpp"
+#include "include/SDL3Engine.hpp"
 
 #include "Core/ApplicationCore.hpp"
 #include "Interfaces/IID.hpp"
@@ -14,6 +14,9 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <json/json.h>
 #include <numbers>
 #include <optional>
 #include <string>
@@ -30,19 +33,144 @@ namespace Engine
 namespace
 {
 
-constexpr int   LOGICAL_WIDTH       = 1'920;
-constexpr int   LOGICAL_HEIGHT      = 1'080;
-constexpr float DESKTOP_USAGE       = 0.9F;
+constexpr const char* ENGINE_CONFIG_FILENAME = "SDL3Engine.json";
+
 constexpr int   FONT_PROBE_SIZE     = 16;
 constexpr int   ELLIPSE_SEGMENTS    = 72;
 constexpr float VECTOR_ARROW_LENGTH = 10.0F;
 constexpr float VECTOR_ARROW_ANGLE  = 25.0F * std::numbers::pi_v<float> / 180.0F;
 constexpr float RAD_TO_DEG          = 180.0F / std::numbers::pi_v<float>;
 
+/*
+ * SDL3_gfx's ellipse primitive computes its scanlines with Sint32 and becomes
+ * wrong for radii above ~1024 (the overscan squares overflow). Large ellipses
+ * are therefore drawn as polygons instead.
+ */
+constexpr float MAX_ELLIPSE_PRIMITIVE_RADIUS = 512.0F;
+
 void logSdlError(const char* what)
 {
     ApplicationCore::log(ApplicationCore::LogLevel::ERROR, "%s: %s", what, SDL_GetError());
 }
+
+struct EngineConfig
+{
+    int   logical_width  = 1'920;
+    int   logical_height = 1'080;
+    float desktop_usage  = 0.9F;
+};
+
+std::filesystem::path executableDirectory()
+{
+    std::error_code             error;
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    if (!error && !self.empty())
+    {
+        return self.parent_path();
+    }
+
+    return std::filesystem::current_path(error);
+}
+
+std::filesystem::path configFilePath()
+{
+    return executableDirectory() / "config" / ENGINE_CONFIG_FILENAME;
+}
+
+void logInvalidConfigField(const std::filesystem::path& path, const char* field)
+{
+    ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Engine config '%s': invalid '%s', using default",
+                         path.string().c_str(), field);
+}
+
+EngineConfig loadEngineConfig(const std::filesystem::path& path)
+{
+    EngineConfig config;
+
+    std::ifstream file(path);
+    if (!file.is_open())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Engine config '%s' not found, using defaults",
+                             path.string().c_str());
+        return config;
+    }
+
+    Json::CharReaderBuilder builder;
+    Json::Value             root;
+    std::string             errors;
+
+    if (!Json::parseFromStream(builder, file, &root, &errors) || !root.isObject())
+    {
+        ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "Engine config '%s' is invalid (%s), using defaults",
+                             path.string().c_str(), errors.empty() ? "root is not an object" : errors.c_str());
+        return config;
+    }
+
+    const Json::Value& logical_width = root["logical_width"];
+    if (logical_width.isInt() && logical_width.asInt() > 0)
+    {
+        config.logical_width = logical_width.asInt();
+    }
+    else if (!logical_width.isNull())
+    {
+        logInvalidConfigField(path, "logical_width");
+    }
+
+    const Json::Value& logical_height = root["logical_height"];
+    if (logical_height.isInt() && logical_height.asInt() > 0)
+    {
+        config.logical_height = logical_height.asInt();
+    }
+    else if (!logical_height.isNull())
+    {
+        logInvalidConfigField(path, "logical_height");
+    }
+
+    const Json::Value& desktop_usage = root["desktop_usage"];
+    if (desktop_usage.isNumeric() && desktop_usage.asFloat() > 0.0F && desktop_usage.asFloat() <= 1.0F)
+    {
+        config.desktop_usage = desktop_usage.asFloat();
+    }
+    else if (!desktop_usage.isNull())
+    {
+        logInvalidConfigField(path, "desktop_usage");
+    }
+
+    return config;
+}
+
+/*
+ * SDL3_gfx primitives set the renderer draw blend mode themselves (NONE for
+ * opaque colors, BLEND otherwise). Restore the previous state afterwards so
+ * the engine's rendering is not affected by an earlier gfx call.
+ */
+class RenderBlendModeGuard final
+{
+public:
+    explicit RenderBlendModeGuard(SDL_Renderer* renderer) : renderer_(renderer)
+    {
+        if (renderer_ == nullptr || !SDL_GetRenderDrawBlendMode(renderer_, &blend_mode_))
+        {
+            logSdlError("SDL_GetRenderDrawBlendMode failed");
+            renderer_ = nullptr;
+        }
+    }
+
+    ~RenderBlendModeGuard()
+    {
+        if (renderer_ != nullptr && !SDL_SetRenderDrawBlendMode(renderer_, blend_mode_))
+        {
+            logSdlError("SDL_SetRenderDrawBlendMode failed");
+        }
+    }
+
+    RenderBlendModeGuard(const RenderBlendModeGuard&)            = delete;
+    RenderBlendModeGuard& operator=(const RenderBlendModeGuard&) = delete;
+
+private:
+    SDL_Renderer* renderer_   = nullptr;
+    SDL_BlendMode blend_mode_ = SDL_BLENDMODE_NONE;
+};
 
 Vec2F rotate(const Vec2F& vec, float angle)
 {
@@ -91,22 +219,24 @@ SDL_FRect toSDLRect(const BoxF& box)
     return {box.left(), box.top(), box.size().x(), box.size().y()};
 }
 
-Vec2F initialWindowSize()
+Vec2F initialWindowSize(const EngineConfig& config)
 {
     SDL_Rect            usable  = {};
     const SDL_DisplayID display = SDL_GetPrimaryDisplay();
 
     if (display == 0 || !SDL_GetDisplayUsableBounds(display, &usable) || usable.w <= 0 || usable.h <= 0)
     {
-        return {static_cast<float>(LOGICAL_WIDTH), static_cast<float>(LOGICAL_HEIGHT)};
+        return {static_cast<float>(config.logical_width), static_cast<float>(config.logical_height)};
     }
 
-    const float width_scale  = static_cast<float>(usable.w) * DESKTOP_USAGE / static_cast<float>(LOGICAL_WIDTH);
-    const float height_scale = static_cast<float>(usable.h) * DESKTOP_USAGE / static_cast<float>(LOGICAL_HEIGHT);
-    const float scale        = std::min({width_scale, height_scale, 1.0F});
+    const float width_scale =
+        static_cast<float>(usable.w) * config.desktop_usage / static_cast<float>(config.logical_width);
+    const float height_scale =
+        static_cast<float>(usable.h) * config.desktop_usage / static_cast<float>(config.logical_height);
+    const float scale = std::min({width_scale, height_scale, 1.0F});
 
-    return {std::floor(static_cast<float>(LOGICAL_WIDTH) * scale),
-            std::floor(static_cast<float>(LOGICAL_HEIGHT) * scale)};
+    return {std::floor(static_cast<float>(config.logical_width) * scale),
+            std::floor(static_cast<float>(config.logical_height) * scale)};
 }
 
 /* ------------------ text helpers ------------------ */
@@ -732,6 +862,8 @@ std::optional<Event> convertEvent(const SDL_Event& sdl_event)
 
 SDL3Engine::SDL3Engine()
 {
+    const EngineConfig config = loadEngineConfig(configFilePath());
+
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
         logSdlError("SDL_Init failed");
@@ -746,7 +878,7 @@ SDL3Engine::SDL3Engine()
 
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "Renderer initialized successfully");
 
-    openWindow(initialWindowSize());
+    openWindow(initialWindowSize(config), config.logical_width, config.logical_height);
 
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "Input pump initialized successfully");
 }
@@ -773,7 +905,7 @@ SDL3Engine::~SDL3Engine()
     ApplicationCore::log(ApplicationCore::LogLevel::OK, "Input pump deinitialized successfully");
 }
 
-void SDL3Engine::openWindow(const Vec2F& size)
+void SDL3Engine::openWindow(const Vec2F& size, int logical_width, int logical_height)
 {
     window_ = SDL_CreateWindow("GDInterface", static_cast<int>(size.x()), static_cast<int>(size.y()),
                                SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
@@ -790,7 +922,7 @@ void SDL3Engine::openWindow(const Vec2F& size)
         return;
     }
 
-    if (!SDL_SetRenderLogicalPresentation(renderer_, LOGICAL_WIDTH, LOGICAL_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX))
+    if (!SDL_SetRenderLogicalPresentation(renderer_, logical_width, logical_height, SDL_LOGICAL_PRESENTATION_LETTERBOX))
     {
         logSdlError("SDL_SetRenderLogicalPresentation failed");
     }
@@ -841,6 +973,7 @@ void SDL3Engine::drawPolygon(const std::vector<Vec2F>& points, const Color& colo
     }
 
     const auto count = static_cast<int>(points.size());
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
     const bool ok = filled ?
                         filledPolygonRGBA(renderer_, xs.data(), ys.data(), count, color.r, color.g, color.b, color.a) :
                         polygonRGBA(renderer_, xs.data(), ys.data(), count, color.r, color.g, color.b, color.a);
@@ -993,10 +1126,14 @@ void SDL3Engine::renderEllipse(const Color& color, const BoxF& box, float angle)
 {
     assert(renderer_);
 
-    if (angle == 0.0F)
+    const Vec2F radius = box.size() / 2.0F;
+    const bool  fits_primitive = radius.x() <= MAX_ELLIPSE_PRIMITIVE_RADIUS &&
+                                radius.y() <= MAX_ELLIPSE_PRIMITIVE_RADIUS;
+
+    if (angle == 0.0F && fits_primitive)
     {
         const Vec2F center = box.center();
-        const Vec2F radius = box.size() / 2.0F;
+        const RenderBlendModeGuard restore_blend_mode(renderer_);
 
         if (!filledEllipseRGBA(renderer_, center.x(), center.y(), radius.x(), radius.y(), color.r, color.g, color.b,
                                color.a))
@@ -1013,10 +1150,14 @@ void SDL3Engine::renderEllipseLines(const Color& color, const BoxF& box, float a
 {
     assert(renderer_);
 
-    if (angle == 0.0F)
+    const Vec2F radius = box.size() / 2.0F;
+    const bool  fits_primitive = radius.x() <= MAX_ELLIPSE_PRIMITIVE_RADIUS &&
+                                radius.y() <= MAX_ELLIPSE_PRIMITIVE_RADIUS;
+
+    if (angle == 0.0F && fits_primitive)
     {
         const Vec2F center = box.center();
-        const Vec2F radius = box.size() / 2.0F;
+        const RenderBlendModeGuard restore_blend_mode(renderer_);
 
         if (!ellipseRGBA(renderer_, center.x(), center.y(), radius.x(), radius.y(), color.r, color.g, color.b, color.a))
         {
@@ -1031,6 +1172,8 @@ void SDL3Engine::renderEllipseLines(const Color& color, const BoxF& box, float a
 void SDL3Engine::renderLine(const Color& color, const Vec2F& origin, const Vec2F& end)
 {
     assert(renderer_);
+
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
 
     if (!lineRGBA(renderer_, origin.x(), origin.y(), end.x(), end.y(), color.r, color.g, color.b, color.a))
     {
@@ -1062,9 +1205,39 @@ void SDL3Engine::renderPixel(const Color& color, const Vec2F& pos)
 {
     assert(renderer_);
 
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
+
     if (!pixelRGBA(renderer_, pos.x(), pos.y(), color.r, color.g, color.b, color.a))
     {
         logSdlError("pixelRGBA failed");
+    }
+}
+
+/* from IVertexRenderer */
+
+void SDL3Engine::renderVertex(const Color& color, const Vertex& vertex)
+{
+    assert(renderer_);
+
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
+
+    if (!filledTrigonRGBA(renderer_, vertex.x0.x(), vertex.x0.y(), vertex.x1.x(), vertex.x1.y(), vertex.x2.x(),
+                          vertex.x2.y(), color.r, color.g, color.b, color.a))
+    {
+        logSdlError("filledTrigonRGBA failed");
+    }
+}
+
+void SDL3Engine::renderVertexLine(const Color& color, const Vertex& vertex)
+{
+    assert(renderer_);
+
+    const RenderBlendModeGuard restore_blend_mode(renderer_);
+
+    if (!trigonRGBA(renderer_, vertex.x0.x(), vertex.x0.y(), vertex.x1.x(), vertex.x1.y(), vertex.x2.x(), vertex.x2.y(),
+                    color.r, color.g, color.b, color.a))
+    {
+        logSdlError("trigonRGBA failed");
     }
 }
 
@@ -1288,6 +1461,13 @@ extern "C" bool INIT_PACKAGE_FUNC_NAME()
     }
 
     if (ApplicationCore::instance().registerInterface(IID_INPUT_PUMP, static_cast<IInputPump*>(&engine)) !=
+        ApplicationCore::Error::SUCCESS)
+    {
+        return false;
+    }
+
+    if (ApplicationCore::instance().registerInterface(IID_VERTEX_RENDERER,
+                                                      static_cast<Kabuto::IVertexRenderer*>(&engine)) !=
         ApplicationCore::Error::SUCCESS)
     {
         return false;
