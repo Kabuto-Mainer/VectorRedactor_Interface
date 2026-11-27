@@ -27,7 +27,7 @@ class Desktop final : public IDesktop
 
 		static Desktop& instance();
 
-		// FIXME: Error -> void
+		// ISSUE: Error -> void
 		Error add(std::unique_ptr<TObject> object) override;
 		[[deprecated]] Error remove(TObject::ID object_id) override;
 };

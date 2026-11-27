@@ -51,9 +51,9 @@ ToolManager::Error ToolManager::addTool(std::unique_ptr<ATool> tool)
 	return Error::SUCCESS;
 }
 
-ToolManager::Error ToolManager::removeTool([[maybe_unused]] ATool::ID tool_id)
+ToolManager::Error ToolManager::removeTool(ATool::ID tool_id)
 {
-	// FIXME: 
+	// ISSUE: why this function is needed
 	ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "%s is a stub", __func__);
 	return Error::SUCCESS;
 }

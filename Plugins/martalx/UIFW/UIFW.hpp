@@ -8,7 +8,6 @@
 #include "Utils/Vec2F.hpp"
 
 #include <functional>
-#include <memory>
 #include <string>
 
 namespace MartAlx::UIFW

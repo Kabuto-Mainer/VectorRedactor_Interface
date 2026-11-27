@@ -1,9 +1,12 @@
-../Plugins/martalx/SDL_GUIEngine/libSDL_GUIEngine.so
+../Plugins/kabuto/SDL3Engine/libkabuto_SDL3Engine.so
 ../Plugins/martalx/Desktop/libDesktop.so
 ../Plugins/martalx/Document/libDocument.so
 ../Plugins/martalx/ToolManager/libToolManager.so
 ../Plugins/martalx/ToolBar/libToolBar.so
 ../Plugins/martalx/Tools/libRectangleTool.so
 ../Plugins/martalx/Tools/libBrowseTool.so
+../Plugins/kabuto/UIFW/libkabuto_UIFW.so
+#../Plugins/kabuto/Palette/libkabuto_Palette.so
+../Plugins/martalx/libmurugov_Tools.so
 ../Plugins/martalx/MainPlugin/libMainPlugin.so
 

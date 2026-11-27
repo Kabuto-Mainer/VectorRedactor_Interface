@@ -14,7 +14,7 @@
 
 using namespace MartAlx::UIFW;
 
-// TODO: mapLocalToGlobal etc move to protected,
+// ISSUE: mapLocalToGlobal etc move to protected,
 // add func below to box class
 static BoxF globalBox(const TWidget &object)
 {
@@ -114,7 +114,7 @@ bool Button::processEvent(const IInputPump::Event& event)
 
 	const auto &event_mouse = std::get<IInputPump::EventMouse>(event);
 
-	// TODO: yack!
+	// ISSUE: sync prototypes of map*
 	if (box().contains(box().topLeft() + mapGlobalToLocal(event_mouse.cursorPos())))
 	{
 		switch (event_mouse.type())
@@ -209,11 +209,11 @@ StandardButton::StandardButton(const Icon &icon)
 
 void StandardButton::render()
 {
-	static constexpr auto NORMAL_TONE  = IRenderer::Color { .r = 0,   .g = 0,   .b = 0,   .a = 0   };
+	static constexpr auto NORMAL_TONE  = IRenderer::Color::TRANSPARENT;
 	static constexpr auto HOVERED_TONE = IRenderer::Color { .r = 255, .g = 255, .b = 0,   .a = 50  };
 	static constexpr auto PRESSED_TONE = IRenderer::Color { .r = 255, .g = 0,   .b = 0,   .a = 50  };
 
-	IRenderer::Color tone = IRenderer::Color::TRANSPARENT;
+	IRenderer::Color tone;
 	switch(state())
 	{
 		case State::NORMAL:  tone = NORMAL_TONE;  break;

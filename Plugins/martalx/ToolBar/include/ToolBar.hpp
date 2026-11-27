@@ -5,7 +5,6 @@
 #include "UIFW/UIFW.hpp"
 #include "Utils/BoxF.hpp"
 #include "Utils/TObject.hpp"
-#include "Utils/Vec2F.hpp"
 
 namespace MartAlx
 {

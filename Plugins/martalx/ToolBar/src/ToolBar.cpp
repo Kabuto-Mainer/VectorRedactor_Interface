@@ -5,7 +5,6 @@
 #include "Interfaces/IToolManager.hpp"
 #include "Interfaces/Package.hpp"
 #include "UIFW/UIFW.hpp"
-#include "Utils/BoxF.hpp"
 #include <cassert>
 #include <memory>
 

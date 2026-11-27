@@ -4,15 +4,22 @@
 #include "Interfaces/IRenderer.hpp"
 #include "Core/ApplicationCore.hpp"
 #include "Utils/BoxF.hpp"
+#include "Utils/Matrix3F.hpp"
 #include "Utils/Vec2F.hpp"
+#include <algorithm>
 #include <memory>
 #include <utility>
 
 using namespace MartAlx::Shapes;
 
+// ISSUE: constexpr BoxF, Vec2F
 static BoxF globalBox(const IDocument::TShape &shape)
 {
-	return BoxF { shape.mapLocalToGlobal(Vec2F { 0.0F, 0.0F }), shape.mapLocalToGlobal(Vec2F { 1.0F, 1.0F }) };
+	const auto origin = shape.mapLocalToGlobal(Vec2F(0.0F, 0.0F));
+	const auto top_left = -0.5F*shape.scaling() + origin;
+	const auto bottom_right = +0.5F*shape.scaling() + origin;
+
+	return BoxF(top_left, bottom_right);
 }
 
 /* Rectangle */
@@ -38,15 +45,24 @@ void Rectangle::render()
 
 bool Rectangle::hitTest(const Vec2F &pos) const
 {
-	// FIXME: implement
-	return false;
+	return BoxF(-0.5F, -0.5F, 0.5F, 0.5F).contains(mapGlobalToLocal(pos));
 }
 
 BoxF Rectangle::axesAlignedBoundingBox() const
 {
-	// FIXME: implement
-	ApplicationCore::log(ApplicationCore::LogLevel::WARNING, "FIXME: %s not implemented", __func__);
-	return BoxF {};
+	const auto box_corners =
+	{
+		transform().transformPoint(Vec2F(-0.5F, -0.5F)),
+		transform().transformPoint(Vec2F( 0.5F, -0.5F)),
+		transform().transformPoint(Vec2F(-0.5F,  0.5F)),
+		transform().transformPoint(Vec2F( 0.5F,  0.5F)),
+	};
+
+	const auto compare_x = [](const Vec2F &v1, const Vec2F &v2){ return v1.x() < v2.x(); };
+	const auto compare_y = [](const Vec2F &v1, const Vec2F &v2){ return v1.y() < v2.y(); };
+
+	return BoxF(std::min(box_corners, compare_x).x(), std::min(box_corners, compare_y).y(),
+			std::max(box_corners, compare_x).x(), std::max(box_corners, compare_y).y());
 }
 
 Rectangle::TypeID Rectangle::tid() const
