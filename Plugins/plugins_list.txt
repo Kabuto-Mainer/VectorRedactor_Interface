@@ -1,0 +1,9 @@
+../../murugov/Raylib_GUIEngine/libmurugov_Raylib_GUIEngine.dylib
+../../murugov/ToolManager/libmurugov_ToolManager.dylib
+../../kabuto/Desktop/libkabuto_Desktop.dylib
+../../kabuto/Document/libkabuto_Document.dylib
+../../murugov/ToolBar/libmurugov_ToolBar.dylib
+
+../../murugov/Tools/SelectTool/libmurugov_SelectTool.dylib
+../../murugov/Tools/PenTool/libmurugov_PenTool.dylib
+../../murugov/Tools/BezierTool/libmurugov_BezierTool.dylib

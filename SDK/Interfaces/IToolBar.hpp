@@ -2,9 +2,6 @@
 
 #include "IRenderer.hpp"
 #include "IToolManager.hpp"
-#include "Interfaces/IID.hpp"
-
-constexpr static IID IID_TOOLBAR = 2;
 
 constexpr static const IID IID_TOOL_BAR = 2;
 
